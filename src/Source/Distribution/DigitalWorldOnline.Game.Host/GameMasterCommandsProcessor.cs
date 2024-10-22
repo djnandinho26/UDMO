@@ -484,6 +484,17 @@ namespace DigitalWorldOnline.Game
 
                                     await _sender.Send(new UpdateDigimonSizeCommand(client.Partner.Id, client.Partner.Size));
                                     await _sender.Send(new UpdateDigimonGradeCommand(client.Partner.Id, client.Partner.HatchGrade));
+
+                                    client.Tamer.UpdateState(CharacterStateEnum.Loading);
+                                    await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
+
+                                    _mapServer.RemoveClient(client);
+
+                                    client.SetGameQuit(false);
+                                    client.Tamer.UpdateSlots();
+
+                                    client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
+                                        client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y));
                                 }
                                 break;
 
@@ -2511,7 +2522,7 @@ namespace DigitalWorldOnline.Game
 
                         if (!match.Success)
                         {
-                            client.Send(new SystemMessagePacket($"Unknown command.\nType !party"));
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !assetreload"));
                             break;
                         }
                         var assetsLoader = _assets.Reload();
