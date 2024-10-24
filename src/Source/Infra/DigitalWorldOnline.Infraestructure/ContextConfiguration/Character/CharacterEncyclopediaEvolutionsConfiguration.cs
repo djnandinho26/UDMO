@@ -24,6 +24,11 @@ namespace DigitalWorldOnline.Infraestructure.ContextConfiguration.Character
                 .IsRequired();
 
             builder
+                .Property(x => x.SlotLevel)
+                .HasColumnType("int")
+                .IsRequired();
+
+            builder
                 .Property(x => x.IsUnlocked)
                 .HasColumnType("bit")
                 .HasDefaultValue(false)

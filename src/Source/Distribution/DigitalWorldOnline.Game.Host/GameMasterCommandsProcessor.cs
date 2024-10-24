@@ -118,7 +118,9 @@ namespace DigitalWorldOnline.Game
 
                         newDigimon.SetBaseStatus(_statusManager.GetDigimonBaseStatus(newDigimon.BaseType, newDigimon.Level, newDigimon.Size));
 
-                        newDigimon.AddEvolutions(_assets.EvolutionInfo.First(x => x.Type == newDigimon.BaseType));
+                        // Get evolution info
+                        EvolutionAssetModel digimonEvolutionInfo = _assets.EvolutionInfo.First(x => x.Type == newDigimon.BaseType);
+                        newDigimon.AddEvolutions(digimonEvolutionInfo);
 
                         if (newDigimon.BaseInfo == null || newDigimon.BaseStatus == null || !newDigimon.Evolutions.Any())
                         {
@@ -163,6 +165,50 @@ namespace DigitalWorldOnline.Game
                                 }
                             }
                         }
+
+
+                        // Get digimon base info
+                        DigimonBaseInfoAssetModel digimonBaseInfo = newDigimon.BaseInfo;
+
+                        // Get digimon evolutions
+                        var digimonEvolutions = newDigimon.Evolutions;
+
+                        // Write log with encyclopedia
+                        _logger.Information($"type: {newDigimon.BaseType}, info: {digimonEvolutionInfo?.Id.ToString()}");
+
+                        var encyclopediaExists = client.Tamer.Encyclopedia.Exists(x => x.DigimonEvolutionId == digimonEvolutionInfo?.Id);
+
+                        // Check if encyclopedia exists
+                        if (encyclopediaExists)
+                        {
+                            // Write log with encyclopedia
+                            _logger.Information($"type: {newDigimon.BaseType}, info: {digimonEvolutionInfo?.Id.ToString()}, encyclopedia exists");
+                        }
+                        else
+                        {
+                            if (digimonEvolutionInfo != null)
+                            {
+                                var encyclopedia = CharacterEncyclopediaModel.Create(client.TamerId, digimonEvolutionInfo.Id, newDigimon.Level, newDigimon.Size, 0, 0, 0, 0, 0, false, false);
+                                digimonEvolutions?.ForEach(x =>
+                                {
+                                    var evolutionLine = digimonEvolutionInfo.Lines.FirstOrDefault(y => y.Type == x.Type);
+                                    byte slotLevel = 0;
+                                    if (evolutionLine != null)
+                                    {
+                                        slotLevel = evolutionLine.SlotLevel;
+                                    }
+                                    encyclopedia.Evolutions.Add(CharacterEncyclopediaEvolutionsModel.Create(encyclopedia.Id, x.Type, slotLevel, Convert.ToBoolean(x.Unlocked)));
+                                });
+
+                                var encyclopediaAdded = await _sender.Send(new CreateCharacterEncyclopediaCommand(encyclopedia));
+
+                                client.Tamer.Encyclopedia.Add(encyclopediaAdded);
+
+                                _logger.Information($"Tamer encyclopedia count: {client.Tamer.Encyclopedia.Count} and last id is {client.Tamer.Encyclopedia.Last().Id}");
+                            }
+                        }
+
+
                     }
                     break;
 
@@ -1393,7 +1439,6 @@ namespace DigitalWorldOnline.Game
                     }
                     break;
 
-
                 case "encyclopedia":
                     {
                         var regex = @"^encyclopedia\s*$";
@@ -1409,21 +1454,21 @@ namespace DigitalWorldOnline.Game
 
                         var digimonEvolutionInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == 21134);
                         _logger.Information($"type: 21134, info: {digimonEvolutionInfo?.ToString()}");
-                        if(digimonEvolutionInfo == null)
+                        if (digimonEvolutionInfo == null)
                         {
                             client.Send(new SystemMessagePacket($"evolution info not found"));
                             return;
                         }
                         List<EvolutionLineAssetModel> evolutionLines = digimonEvolutionInfo.Lines.OrderBy(x => x.Id).ToList();
 
-                        var encyclopedia = CharacterEncyclopediaModel.Create(client.TamerId, digimonEvolutionInfo.Id, false, false);
+                        var encyclopedia = CharacterEncyclopediaModel.Create(client.TamerId, digimonEvolutionInfo.Id, 120, 14000, 15, 15, 15, 15, 15, false, false);
                         evolutionLines?.ForEach(x =>
                         {
-                            encyclopedia.Evolutions.Add(CharacterEncyclopediaEvolutionsModel.Create(encyclopedia.Id, x.Type, false));
+                            encyclopedia.Evolutions.Add(CharacterEncyclopediaEvolutionsModel.Create(encyclopedia.Id, x.Type, x.SlotLevel, false));
                         });
                         client.Tamer.Encyclopedia.Add(encyclopedia);
 
-                        var encyclopediaAdded  = await _sender.Send(new CreateCharacterEncyclopediaCommand(encyclopedia));
+                        var encyclopediaAdded = await _sender.Send(new CreateCharacterEncyclopediaCommand(encyclopedia));
 
                         client.Send(new SystemMessagePacket($"Encyclopedia added! {encyclopediaAdded.Id}, evolutions"));
 

@@ -4,6 +4,7 @@ using DigitalWorldOnline.Infraestructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DigitalWorldOnline.Infraestructure.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20241023212111_UpdateEncyclopedia")]
+    partial class UpdateEncyclopedia
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -3056,9 +3059,6 @@ namespace DigitalWorldOnline.Infraestructure.Migrations
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
 
-                    b.Property<int>("SlotLevel")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.HasIndex("CharacterEncyclopediaId");
@@ -3606,7 +3606,7 @@ namespace DigitalWorldOnline.Infraestructure.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2024, 10, 24, 2, 35, 42, 558, DateTimeKind.Local).AddTicks(6826),
+                            CreatedAt = new DateTime(2024, 10, 24, 0, 21, 10, 729, DateTimeKind.Local).AddTicks(2134),
                             Hash = "pMgM+NOH0Z+RwR9F1iFVOOwKrW1iDaifx4jWDnH1Dbo="
                         });
                 });
@@ -5383,7 +5383,7 @@ namespace DigitalWorldOnline.Infraestructure.Migrations
                         {
                             Id = 1L,
                             Active = true,
-                            CreatedAt = new DateTime(2024, 10, 24, 2, 35, 42, 567, DateTimeKind.Local).AddTicks(879),
+                            CreatedAt = new DateTime(2024, 10, 24, 0, 21, 10, 736, DateTimeKind.Local).AddTicks(3280),
                             Interval = 1,
                             Name = "Daily Quests",
                             NextRunTime = new DateTime(2024, 10, 25, 0, 0, 0, 0, DateTimeKind.Local),

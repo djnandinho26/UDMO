@@ -1,7 +1,12 @@
 ﻿using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
+using DigitalWorldOnline.Commons.Packets.GameServer;
+using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Writers;
+using MediatR;
+using Serilog;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -9,33 +14,26 @@ namespace DigitalWorldOnline.Game.PacketProcessors
     {
         public GameServerPacketEnum Type => GameServerPacketEnum.EncyclopediaLoad;
 
-        public EncyclopediaLoadPacketProcessor() { }
+        private readonly ISender _sender;
+        private readonly ILogger _logger;
+
+        public EncyclopediaLoadPacketProcessor(ISender sender,ILogger logger)
+        {
+            _sender = sender;
+            _logger = logger;
+        }
 
         public async Task Process(GameClient client, byte[] packetData)
         {
-            for (int i = 0; i <= 100; i++)
-            {
-                PacketWriter writer = new();
-                writer.Type(3234);
-                writer.WriteInt(client.Partner.Evolutions.Count(x => x.Unlocked > 0));
-                writer.WriteInt(client.Partner.BaseType);
-                writer.WriteShort(client.Partner.Level);
+            var packet = new GamePacketReader(packetData);
 
-                writer.WriteInt64(8);
+            var encyclopedia = client.Tamer.Encyclopedia;
 
-                writer.WriteShort(client.Partner.Digiclone.ATLevel);
-                writer.WriteShort(client.Partner.Digiclone.BLLevel);
-                writer.WriteShort(client.Partner.Digiclone.CTLevel);
-                writer.WriteShort(client.Partner.Digiclone.EVLevel);
-                writer.WriteShort(client.Partner.Digiclone.HPLevel);
+            _logger.Information($"Getting encyclopedia data");
 
-                writer.WriteShort(client.Partner.Size);
-                writer.WriteByte(0);
+            _logger.Information($"Encyclopedia's count: {encyclopedia.Count}");
 
-                writer.WriteByte(0);
-
-                client.Send(writer.Serialize());
-            }
+            client.Send(new EncyclopediaLoadPacketPacket(encyclopedia));
         }
     }
 }

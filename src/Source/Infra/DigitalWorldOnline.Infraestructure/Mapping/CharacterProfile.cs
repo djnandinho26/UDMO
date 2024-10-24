@@ -85,7 +85,7 @@ namespace DigitalWorldOnline.Infraestructure.Mapping
                 .ForMember(dest => dest.Id, x => x.Ignore())
                .ReverseMap();
 
-            CreateMap<CharacterEncyclopediaModel, CharacterEncyclopediaDTO>()
+            CreateMap<CharacterEncyclopediaDTO, CharacterEncyclopediaModel>()
               .ReverseMap();
 
             CreateMap<CharacterEncyclopediaEvolutionsModel, CharacterEncyclopediaEvolutionsDTO>()
