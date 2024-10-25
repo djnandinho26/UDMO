@@ -159,6 +159,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (client.DungeonMap)
                 {
+                    client.Tamer.SetCurrentChannel(0);
                     _dungeonsServer.AddClient(client);
                     _logger.Information($"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                 }
