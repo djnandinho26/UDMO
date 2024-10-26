@@ -18,6 +18,5 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
             WriteUInt((uint)item.ItemId);
             WriteUShort((ushort)item.Amount);
         }
-
     }
 }

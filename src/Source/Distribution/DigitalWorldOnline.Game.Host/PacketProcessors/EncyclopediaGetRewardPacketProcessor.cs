@@ -23,7 +23,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ISender _sender;
         private readonly ILogger _logger;
 
-        public EncyclopediaGetRewardPacketProcessor(AssetsLoader assets, ISender sender,ILogger logger)
+        public EncyclopediaGetRewardPacketProcessor(AssetsLoader assets, ISender sender, ILogger logger)
         {
             _assets = assets;
             _sender = sender;
@@ -33,11 +33,39 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         public async Task Process(GameClient client, byte[] packetData)
         {
             var packet = new GamePacketReader(packetData);
-            
+
             // Get digimon id
             var digimonId = packet.ReadUInt();
 
-            var encyclopedia = client.Tamer.Encyclopedia;
+            var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == digimonId);
+            if (evoInfo == null)
+            {
+                client.Send(new SystemMessagePacket($"Failed to receive reward."));
+                return;
+            }
+
+            var encyclopedia = client.Tamer.Encyclopedia.FirstOrDefault(x => x.DigimonEvolutionId == evoInfo.Id);
+
+            if (encyclopedia == null)
+            {
+                _logger.Warning($"Failed to send encyclopedia reward to tamer {client.TamerId}, Player does not have this opened.");
+                client.Send(new SystemMessagePacket($"Failed to receive reward."));
+                return;
+            }
+
+            if (encyclopedia.IsRewardReceived)
+            {
+                _logger.Warning($"Tamer {client.TamerId}, Already received the reward.");
+                client.Send(new SystemMessagePacket($"You have already received the reward."));
+                return;
+            }
+
+            if (!encyclopedia.IsRewardAllowed)
+            {
+                _logger.Warning($"Tamer {client.TamerId}, Is not allowed to take the item.");
+                client.Send(new SystemMessagePacket($"Failed to receive reward."));
+                return;
+            }
 
             var itemId = 97206;
             var newItem = new ItemModel();
@@ -59,15 +87,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var itemClone = (ItemModel)newItem.Clone();
             if (client.Tamer.Inventory.AddItem(newItem))
             {
-                client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                // client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                client.Send(new EncyclopediaReceiveRewardItemPacketPacket(newItem));
+                encyclopedia.SetRewardAllowed(false);
+                encyclopedia.SetRewardReceived(true);
+                await _sender.Send(new UpdateCharacterEncyclopediaCommand(encyclopedia));
             }
             else
             {
                 client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
             }
-
-            client.Send(new EncyclopediaLoadPacketPacket(encyclopedia));
         }
     }
 }
