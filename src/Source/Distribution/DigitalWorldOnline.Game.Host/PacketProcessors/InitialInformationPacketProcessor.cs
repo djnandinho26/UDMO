@@ -150,6 +150,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     character.SetCurrentChannel(channel);
                 }
 
+                if (client.DungeonMap)
+                    client.Tamer.SetCurrentChannel(0);
+
                 character.UpdateState(CharacterStateEnum.Loading);
                 client.SetCharacter(character);
                 client.SetSentOnceDataSent(character.InitialPacketSentOnceSent);
@@ -159,7 +162,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (client.DungeonMap)
                 {
-                    client.Tamer.SetCurrentChannel(0);
                     _dungeonsServer.AddClient(client);
                     _logger.Information($"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                 }
