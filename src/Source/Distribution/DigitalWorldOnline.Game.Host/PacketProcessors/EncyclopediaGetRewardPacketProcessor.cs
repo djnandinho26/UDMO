@@ -87,10 +87,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var itemClone = (ItemModel)newItem.Clone();
             if (client.Tamer.Inventory.AddItem(newItem))
             {
-                client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
-                await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
                 encyclopedia.SetRewardAllowed(false);
                 encyclopedia.SetRewardReceived(true);
+                await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
                 await _sender.Send(new UpdateCharacterEncyclopediaCommand(encyclopedia));
                 client.Send(new EncyclopediaReceiveRewardItemPacket(newItem, (int)digimonId));
                 // client.Send(new EncyclopediaLoadPacket(client.Tamer.Encyclopedia));
