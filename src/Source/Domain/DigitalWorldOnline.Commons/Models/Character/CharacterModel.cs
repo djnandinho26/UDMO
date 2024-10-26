@@ -390,7 +390,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
         public void UpdateEncyclopedia(CharacterEncyclopediaModel encyclopedia)
         {
-            Console.WriteLine($"new data: {Encyclopedia.FirstOrDefault(x => x.Id == encyclopedia.Id)?.IsRewardAllowed}");
+            Console.WriteLine($"new data: {Encyclopedia.FirstOrDefault(x => x.Id == encyclopedia.Id)?.IsRewardReceived.ToString()}");
         }
     }
 }
