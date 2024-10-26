@@ -49,9 +49,9 @@ namespace DigitalWorldOnline.Infraestructure.ContextConfiguration.Character
 
             builder
                 .HasOne(x => x.BaseInfo)
-                .WithOne()
-                .HasForeignKey<CharacterEncyclopediaEvolutionsDTO>(x => x.DigimonBaseType)
-                .HasPrincipalKey<DigimonBaseInfoAssetDTO>(x => x.Type)
+                .WithMany()
+                .HasForeignKey(x => x.DigimonBaseType)
+                .HasPrincipalKey(x => x.Type)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }
