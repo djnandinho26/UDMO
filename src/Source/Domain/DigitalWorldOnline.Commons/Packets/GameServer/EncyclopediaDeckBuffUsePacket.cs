@@ -9,7 +9,7 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
 {
     public class EncyclopediaDeckBuffUsePacket : PacketWriter
     {
-        private const int PacketNumber = 3235;
+        private const int PacketNumber = 3236;
 
         public EncyclopediaDeckBuffUsePacket(CharacterModel character)
         {
