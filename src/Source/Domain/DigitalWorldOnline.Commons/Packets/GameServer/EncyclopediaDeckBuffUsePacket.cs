@@ -11,12 +11,12 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
     {
         private const int PacketNumber = 3235;
 
-        public EncyclopediaDeckBuffUsePacket(int HP, short AS)
+        public EncyclopediaDeckBuffUsePacket(CharacterModel character)
         {
             Type(PacketNumber);
 
-            WriteInt(HP);
-            WriteUShort((ushort)AS);
+            WriteInt(character.Partner.HP);
+            WriteShort((short)character.Partner.AS);
         }
     }
 }

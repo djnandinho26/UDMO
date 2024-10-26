@@ -40,7 +40,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             await _sender.Send(new UpdateCharacterDeckBuffCommand(character));
 
-            client.Send(new EncyclopediaDeckBuffUsePacket(20000, 1));
+            client.Send(new EncyclopediaDeckBuffUsePacket(character));
         }
     }
 }
