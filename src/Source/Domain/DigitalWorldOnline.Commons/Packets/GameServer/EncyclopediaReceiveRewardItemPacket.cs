@@ -9,15 +9,14 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
 {
     public class EncyclopediaReceiveRewardItemPacket : PacketWriter
     {
-        private const int PacketNumber = 3234;
+        private const int PacketNumber = 3235;
 
         public EncyclopediaReceiveRewardItemPacket(ItemModel item, int digimonId)
         {
             Type(PacketNumber);
 
-            WriteInt(item.ItemId);
-            WriteShort((short)item.Amount);
-            WriteInt(digimonId);
+            WriteUInt((uint)item.ItemId);
+            WriteUShort((ushort)item.Amount);
         }
     }
 }
