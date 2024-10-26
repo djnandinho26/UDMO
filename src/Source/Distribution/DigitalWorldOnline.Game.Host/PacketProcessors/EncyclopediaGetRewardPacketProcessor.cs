@@ -92,7 +92,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 encyclopedia.SetRewardAllowed(false);
                 encyclopedia.SetRewardReceived(true);
                 await _sender.Send(new UpdateCharacterEncyclopediaCommand(encyclopedia));
-                client.Send(new EncyclopediaReceiveRewardItemPacket(newItem));
+                client.Send(new EncyclopediaReceiveRewardItemPacket(newItem, (int)digimonId));
                 // client.Send(new EncyclopediaLoadPacket(client.Tamer.Encyclopedia));
             }
             else

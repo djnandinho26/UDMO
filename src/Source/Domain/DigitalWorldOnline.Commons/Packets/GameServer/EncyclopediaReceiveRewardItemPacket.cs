@@ -11,12 +11,13 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
     {
         private const int PacketNumber = 3234;
 
-        public EncyclopediaReceiveRewardItemPacket(ItemModel item)
+        public EncyclopediaReceiveRewardItemPacket(ItemModel item, int digimonId)
         {
             Type(PacketNumber);
 
             WriteInt(item.ItemId);
             WriteShort((short)item.Amount);
+            WriteInt(digimonId);
         }
     }
 }
