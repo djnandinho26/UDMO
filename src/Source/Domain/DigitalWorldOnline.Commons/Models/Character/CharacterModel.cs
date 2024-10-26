@@ -386,6 +386,11 @@ namespace DigitalWorldOnline.Commons.Models.Character
             TradeInventory = null;
 
         }
-    
+
+
+        public void UpdateEncyclopedia(CharacterEncyclopediaModel encyclopedia)
+        {
+            Console.WriteLine($"new data: {Encyclopedia.FirstOrDefault(x => x.Id == encyclopedia.Id)?.IsRewardAllowed}");
+        }
     }
 }
