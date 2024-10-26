@@ -462,7 +462,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
                     //SocketAttribute(AccessoryStatusTypeEnum.MS, _baseMs) +
                     BuffAttribute(_baseMs, SkillCodeApplyAttributeEnum.MS, SkillCodeApplyAttributeEnum.MovementSpeedComparisonCorrectionBuff, SkillCodeApplyAttributeEnum.MovementSpeedIncrease);
 
-                return Math.Min(calculatedMS, 3500); // Max value of MS = 3500
+                return Math.Min(calculatedMS, 15000); // Max value of MS = 3500
             }
         }
 

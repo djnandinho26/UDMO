@@ -1275,11 +1275,19 @@ namespace DigitalWorldOnline.Infraestructure.Repositories.Character
 
             if (tamerDto != null)
             {
-                tamerDto.Encyclopedia.Add(dto);
+                try
+                {
+                    tamerDto.Encyclopedia.Add(dto);
 
-                _context.Update(tamerDto);
+                    _context.Update(tamerDto);
 
-                _context.SaveChanges();
+                    _context.SaveChanges();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.ToString());
+                }
+
             }
 
             return _mapper.Map<CharacterEncyclopediaModel>(dto);
