@@ -156,6 +156,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
 
                 evolution.Unlock();
+
                 var encyclopedia = client.Tamer.Encyclopedia.First(x => x.DigimonEvolutionId == evoInfo.EvolutionId);
                 _logger.Information($"Encyclopedia is: {encyclopedia.Id}, evolution id: {evoInfo.EvolutionId}, count: {client.Tamer.Encyclopedia.Count}");
                 _logger.Information($"Encyclopedia is: {client.Tamer.Encyclopedia.Last()?.Id}");

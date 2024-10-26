@@ -86,6 +86,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             //_logger.Information($"Evoline ID: {evoInfo.Id} | Digimon Type Atual: {evoInfo.Type}");
             
             var starterPartners = new List<int>() { 31001, 31002, 31003, 31004 };
+
             if (!client.Partner.BaseType.IsBetween(starterPartners.ToArray()))
             {
                 var targetEvo = client.Partner.Evolutions.FirstOrDefault(x => x.Type == evoLine[evoStage].Type);

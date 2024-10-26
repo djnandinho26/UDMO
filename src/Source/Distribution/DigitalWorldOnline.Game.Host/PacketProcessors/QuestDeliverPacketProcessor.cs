@@ -53,6 +53,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var questId = packet.ReadShort();
 
             var questInfo = _assets.Quest.FirstOrDefault(x => x.QuestId == questId);
+
             if (questInfo == null)
             {
                 _logger.Error($"Unknown quest id {questId}.");
@@ -67,8 +68,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             ReturnSupplies(client, questId, questInfo);
             QuestRewards(client, questInfo);
 
-            var evolutionQuest = _assets.EvolutionInfo
-               .FirstOrDefault(x => x.Type == client.Partner.BaseType)?
+            var evolutionQuest = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?
                .Lines.FirstOrDefault(y => y.UnlockQuestId == questId && y.UnlockItemSection == 0);
 
             if (evolutionQuest != null)
@@ -80,6 +80,28 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     targetEvolution.Unlock();
                     await _sender.Send(new UpdateEvolutionCommand(targetEvolution));
                     _logger.Verbose($"Character {client.TamerId} unlocked evolution {targetEvolution.Type} on quest {questId} completion.");
+
+                    var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == targetEvolution.Type);
+
+                    var encyclopedia = client.Tamer.Encyclopedia.First(x => x.DigimonEvolutionId == evoInfo.EvolutionId);
+
+                    if (encyclopedia != null)
+                    {
+                        var encyclopediaEvolution = encyclopedia.Evolutions.First(x => x.DigimonBaseType == targetEvolution.Type);
+
+                        encyclopediaEvolution.Unlock();
+
+                        await _sender.Send(new UpdateCharacterEncyclopediaEvolutionsCommand(encyclopediaEvolution));
+
+                        int LockedEncyclopediaCount = encyclopedia.Evolutions.Count(x => x.IsUnlocked == false);
+
+                        if (LockedEncyclopediaCount <= 0)
+                        {
+                            encyclopedia.SetRewardAllowed();
+                            await _sender.Send(new UpdateCharacterEncyclopediaCommand(encyclopedia));
+                        }
+                    }
+
                 }
             }
 
