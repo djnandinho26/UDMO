@@ -1305,6 +1305,12 @@ namespace DigitalWorldOnline.Commons.Models.Character
         public void UpdateCurrentTitle(short newTitleId) => CurrentTitle = newTitleId;
 
         /// <summary>
+        /// Updates the current tamer deck buff id.
+        /// </summary>
+        /// <param name="deckBuffId">Set the new deck buff</param>
+        public void UpdateDeckBuffId(int? deckBuffId) => DeckBuffId = deckBuffId;
+
+        /// <summary>
         /// Updates the current tamer title.
         /// </summary>
         /// <param name="sendOnceSent">The new title id</param>

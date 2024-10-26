@@ -1229,6 +1229,22 @@ namespace DigitalWorldOnline.Infraestructure.Repositories.Character
 
             return;
         }
+        public async Task UpdateCharacterDeckbuffAsync(CharacterModel character)
+        {
+            var dto = await _context.Character
+                .AsNoTracking()
+                 .FirstOrDefaultAsync(x => x.Id == character.Id);
+
+            if (dto != null)
+            {
+                dto.DeckBuffId = character.DeckBuffId;
+
+                _context.Update(dto);
+                _context.SaveChanges();
+            }
+
+            return;
+        }
 
         public async Task UpdateTamerTimeRewardAsync(TimeRewardModel timeRewardModel)
         {
