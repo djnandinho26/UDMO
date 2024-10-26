@@ -36,7 +36,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var character = client.Tamer;
 
-            character.UpdateDeckBuffId(deckBuffId);
+            character.UpdateDeckBuffId(deckBuffId == 0 ? null : deckBuffId);
 
             await _sender.Send(new UpdateCharacterDeckBuffCommand(character));
 
