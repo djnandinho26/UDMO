@@ -91,10 +91,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
                 encyclopedia.SetRewardAllowed(false);
                 encyclopedia.SetRewardReceived(true);
-                client.Tamer.UpdateEncyclopedia(encyclopedia);
                 await _sender.Send(new UpdateCharacterEncyclopediaCommand(encyclopedia));
-                client.Send(new EncyclopediaReceiveRewardItemPacketPacket(newItem));
-                client.Send(new EncyclopediaLoadPacketPacket(client.Tamer.Encyclopedia));
+                client.Send(new EncyclopediaReceiveRewardItemPacket(newItem));
+                // client.Send(new EncyclopediaLoadPacket(client.Tamer.Encyclopedia));
             }
             else
             {

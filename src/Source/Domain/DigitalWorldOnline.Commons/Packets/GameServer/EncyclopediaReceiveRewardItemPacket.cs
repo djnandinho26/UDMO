@@ -7,16 +7,16 @@ using static System.Reflection.Metadata.BlobBuilder;
 
 namespace DigitalWorldOnline.Commons.Packets.GameServer
 {
-    public class EncyclopediaReceiveRewardItemPacketPacket : PacketWriter
+    public class EncyclopediaReceiveRewardItemPacket : PacketWriter
     {
         private const int PacketNumber = 3234;
 
-        public EncyclopediaReceiveRewardItemPacketPacket(ItemModel item)
+        public EncyclopediaReceiveRewardItemPacket(ItemModel item)
         {
             Type(PacketNumber);
 
-            WriteUInt((uint)item.ItemId);
-            WriteUShort((ushort)item.Amount);
+            WriteInt(item.ItemId);
+            WriteShort((short)item.Amount);
         }
     }
 }

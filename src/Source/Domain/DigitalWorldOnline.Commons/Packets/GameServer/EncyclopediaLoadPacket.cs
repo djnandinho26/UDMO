@@ -6,11 +6,11 @@ using static System.Reflection.Metadata.BlobBuilder;
 
 namespace DigitalWorldOnline.Commons.Packets.GameServer
 {
-    public class EncyclopediaLoadPacketPacket : PacketWriter
+    public class EncyclopediaLoadPacket : PacketWriter
     {
         private const int PacketNumber = 3234;
 
-        public EncyclopediaLoadPacketPacket(List<CharacterEncyclopediaModel> Encyclopedia)
+        public EncyclopediaLoadPacket(List<CharacterEncyclopediaModel> Encyclopedia)
         {
             Type(PacketNumber);
 

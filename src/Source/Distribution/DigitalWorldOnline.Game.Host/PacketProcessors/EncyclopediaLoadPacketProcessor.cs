@@ -33,7 +33,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _logger.Information($"Encyclopedia's count: {encyclopedia.Count}");
 
-            client.Send(new EncyclopediaLoadPacketPacket(encyclopedia));
+            client.Send(new EncyclopediaLoadPacket(encyclopedia));
         }
     }
 }
