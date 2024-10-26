@@ -30,7 +30,6 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
                 });
 
                 var isRewardNotAllowed = encyclopediaRecord.IsRewardReceived && !encyclopediaRecord.IsRewardAllowed;
-                Console.WriteLine($"Allowed to get reward: {isRewardNotAllowed.ToString()}, {Convert.ToByte(isRewardNotAllowed)}");
                 WriteInt(encyclopediaRecord.EvolutionAsset.Type);
                 WriteShort(encyclopediaRecord.Level);
                 WriteInt64(nSlotOpened);
