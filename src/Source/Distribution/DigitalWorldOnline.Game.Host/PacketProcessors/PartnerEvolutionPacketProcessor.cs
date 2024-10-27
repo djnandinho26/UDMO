@@ -146,7 +146,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             else
             {
                 var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == evoLine[evoStage].Type).EvolutionType;
-                //var targetEvo = client.Partner.Evolutions.FirstOrDefault(x => x.Type == evoLine[evoStage].Type);
 
                 //_logger.Information($"EvolutionRankEnum: {(EvolutionRankEnum)evolutionType}");
 
@@ -206,19 +205,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         {
                             evoEffect = DigimonEvolutionEffectEnum.BurstMode;
 
-                            _logger.Information($"evoInfo.RequiredItem: {targetInfo.RequiredItem}");
+                            //_logger.Information($"evoInfo.RequiredItem: {targetInfo.RequiredItem}");
 
                             if (targetInfo.RequiredItem > 0)
                             {
-                                //_logger.Information($"Searching item 41002 to consume");
-
                                 var itemToConsume = client.Tamer.Inventory.FindItemById(41002);
 
                                 if (itemToConsume == null)
                                 {
-                                    _logger.Error($"Accelerator ID 41002 not found");
-                                    client.Send(new DigimonEvolutionFailPacket());
-                                    return;
+                                    itemToConsume = client.Tamer.Inventory.FindItemById(9400);
+
+                                    if (itemToConsume == null)
+                                    {
+                                        _logger.Verbose($"Accelerator not found");
+                                        client.Send(new DigimonEvolutionFailPacket());
+                                        return;
+                                    }
                                 }
                                 else
                                 {
@@ -245,7 +247,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             }
 
                             client.Tamer.ActiveEvolution.SetDs(40);
-                            client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory));
                         }
                         break;
 
@@ -253,13 +254,24 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         {
                             evoEffect = DigimonEvolutionEffectEnum.Default;
 
+                            //_logger.Information($"evoInfo.RequiredItem: {targetInfo.RequiredItem}");
+
                             if (targetInfo.RequiredItem > 0)
                             {
                                 var itemToConsume = client.Tamer.Inventory.FindItemBySection(targetInfo.RequiredItem);
 
                                 if (itemToConsume == null)
-                                    _logger.Error($"Item on Section {targetInfo.RequiredItem} not found");
+                                {
+                                    itemToConsume = client.Tamer.Inventory.FindItemById(targetInfo.RequiredItem);
 
+                                    if (itemToConsume == null)
+                                    {
+                                        _logger.Verbose($"Item {targetInfo.RequiredItem} not found on Section and ItemId !!");
+                                        client.Send(new DigimonEvolutionFailPacket());
+                                        return;
+                                    }
+                                }
+                                    
                                 if (client.Partner.Level < targetInfo.UnlockLevel && !client.Tamer.ConsumeDs(180) && !client.Tamer.Inventory.RemoveOrReduceItem(itemToConsume, targetInfo.RequiredAmount))
                                 {
                                     client.Send(new DigimonEvolutionFailPacket());
@@ -273,10 +285,37 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                     client.Send(new DigimonEvolutionFailPacket());
                                     return;
                                 }
-
                             }
 
                             client.Tamer.ActiveEvolution.SetDs(80);
+                        }
+                        break;
+
+                    case EvolutionRankEnum.Capsule:
+                        {
+                            evoEffect = DigimonEvolutionEffectEnum.Unknown;
+
+                            if (client.Partner.Level < targetInfo.UnlockLevel || !client.Tamer.ConsumeDs(75))
+                            {
+                                client.Send(new DigimonEvolutionFailPacket());
+                                return;
+                            }
+
+                            client.Tamer.ActiveEvolution.SetDs(3);
+                        }
+                        break;
+
+                    case EvolutionRankEnum.Spirit:
+                        {
+                            evoEffect = DigimonEvolutionEffectEnum.Default;
+
+                            if (client.Partner.Level < targetInfo.UnlockLevel || !client.Tamer.ConsumeDs(0))
+                            {
+                                client.Send(new DigimonEvolutionFailPacket());
+                                return;
+                            }
+
+                            client.Tamer.ActiveEvolution.SetDs(20);
                         }
                         break;
 
@@ -340,21 +379,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         }
                         break;
 
-                    case EvolutionRankEnum.Capsule:
-                        {
-                            evoEffect = DigimonEvolutionEffectEnum.Unknown;
-
-                            if (client.Partner.Level < targetInfo.UnlockLevel || !client.Tamer.ConsumeDs(75))
-                            {
-                                client.Send(new DigimonEvolutionFailPacket());
-                                return;
-                            }
-
-                            client.Tamer.ActiveEvolution.SetDs(3);
-                        }
-                        break;
-
-                    case EvolutionRankEnum.JogressX:
                     case EvolutionRankEnum.BurstModeX:
                         {
                             evoEffect = DigimonEvolutionEffectEnum.BurstMode;
@@ -367,6 +391,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                             client.Tamer.ConsumeXg(280);
                             client.Tamer.ActiveEvolution.SetXg(10);
+                        }
+                        break;
+
+                    case EvolutionRankEnum.JogressX:
+                        {
+                            evoEffect = DigimonEvolutionEffectEnum.BurstMode;
+
+                            if (client.Partner.Level < targetInfo.UnlockLevel)
+                            {
+                                client.Send(new DigimonEvolutionFailPacket());
+                                return;
+                            }
+
+                            client.Tamer.ConsumeXg(320);
+                            client.Tamer.ActiveEvolution.SetXg(12);
                         }
                         break;
 
