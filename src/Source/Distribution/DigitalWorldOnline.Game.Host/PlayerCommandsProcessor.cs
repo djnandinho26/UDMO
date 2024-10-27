@@ -125,6 +125,21 @@ namespace DigitalWorldOnline.Game
                     }
                     break;
 
+                case "time":
+                    {
+                        var regex = @"^time\s*$";
+                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+
+                        if (!match.Success)
+                        {
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !time"));
+                            break;
+                        }
+
+                        client.Send(new SystemMessagePacket($"Server Time is: {DateTime.UtcNow}"));
+                    }
+                    break;
+
                 case "help":
                     {
                         if (command[1] == "inv")
@@ -143,9 +158,13 @@ namespace DigitalWorldOnline.Game
                         {
                             client.Send(new SystemMessagePacket("!stats: Show hidden stats"));
                         }
+                        else if (command[1] == "time")
+                        {
+                            client.Send(new SystemMessagePacket("!time: Show the server time"));
+                        }
                         else
                         {
-                            client.Send(new SystemMessagePacket("Commands:\n1. !clear\n2. !stats\nType !help {command} for more details."));
+                            client.Send(new SystemMessagePacket("Commands:\n1. !clear\n2. !stats\n3. !time\nType !help {command} for more details."));
                         }
                     }
                     break;

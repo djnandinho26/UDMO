@@ -78,7 +78,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 if (targetEvolution != null)
                 {
                     targetEvolution.Unlock();
+
                     await _sender.Send(new UpdateEvolutionCommand(targetEvolution));
+
                     _logger.Verbose($"Character {client.TamerId} unlocked evolution {targetEvolution.Type} on quest {questId} completion.");
 
                     var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == targetEvolution.Type);

@@ -1693,6 +1693,7 @@ namespace DigitalWorldOnline.Game
                 // -- INFO ---------------------------------------
 
                 #region INFO
+
                 case "updatestats":
                     {
                         var regex = @"^updatestats\s*$";
@@ -1709,6 +1710,116 @@ namespace DigitalWorldOnline.Game
                         client.Send(new SystemMessagePacket($"Stats updated !!"));
                     }
                     break;
+
+                case "time":
+                    {
+                        var regex = @"^time\s*$";
+                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+
+                        if (!match.Success)
+                        {
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !time"));
+                            break;
+                        }
+
+                        client.Send(new SystemMessagePacket($"Server Time is: {DateTime.UtcNow}"));
+                    }
+                    break;
+
+                case "deckload":
+                    {
+                        var regex = @"^deckload\s*$";
+                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+
+                        if (!match.Success)
+                        {
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !deckload"));
+                            break;
+                        }
+
+                        var evolution = client.Partner.Evolutions[0];
+
+                        _logger.Information($"Evolution ID: {evolution.Id} | Evolution Type: {evolution.Type} | Evolution Unlocked: {evolution.Unlocked}");
+
+                        var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == evolution.Type);
+
+                        _logger.Information($"EvoInfo ID: {evoInfo.Id}");
+                        _logger.Information($"EvoInfo EvolutionId: {evoInfo.EvolutionId}");
+
+                        // --- CREATE DB ----------------------------------------------------------------------------------------
+
+                        var digimonEvolutionInfo = _assets.EvolutionInfo.First(x => x.Type == client.Partner.BaseType);
+
+                        var digimonEvolutions = client.Partner.Evolutions;
+
+                        var encyclopediaExists = client.Tamer.Encyclopedia.Exists(x => x.DigimonEvolutionId == digimonEvolutionInfo.Id);
+
+                        if (!encyclopediaExists)
+                        {
+                            if (digimonEvolutionInfo != null)
+                            {
+                                var newEncyclopedia = CharacterEncyclopediaModel.Create(client.TamerId, digimonEvolutionInfo.Id, client.Partner.Level, client.Partner.Size, 0, 0, 0, 0, 0, false, false);
+                                
+                                digimonEvolutions?.ForEach(x =>
+                                {
+                                    var evolutionLine = digimonEvolutionInfo.Lines.FirstOrDefault(y => y.Type == x.Type);
+
+                                    byte slotLevel = 0;
+
+                                    if (evolutionLine != null)
+                                        slotLevel = evolutionLine.SlotLevel;
+                                    
+                                    newEncyclopedia.Evolutions.Add(CharacterEncyclopediaEvolutionsModel.Create(newEncyclopedia.Id, x.Type, slotLevel, Convert.ToBoolean(x.Unlocked)));
+                                });
+
+                                var encyclopediaAdded = await _sender.Send(new CreateCharacterEncyclopediaCommand(newEncyclopedia));
+
+                                client.Tamer.Encyclopedia.Add(encyclopediaAdded);
+
+                                _logger.Information($"Digimon Type {client.Partner.BaseType} encyclopedia created !!");
+                            }
+                        }
+                        else
+                        {
+                            _logger.Information($"Encyclopedia already exist !!");
+                        }
+
+                        // --- UNLOCK -------------------------------------------------------------------------------------------
+
+                        var encyclopedia = client.Tamer.Encyclopedia.First(x => x.DigimonEvolutionId == evoInfo.EvolutionId);
+
+                        _logger.Information($"Encyclopedia is: {encyclopedia.Id}, evolution id: {evoInfo.EvolutionId}");
+
+                        if (encyclopedia != null)
+                        {
+                            var encyclopediaEvolution = encyclopedia.Evolutions.First(x => x.DigimonBaseType == evolution.Type);
+
+                            if (!encyclopediaEvolution.IsUnlocked)
+                            {
+                                encyclopediaEvolution.Unlock();
+
+                                await _sender.Send(new UpdateCharacterEncyclopediaEvolutionsCommand(encyclopediaEvolution));
+
+                                int LockedEncyclopediaCount = encyclopedia.Evolutions.Count(x => x.IsUnlocked == false);
+
+                                if (LockedEncyclopediaCount <= 0)
+                                {
+                                    encyclopedia.SetRewardAllowed();
+                                    await _sender.Send(new UpdateCharacterEncyclopediaCommand(encyclopedia));
+                                }
+                            }
+                            else
+                            {
+                                _logger.Information($"Evolution already unlocked on encyclopedia !!");
+                            }
+                        }
+
+                        // ------------------------------------------------------------------------------------------------------
+
+                        client.Send(new SystemMessagePacket($"Encyclopedia verifyed and updated !!"));
+                    }
+                    break;
+
                 #endregion
 
                 // -- MAINTENANCE --------------------------------
