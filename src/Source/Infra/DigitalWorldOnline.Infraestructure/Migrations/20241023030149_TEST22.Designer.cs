@@ -2620,7 +2620,7 @@ namespace DigitalWorldOnline.Infraestructure.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("TamerShopSellPrice")
-                        .HasColumnType("int");
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 

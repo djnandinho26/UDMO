@@ -47,22 +47,20 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var packet = new GamePacketReader(packetData);
 
-            _logger.Debug($"Getting parameters...");
+            _logger.Information($"ConsigmentShop View Packet");
+
             packet.Skip(4);
             var handler = packet.ReadInt();
 
-            _logger.Debug($"{handler}");
-
-            _logger.Debug($"Searching consigned shop with handler {handler}...");
+            _logger.Information($"Searching consigned shop with handler {handler}...");
             var consignedShop = _mapper.Map<ConsignedShop>(await _sender.Send(new ConsignedShopByHandlerQuery(handler)));
 
             if (consignedShop == null)
             {
                 _logger.Warning($"Consigned shop not found with handler {handler}.");
-                _logger.Debug($"Sending consigned shop items view packet...");
                 client.Send(new ConsignedShopItemsViewPacket());
 
-                _logger.Debug($"Sending unload consigned shop packet...");
+                _logger.Information($"Sending unload consigned shop packet...");
                 _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UnloadConsignedShopPacket(handler).Serialize());
                 return;
             }

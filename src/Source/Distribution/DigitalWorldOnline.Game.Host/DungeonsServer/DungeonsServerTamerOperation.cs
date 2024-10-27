@@ -340,17 +340,17 @@ namespace DigitalWorldOnline.GameHost
                     }
                 }
 
-                //if (tamer.ResetDailyQuestsTime)
-                //{
-                //    tamer.UpdateDailyQuestsSyncTime();
+                if (tamer.ResetDailyQuestsTime)
+                {
+                    tamer.UpdateDailyQuestsSyncTime();
 
-                //    var dailyQuestResetTime = _sender.Send(new DailyQuestResetTimeQuery());
+                    var dailyQuestResetTime = _sender.Send(new DailyQuestResetTimeQuery());
 
-                //    if (DateTime.Now >= dailyQuestResetTime.Result)
-                //    {
-                //        client.Send(new QuestDailyUpdatePacket());
-                //    }
-                //}
+                    if (DateTime.Now >= dailyQuestResetTime.Result)
+                    {
+                        client.Send(new QuestDailyUpdatePacket());
+                    }
+                }
             }
 
             stopwatch.Stop();

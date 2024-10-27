@@ -49,10 +49,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Debug($"Getting parameters...");
+            _logger.Verbose($"PersonalShop Open Packet 1511");
+
             var shopName = packet.ReadString();
             packet.Skip(1);
             var sellQuantity = packet.ReadInt();
+
+            _logger.Verbose($"Shop Location: Map {client.Tamer.Location.MapId} ShopName: {shopName}, Items Amount: {sellQuantity}\n");
 
             List<ItemModel> sellList = new(sellQuantity);
 
@@ -61,13 +64,16 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 var sellItem = new ItemModel(packet.ReadInt(), packet.ReadInt());
 
                 packet.Skip(64);
-                sellItem.SetSellPrice(packet.ReadInt());
+
+                var price = packet.ReadInt64();
+                sellItem.SetSellPrice(price);
 
                 packet.Skip(12);
                 sellList.Add(sellItem);
-            }
 
-            _logger.Debug($"{shopName} {sellQuantity}");
+                //_logger.Information($"SellItem index: {i} | SellItem: {sellItem.ItemId}");
+                //_logger.Information($"SellItem Amount: {sellItem.Amount} | SellItem Price: {sellItem.TamerShopSellPrice}");
+            }
 
             foreach (var item in sellList)
             {
@@ -76,7 +82,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     if (item2.ItemId == item.ItemId && item2.TamerShopSellPrice != item.TamerShopSellPrice)
                     {
-                        client.Send(new DisconnectUserPacket("Voce nao pode adicionar 2 itens do mesmo id com preco diferente!").Serialize());
+                        _logger.Error($"Tamer {client.Tamer.Name} tryed to add 2 items of same id with different price!");
+                        client.Send(new DisconnectUserPacket("You cant add 2 items of same id with different price!").Serialize());
                         return;
                     }
                 }
@@ -89,6 +96,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 _logger.Debug($"{item.ItemId} {item.Amount} {item.TamerShopSellPrice}");
             }
+
             _logger.Debug($"Updating tamer shop item list...");
             client.Tamer.TamerShop.AddItems(sellList.Clone());
             await _sender.Send(new UpdateItemsCommand(client.Tamer.TamerShop));
@@ -100,17 +108,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             client.Tamer.UpdateCurrentCondition(ConditionEnum.TamerShop);
             client.Tamer.UpdateShopName(shopName);
 
-
             _logger.Debug($"Sending sync in condition packet...");
             _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition, shopName).Serialize());
             client.Send(new PersonalShopItemsViewPacket(client.Tamer.TamerShop, client.Tamer.ShopName));
 
             _logger.Debug($"Sending tamer shop open packet...");
             client.Send(new PersonalShopPacket(client.Tamer.ShopItemId));
-            client.Send(new LoadInventoryPacket(client.Tamer.Inventory,
-                 InventoryTypeEnum.Inventory)
-                 .Serialize());
-             await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory.Id, client.Tamer.Inventory.Bits));
+            client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
+
+            await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory.Id, client.Tamer.Inventory.Bits));
         }
     }
 }

@@ -3,7 +3,6 @@ using DigitalWorldOnline.Commons.DTOs.Assets;
 using DigitalWorldOnline.Commons.DTOs.Character;
 using DigitalWorldOnline.Commons.DTOs.Events;
 using DigitalWorldOnline.Commons.Model.Character;
-using DigitalWorldOnline.Commons.Models;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Events;
 using DigitalWorldOnline.Commons.Models.Mechanics;

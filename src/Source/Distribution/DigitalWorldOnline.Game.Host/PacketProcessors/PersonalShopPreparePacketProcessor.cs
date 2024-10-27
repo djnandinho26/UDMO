@@ -35,13 +35,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            //TODO: validação de mobs na região
+            _logger.Information($"PersonalShop Create Packet 1510");
 
-            _logger.Debug($"Getting parameters...");
             var requestType = (TamerShopActionEnum)packet.ReadInt();
             var itemSlot = packet.ReadShort();
 
-            _logger.Debug($"{requestType} {itemSlot}");
+            _logger.Debug($"RequestType: {requestType} | ItemSlot: {itemSlot}");
 
             var itemId = 0;
             var action = TamerShopActionEnum.CloseWindow;
@@ -54,6 +53,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     return;
                 }
             }
+
             switch (requestType)
             {
                 case TamerShopActionEnum.TamerShopRequest:
@@ -80,19 +80,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             client.Tamer.UpdateShopItemId(itemId);
 
             _logger.Debug($"Sending sync condition packet...");
-            if (requestType == TamerShopActionEnum.CloseShopRequest) {
 
+            if (requestType == TamerShopActionEnum.CloseShopRequest)
                 client.Tamer.RestorePreviousCondition();
-            }
             else
                 client.Tamer.UpdateCurrentCondition(ConditionEnum.PreparingShop);
 
-            if(requestType == TamerShopActionEnum.TamerShopWithoutItensCloseRequest)
+            if (requestType == TamerShopActionEnum.TamerShopWithoutItensCloseRequest)
                 client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
 
             _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
 
             _logger.Debug($"Sending personal shop packet with action {action}...");
+
             if (requestType == TamerShopActionEnum.TamerShopWithItensCloseRequest)
             {
 
@@ -106,9 +106,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.TamerShop)); 
                 
-                client.Send(new LoadInventoryPacket(client.Tamer.Inventory,
-                InventoryTypeEnum.Inventory)
-                .Serialize());
+                client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
 
                 _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
             }

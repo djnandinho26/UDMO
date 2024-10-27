@@ -1491,7 +1491,7 @@ namespace DigitalWorldOnline.GameHost
 
                 }
 
-                Console.WriteLine($"RoyalBase Allowed To Use Portal: {map?.RoyalBaseMap?.AllowUsingPortalFromFloorOneToFloorTwo.ToString()}");
+                //Console.WriteLine($"RoyalBase Allowed To Use Portal: {map?.RoyalBaseMap?.AllowUsingPortalFromFloorOneToFloorTwo.ToString()}");
                 if (map.IsRoyalBase && map.RoyalBaseMap != null)
                 {
                     map.RoyalBaseMap.UpdateMonsterDead(mob);
@@ -1529,7 +1529,7 @@ namespace DigitalWorldOnline.GameHost
 
                 }
 
-                Console.WriteLine($"RoyalBase Allowed To Use Portal: {map?.RoyalBaseMap?.AllowUsingPortalFromFloorOneToFloorTwo.ToString()}");
+                //Console.WriteLine($"RoyalBase Allowed To Use Portal: {map?.RoyalBaseMap?.AllowUsingPortalFromFloorOneToFloorTwo.ToString()}");
                 if (map.IsRoyalBase && map.RoyalBaseMap != null)
                 {
                     map.RoyalBaseMap.UpdateMonsterDead(mob);

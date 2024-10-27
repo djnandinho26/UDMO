@@ -1,8 +1,10 @@
-﻿using DigitalWorldOnline.Commons.DTOs.Character;
+﻿using DigitalWorldOnline.Commons.DTOs.Account;
+using DigitalWorldOnline.Commons.DTOs.Character;
 using DigitalWorldOnline.Commons.DTOs.Digimon;
 using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.Model.Character;
+using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Chat;
@@ -19,6 +21,8 @@ namespace DigitalWorldOnline.Commons.Interfaces
         Task<DigimonDTO> AddDigimonAsync(DigimonModel digimon);
 
         Task<CharacterFriendDTO> AddFriendAsync(CharacterFriendModel friend);
+
+        //Task<AccountBlockDTO> AddBanAsync(AccountBlockModel ban);
 
         Task<DeleteCharacterResultEnum> DeleteCharacterByAccountAndPositionAsync(long accountId, byte characterPosition);
 

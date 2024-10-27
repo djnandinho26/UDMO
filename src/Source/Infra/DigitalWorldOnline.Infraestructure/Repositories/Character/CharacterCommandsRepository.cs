@@ -1,22 +1,24 @@
 ﻿using AutoMapper;
+using DigitalWorldOnline.Commons.Interfaces;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Models.Character;
-using DigitalWorldOnline.Commons.Models.Chat;
-using DigitalWorldOnline.Commons.DTOs.Character;
-using DigitalWorldOnline.Commons.DTOs.Chat;
-using DigitalWorldOnline.Commons.DTOs.Digimon;
-using Microsoft.EntityFrameworkCore;
-using DigitalWorldOnline.Commons.Interfaces;
-using DigitalWorldOnline.Commons.Models.Base;
-using DigitalWorldOnline.Commons.DTOs.Base;
-using DigitalWorldOnline.Commons.Enums;
-using DigitalWorldOnline.Commons.Models;
-using DigitalWorldOnline.Commons.Models.Events;
-using MediatR;
 using DigitalWorldOnline.Commons.Models.Mechanics;
-using DigitalWorldOnline.Commons.DTOs.Events;
 using DigitalWorldOnline.Commons.Model.Character;
+using DigitalWorldOnline.Commons.Models.Account;
+using DigitalWorldOnline.Commons.Models.Events;
+using DigitalWorldOnline.Commons.Models.Base;
+using DigitalWorldOnline.Commons.Models.Chat;
+using DigitalWorldOnline.Commons.Models;
+using DigitalWorldOnline.Commons.DTOs.Character;
+using DigitalWorldOnline.Commons.DTOs.Digimon;
+using DigitalWorldOnline.Commons.DTOs.Account;
+using DigitalWorldOnline.Commons.DTOs.Events;
+using DigitalWorldOnline.Commons.DTOs.Base;
+using DigitalWorldOnline.Commons.DTOs.Chat;
+using Microsoft.EntityFrameworkCore;
+using MediatR;
 
 namespace DigitalWorldOnline.Infraestructure.Repositories.Character
 {
@@ -1347,5 +1349,6 @@ namespace DigitalWorldOnline.Infraestructure.Repositories.Character
                 _context.SaveChanges();
             }
         }
+    
     }
 }

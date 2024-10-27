@@ -187,7 +187,7 @@ namespace DigitalWorldOnline.Commons.Models.Base
         /// Updates the sell price at tamer shop.
         /// </summary>
         /// <param name="sellPrice">The new sell price</param>
-        public void SetSellPrice(int sellprice) => TamerShopSellPrice = sellprice;
+        public void SetSellPrice(long sellprice) => TamerShopSellPrice = sellprice;
 
         /// <summary>
         /// Updates the extra information about the item.

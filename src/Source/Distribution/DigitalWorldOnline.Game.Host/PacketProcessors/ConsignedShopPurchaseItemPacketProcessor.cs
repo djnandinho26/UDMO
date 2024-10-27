@@ -44,7 +44,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Debug($"Getting parameters...");
+            _logger.Verbose($"ConsigmentShop Buy Packet 1518");
+
             var shopHandler = packet.ReadInt();
             var shopSlot = packet.ReadInt();
             var boughtItemId = packet.ReadInt();
