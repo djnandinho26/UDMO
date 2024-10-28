@@ -26,7 +26,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _logger.Information($"--- Burning Event Packet 3132 ---\n");
 
-            //int m_nResult = packet.ReadInt();
             uint m_nExpRate = packet.ReadUInt();
             uint m_nNextDayExpRate = packet.ReadUInt();
             uint m_nExpTarget = packet.ReadUInt();
@@ -37,7 +36,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _logger.Information($"---------------------------------");
 
-            //await _sender.Send(new BurningEventPacket(m_nResult, m_nExpRate, m_nNextDayExpRate, m_nExpTarget, m_nSpecialExp));
+            await _sender.Send(new BurningEventPacket(0, m_nExpRate, m_nNextDayExpRate, m_nExpTarget, m_nSpecialExp));
 
         }
     }
