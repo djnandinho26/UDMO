@@ -38,27 +38,27 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Loads all the other game-related information.
         /// </summary>
         ComplementarInformation = 1001,
-            
+
         /// <summary>
         /// Sent at every tamer or digimon movimentation.
         /// </summary>
         TamerMovimentation = 1004,
-        
+
         /// <summary>
         /// Sends a message to the target chat.
         /// </summary>
         ChatMessage = 1008,
-        
+
         /// <summary>
         /// Sends a private message to the target character.
         /// </summary>
         WhisperMessage = 1009,
-        
+
         /// <summary>
         /// Sends the current partner to perform an attack into the target.
         /// </summary>
         PartnerAttack = 1013,
-        
+
         /// <summary>
         /// Sends the current partner to perform an skill into the target.
         /// </summary>
@@ -93,7 +93,7 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Try to increase the curent incubator egg.
         /// </summary>
         HatchIncrease = 1037,
-        
+
         /// <summary>
         /// Ecloacs the current egg.
         /// </summary>
@@ -103,12 +103,12 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Removes the egg from the incubator.
         /// </summary>
         HatchRemoveEgg = 1039,
-        
+
         /// <summary>
         /// Switches the current partner.
         /// </summary>
         PartnerSwitch = 1041,
-        
+
         /// <summary>
         /// Deletes the selected partner.
         /// </summary>
@@ -133,7 +133,7 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Sends a shout message to the current map.
         /// </summary>
         ShoutMessage = 1056,
-        
+
         /// <summary>
         /// Jumps to another map.
         /// </summary>
@@ -158,7 +158,7 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Sends the digiclone results
         /// </summary>
         PartnerDigiclone = 1075,
-        
+
         /// <summary>
         /// Sends the digiclone reset
         /// </summary>
@@ -355,27 +355,27 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Sends a response to the party invite.
         /// </summary>
         PartyRequestResponse = 2302,
-        
+
         /// <summary>
         /// Sends a message to the entire party.
         /// </summary>
         PartyMessage = 2304,
-        
+
         /// <summary>
         /// Kicks a member of the party.
         /// </summary>
         PartyMemberKick = 2306,
-        
+
         /// <summary>
         /// Member quit from the party.
         /// </summary>
         PartyMemberLeave = 2307,
-        
+
         /// <summary>
         /// Changes the party leader.
         /// </summary>
         PartyLeaderChange = 2308,
-        
+
         /// <summary>
         /// Changes the party config.
         /// </summary>
@@ -435,7 +435,7 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Loads the digimon archive/storage.
         /// </summary>
         DigimonArchive = 3204,
-        
+
         /// <summary>
         /// Loads the remaining membership timer.
         /// </summary>
@@ -470,12 +470,12 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Sends the tamer to loot the item on the ground.
         /// </summary>
         LootItem = 3910,
-        
+
         /// <summary>
         /// Purchases an item from the NPC store.
         /// </summary>
         NpcItemPurchase = 3915,
-        
+
         /// <summary>
         /// Sells an item to the NPC store.
         /// </summary>
@@ -510,12 +510,12 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Opens the target seal
         /// </summary>
         OpenSeal = 3971,
-        
+
         /// <summary>
         /// Closes the target seal
         /// </summary>
         CloseSeal = 3972,
-        
+
         /// <summary>
         /// Repurchase an item from the NPC
         /// </summary>
@@ -525,7 +525,7 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Crafts an item.
         /// </summary>
         ItemCraft = 3982,
-        
+
         /// <summary>
         /// Sorts the inventory items.
         /// </summary>
@@ -565,7 +565,7 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Accepts a quest.
         /// </summary>
         QuestAccept = 11002,
-        
+
         /// <summary>
         /// Give up a quest.
         /// </summary>
@@ -609,12 +609,12 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Join event queue. (Custom)
         /// </summary>
         JoinEventQueue = 3124,
-        
+
         /// <summary>
         /// Loads NPC repurchase list.
         /// </summary>
         LoadNpcRepurchaseList = 3979,
-        
+
         /// <summary>
         /// Removes an active buff manually.
         /// </summary>
@@ -724,7 +724,7 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Insert backup disk on incubator.
         /// </summary>
         HatchInsertBackup = 3946,
-        
+
         /// <summary>
         /// Removes the backup disk from incubator.
         /// </summary>
@@ -734,7 +734,7 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Identify an item.
         /// </summary>
         ItemIdentify = 3968,
-            
+
         /// <summary>
         /// Reroll item status.
         /// </summary>
@@ -748,7 +748,7 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// <summary>
         /// REWARD STORAGE.
         /// </summary>
-        RewardStorage = 16001, 
+        RewardStorage = 16001,
 
         /// <summary>
         /// Arena all ranking request info.
@@ -779,7 +779,13 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// Item Recharge NPC Result.
         /// </summary>
         TimeChargeResult = 16042,
+        
+        /// <summary>
+        /// Loads the Burning Event. 
+        /// </summary>
+        BurningEvent = 3132,
+
     }
-    
-    
+
+
 }
