@@ -41,7 +41,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Verbose($"ConsigmentShop Open Packet 1516");
+            _logger.Verbose($"--- ConsigmentShop Open Packet 1516 ---");
 
             var posX = packet.ReadInt();
             var posY = packet.ReadInt();
@@ -54,21 +54,29 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             List<ItemModel> sellList = new(sellQuantity);
 
+            //_logger.Information($"-------------------------------------\n");
+
             for (int i = 0; i < sellQuantity; i++)
             {
-                var sellItem = new ItemModel(packet.ReadInt(), packet.ReadInt());
+                var itemId = packet.ReadInt();
+                var itemAmount = packet.ReadInt();
+
+                _logger.Verbose($"Item Index: {i} | ItemId: {itemId} | ItemAmount: {itemAmount}");
+
+                var sellItem = new ItemModel(itemId, itemAmount);
 
                 packet.Skip(64);
 
                 var price = packet.ReadInt64();
                 sellItem.SetSellPrice(price);
 
-                packet.Skip(12);
+                packet.Skip(8);
                 sellList.Add(sellItem);
 
-                //_logger.Information($"SellItem index: {i} | SellItem: {sellItem.ItemId}");
-                //_logger.Information($"SellItem Amount: {sellItem.Amount} | SellItem Price: {sellItem.TamerShopSellPrice}");
+                _logger.Verbose($"Item Index: {i} | Price: {price}\n");
             }
+
+            //_logger.Information($"-------------------------------------");
 
             foreach (var item in sellList)
             {

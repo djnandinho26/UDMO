@@ -1,7 +1,7 @@
-﻿using DigitalWorldOnline.Commons.Enums.PacketProcessor;
-using DigitalWorldOnline.Commons.Packets.GameServer;
+﻿using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
-using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Packets.GameServer;
 using MediatR;
 using Serilog;
 
@@ -24,19 +24,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Information($"--- Burning Event Packet 3132 ---\n");
+            _logger.Verbose($"--- Burning Event Packet 3132 ---\n");
 
             uint m_nExpRate = packet.ReadUInt();
             uint m_nNextDayExpRate = packet.ReadUInt();
             uint m_nExpTarget = packet.ReadUInt();
             uint m_nSpecialExp = packet.ReadUInt();
 
-            //_logger.Information($"Result: {m_nResult}");
-            _logger.Information($"ExpRate: {m_nExpRate} | NextDayExpRate: {m_nNextDayExpRate} | ExpTarget: {m_nExpTarget}\n");
+            _logger.Verbose($"ExpRate: {m_nExpRate} | NextDayExpRate: {m_nNextDayExpRate} | ExpTarget: {m_nExpTarget}\n");
 
-            _logger.Information($"---------------------------------");
+            _logger.Verbose($"---------------------------------");
 
-            await _sender.Send(new BurningEventPacket(0, m_nExpRate, m_nNextDayExpRate, m_nExpTarget, m_nSpecialExp));
+            //await _sender.Send(new BurningEventPacket(m_nExpRate, m_nNextDayExpRate, m_nExpTarget, m_nSpecialExp));
 
         }
     }

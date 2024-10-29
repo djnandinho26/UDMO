@@ -7,7 +7,6 @@ using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Packets.PersonalShop;
 using DigitalWorldOnline.GameHost;
-
 using MediatR;
 using Serilog;
 
@@ -21,10 +20,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ILogger _logger;
         private readonly ISender _sender;
 
-        public PersonalShopPreparePacketProcessor(
-            MapServer mapServer,
-            ILogger logger,
-            ISender sender)
+        public PersonalShopPreparePacketProcessor(MapServer mapServer, ILogger logger, ISender sender)
         {
             _mapServer = mapServer;
             _logger = logger;
@@ -35,12 +31,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Information($"PersonalShop Create Packet 1510");
+            _logger.Information($"--- PersonalShop Create Packet 1510 ---");
 
             var requestType = (TamerShopActionEnum)packet.ReadInt();
             var itemSlot = packet.ReadShort();
 
-            _logger.Debug($"RequestType: {requestType} | ItemSlot: {itemSlot}");
+            _logger.Information($"RequestType: {requestType} | ItemSlot: {itemSlot}\n");
 
             var itemId = 0;
             var action = TamerShopActionEnum.CloseWindow;

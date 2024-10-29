@@ -10,7 +10,7 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
         /// <summary>
         /// Load the burning event.
         /// </summary>
-        public BurningEventPacket(int m_nResult, uint m_nExpRate, uint m_nNextDayExpRate, uint m_nExpTarget, uint m_nSpecialExp)
+        public BurningEventPacket(uint m_nExpRate, uint m_nNextDayExpRate, uint m_nExpTarget, uint m_nSpecialExp)
         {
             Type(PacketNumber);
             WriteUInt(1000);

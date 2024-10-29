@@ -7,20 +7,11 @@ using DigitalWorldOnline.Commons.Extensions;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Packets.PersonalShop;
-using DigitalWorldOnline.Commons.Entities;
-using DigitalWorldOnline.Commons.Enums;
-using DigitalWorldOnline.Commons.Enums.Character;
-using DigitalWorldOnline.Commons.Enums.ClientEnums;
-using DigitalWorldOnline.Commons.Enums.PacketProcessor;
-using DigitalWorldOnline.Commons.Interfaces;
-using DigitalWorldOnline.Commons.Models.Account;
-using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Packets.GameServer;
-using DigitalWorldOnline.Commons.Packets.MapServer;
+using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.GameHost;
 using MediatR;
 using Serilog;
-using DigitalWorldOnline.Commons.Packets.Items;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -33,11 +24,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ILogger _logger;
         private readonly ISender _sender;
 
-        public TamerShopOpenPacketProcessor(
-            MapServer mapServer,
-            AssetsLoader assets,
-            ILogger logger,
-            ISender sender)
+        public TamerShopOpenPacketProcessor(MapServer mapServer, AssetsLoader assets, ILogger logger, ISender sender)
         {
             _mapServer = mapServer;
             _assets = assets;
@@ -49,31 +36,48 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Verbose($"PersonalShop Open Packet 1511");
-
+            _logger.Verbose($"--- PersonalShop Open Packet 1511 ---");
+            
             var shopName = packet.ReadString();
+
             packet.Skip(1);
+
             var sellQuantity = packet.ReadInt();
 
             _logger.Verbose($"Shop Location: Map {client.Tamer.Location.MapId} ShopName: {shopName}, Items Amount: {sellQuantity}\n");
-
+            
             List<ItemModel> sellList = new(sellQuantity);
+
+            //_logger.Information($"-------------------------------------\n");
 
             for (int i = 0; i < sellQuantity; i++)
             {
-                var sellItem = new ItemModel(packet.ReadInt(), packet.ReadInt());
+                var itemId = packet.ReadInt();
+                var itemAmount = packet.ReadInt();
+
+                _logger.Verbose($"Item Index: {i} | ItemId: {itemId} | ItemAmount: {itemAmount}");
+
+                var sellItem = new ItemModel(itemId, itemAmount);
 
                 packet.Skip(64);
 
                 var price = packet.ReadInt64();
                 sellItem.SetSellPrice(price);
 
-                packet.Skip(12);
+                packet.Skip(8);
+
+                //_logger.Information("--- Pacote Bruto ---");
+                //string packetHex = BitConverter.ToString(packetData);
+                //_logger.Information(packetHex);
+                //_logger.Information("--------------------");
+                
                 sellList.Add(sellItem);
 
-                //_logger.Information($"SellItem index: {i} | SellItem: {sellItem.ItemId}");
-                //_logger.Information($"SellItem Amount: {sellItem.Amount} | SellItem Price: {sellItem.TamerShopSellPrice}");
+                _logger.Verbose($"Item Index: {i} | Price: {price}\n");
+                //break;
             }
+
+            //_logger.Information($"-------------------------------------");
 
             foreach (var item in sellList)
             {
@@ -118,5 +122,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory.Id, client.Tamer.Inventory.Bits));
         }
+
     }
 }

@@ -402,6 +402,11 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         FriendInformation = 3129,
 
         /// <summary>
+        /// Loads the Burning Event information.
+        /// </summary>
+        BurningEvent = 3132,
+
+        /// <summary>
         /// Sets the target seal as leader
         /// </summary>
         SetSealLeader = 3232,
@@ -780,12 +785,6 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// </summary>
         TimeChargeResult = 16042,
         
-        /// <summary>
-        /// Loads the Burning Event. 
-        /// </summary>
-        BurningEvent = 3132,
-
     }
-
 
 }
