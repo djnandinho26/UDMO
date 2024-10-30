@@ -228,55 +228,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _logger.Debug($"Updating account welcome flag for account {client.AccountId}...");
             await _sender.Send(new UpdateAccountWelcomeFlagCommand(client.AccountId, false));
-
-            if (!client.DungeonMap)
-            {
-                var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
-
-                int channelsCount;
-
-                if (mapConfig != null)
-                {
-                    channelsCount = mapConfig.Channels;
-                }
-                else
-                {
-                    channelsCount = 3;
-                }
-
-                var channels = new Dictionary<byte, byte>();
-
-                var mapChannels = await _sender.Send(new ChannelsByMapIdQuery(client.Tamer.Location.MapId));
-                
-                if (mapChannels != null)
-                {
-                    foreach (var channel in mapChannels.OrderBy(x => x.Key))
-                    {
-                        channels.Add(channel.Key, channel.Value);
-                    }
-                }
-                else
-                {
-                    for (byte i = 0; i < channelsCount; i++)
-                    {
-                        channels.Add(i, 0);
-                    }
-                }
-                
-                if (!channels.IsNullOrEmpty())
-                {
-                    client.Send(new AvailableChannelsPacket(channels).Serialize());
-                }
-            }
-            else
-            {
-                var channels = new Dictionary<byte, byte>
-                {
-                    { 0, 30 }
-                };
-            }
-
-
+            
             if (!client.DungeonMap)
             {
                 var map = _mapServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);

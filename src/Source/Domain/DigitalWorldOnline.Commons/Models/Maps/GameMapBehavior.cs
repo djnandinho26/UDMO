@@ -10,14 +10,14 @@ using System.Text;
 
 namespace DigitalWorldOnline.Commons.Models.Map
 {
-    public sealed partial class GameMap :ICloneable
+    public sealed partial class GameMap : ICloneable
     {
         //TODO: externalizar
         private readonly int _startToSee = 4000;
         private readonly int _stopSeeing = 4001;
 
         public List<ConsignedShop> ConsignedShopsToRemove = new();
- 
+
         public void Initialize()
         {
             if (Initialized)
@@ -50,10 +50,7 @@ namespace DigitalWorldOnline.Commons.Models.Map
             for (short i = 1; i <= 2000; i++)
                 DropHandlers.Add(i, 0);
 
-            KillSpawns.ForEach(killSpawn =>
-            {
-                killSpawn.ResetCurrentSourceMobAmount();
-            });
+            KillSpawns.ForEach(killSpawn => { killSpawn.ResetCurrentSourceMobAmount(); });
 
             Mobs.ForEach(mob =>
             {
@@ -66,7 +63,6 @@ namespace DigitalWorldOnline.Commons.Models.Map
                 {
                     mob.SetAwaitingKillSpawn();
                 }
-                
             });
 
             Initialized = true;
@@ -112,10 +108,15 @@ namespace DigitalWorldOnline.Commons.Models.Map
         {
             IsRoyalBase = value;
         }
-       
-        public bool MobsAttacking(long tamerId) => Mobs.Any(x => !x.Dead && x.TargetTamers.Exists(x => x.Id == tamerId));
-        public bool MobsAttacking(long tamerId,bool Summon) => SummonMobs.Any(x => !x.Dead && x.TargetTamers.Exists(x => x.Id == tamerId));
-        public bool PlayersAttacking(long partnerId) => ConnectedTamers.Any(x => x.Alive && x.TargetPartners.Exists(x => x.Id == partnerId));
+
+        public bool MobsAttacking(long tamerId) =>
+            Mobs.Any(x => !x.Dead && x.TargetTamers.Exists(x => x.Id == tamerId));
+
+        public bool MobsAttacking(long tamerId, bool Summon) =>
+            SummonMobs.Any(x => !x.Dead && x.TargetTamers.Exists(x => x.Id == tamerId));
+
+        public bool PlayersAttacking(long partnerId) =>
+            ConnectedTamers.Any(x => x.Alive && x.TargetPartners.Exists(x => x.Id == partnerId));
 
         public void BroadcastForMap(byte[] packet)
         {
@@ -133,7 +134,7 @@ namespace DigitalWorldOnline.Commons.Models.Map
 
             clients.ForEach(client => { client.Send(packet); });
         }
-        
+
         public void BroadcastForTargetTamers(long sourceId, byte[] packet)
         {
             BroadcastForTamerViews(sourceId, packet);
@@ -245,7 +246,7 @@ namespace DigitalWorldOnline.Commons.Models.Map
         }
 
         public void RemoveClient(GameClient client)
-        {          
+        {
             BroadcastForTamerViews(client.TamerId, new UnloadTamerPacket(client.Tamer).Serialize());
 
 #if DEBUG
@@ -264,7 +265,7 @@ namespace DigitalWorldOnline.Commons.Models.Map
             if (!Tamers.Any())
                 WithoutTamers = DateTime.Now;
         }
-  
+
         private static string SerializeHideTamer(CharacterModel tamer)
         {
             var sb = new StringBuilder();
