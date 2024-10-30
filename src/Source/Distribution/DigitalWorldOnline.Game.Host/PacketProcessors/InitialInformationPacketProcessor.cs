@@ -162,12 +162,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (client.DungeonMap)
                 {
-                    _dungeonsServer.AddClient(client);
+                    await _dungeonsServer.AddClient(client);
                     _logger.Information($"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                 }
                 else
                 {
-                    _mapServer.AddClient(client);
+                    await _mapServer.AddClient(client);
                     _logger.Information($"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
                 }
 
