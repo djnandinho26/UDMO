@@ -3,7 +3,7 @@ using DigitalWorldOnline.Application;
 using DigitalWorldOnline.Commons.Models.Config;
 using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Game.Managers;
-using DigitalWorldOnline.Infraestructure;
+using DigitalWorldOnline.Infrastructure;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;

@@ -17,7 +17,7 @@ using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Commons.Writers;
 using DigitalWorldOnline.Game.Managers;
-using DigitalWorldOnline.Infraestructure.Migrations;
+using DigitalWorldOnline.Infrastructure.Migrations;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using System.Linq;

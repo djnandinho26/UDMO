@@ -7,7 +7,7 @@ using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.GameHost;
-using DigitalWorldOnline.Infraestructure.Migrations;
+using DigitalWorldOnline.Infrastructure.Migrations;
 using MediatR;
 using Serilog;
 

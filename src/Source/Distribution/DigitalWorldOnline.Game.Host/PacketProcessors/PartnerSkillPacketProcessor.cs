@@ -18,6 +18,8 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System.Text.Json.Nodes;
+using DigitalWorldOnline.Commons.Enums.ClientEnums;
+using DigitalWorldOnline.Commons.Packets.GameServer;
 using static DigitalWorldOnline.Commons.Packets.GameServer.AddBuffPacket;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
@@ -726,7 +728,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else
                 {
-                    _logger.Information($"Using skill on Mob (Map Server)");
+                    _logger.Verbose($"Using skill on Mob (Map Server)");
 
                     var targetMobs = new List<MobConfigModel>();
 
@@ -771,7 +773,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         targetMobs.Add(mob);
                     }
 
-                    _logger.Information($"Skill Type: {skillType}");
+                    _logger.Verbose($"Skill Type: {skillType}");
 
                     if (targetMobs.Any())
                     {
@@ -806,7 +808,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (skillType != SkillTypeEnum.Single)
                         {
                             var finalDmg = client.Tamer.GodMode ? targetMobs.First().CurrentHP : AoeDamage(client, targetMobs.First(), skill, skillSlot, _configuration);
-
+                           
                             targetMobs.ForEach(targetMob =>
                             {
                                 if (finalDmg <= 0) finalDmg = client.Tamer.Partner.AT;
@@ -821,7 +823,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                 {
                                     targetMob.AddTarget(client.Tamer);
                                 }
-
+                                
                                 var newHp = targetMob.ReceiveDamage(finalDmg, client.TamerId);
 
                                 if (newHp > 0)
@@ -832,14 +834,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                 {
                                     _logger.Verbose($"Partner {client.Partner.Id} killed mob {targetMob?.Id} - {targetMob?.Name} with {finalDmg} skill {skill.Id} damage.");
 
-                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new KillOnSkillPacket(attackerHandler, targetMob.GeneralHandler, skillSlot, finalDmg).Serialize());
+                                    // This packet would send attack skill packet that would make DS consume for each monster (Visual only)
+                                    // This packet should be sent only if it is single monster skill
+                                    // _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new KillOnSkillPacket(attackerHandler, targetMob.GeneralHandler, skillSlot, finalDmg).Serialize());
 
                                     targetMob?.Die();
                                 }
+                                
                             });
-
+                           
                             _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new CastSkillPacket(skillSlot, attackerHandler, targetHandler).Serialize());
                             _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AreaSkillPacket(attackerHandler, client.Partner.HpRate, targetMobs, skillSlot, finalDmg).Serialize());
+                           
                         }
                         else
                         {
@@ -969,14 +975,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             }
 
                         }
-
+                       
                         if (!_mapServer.MobsAttacking(client.Tamer.Location.MapId, client.TamerId))
                         {
                             client.Tamer.StopBattle();
 
                             SendBattleOffTask(client, attackerHandler);
                         }
-
+                        
                         var evolution = client.Tamer.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Tamer.Partner.CurrentType);
 
                         // Save cooldown in database if the cooldown is more than 20 seconds
@@ -988,7 +994,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                 }
             }
-
             return Task.CompletedTask;
         }
 

@@ -28,7 +28,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         public DateTime TempUpdating { get; set; } = DateTime.Now; //TODO: Remover após abstração da movimentação
 
         private int _baseMs => BaseStatus.MSValue + LevelingStatus.MSValue;
-        private int _baseHp => LevelingStatus.HPValue;
+        private int _baseHp => Math.Max(LevelingStatus.HPValue, 100);
         private int _baseDs => LevelingStatus.DSValue;
         private int _baseAt => LevelingStatus.ATValue;
         private int _baseDe => LevelingStatus.DEValue;

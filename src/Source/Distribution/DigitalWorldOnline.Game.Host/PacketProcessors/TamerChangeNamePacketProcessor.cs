@@ -11,7 +11,7 @@ using DigitalWorldOnline.Commons.Models.Chat;
 using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.GameHost;
-using DigitalWorldOnline.Infraestructure.Migrations;
+using DigitalWorldOnline.Infrastructure.Migrations;
 using MediatR;
 using Serilog;
 using System.Xml.Linq;
