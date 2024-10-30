@@ -146,6 +146,25 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _logger.Information($"Sending tamer relations packet for character {client.TamerId}...");
                 client.Send(new TamerRelationsPacket(client.Tamer.Friends, client.Tamer.Foes));
                 await _sender.Send(new UpdateCharacterInitialPacketSentOnceSentCommand(client.TamerId, true));
+                
+                if (!client.DungeonMap)
+                {
+                    var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+                    
+                    var channels = new Dictionary<byte, byte>();
+
+                    var mapChannels = await _sender.Send(new ChannelsByMapIdQuery(client.Tamer.Location.MapId));
+
+                    foreach (var channel in mapChannels.OrderBy(x => x.Key))
+                    {
+                        channels.Add(channel.Key, channel.Value);
+                    }
+
+                    if (!channels.IsNullOrEmpty())
+                    {
+                        client.Send(new AvailableChannelsPacket(channels).Serialize());
+                    }
+                }
             }
 
             _logger.Debug($"Sending attendance event packet for character {client.TamerId}...");
