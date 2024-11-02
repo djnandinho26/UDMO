@@ -33,11 +33,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             targetClient.Send(new TradeInventoryUnlockPacket(client.Tamer.GeneralHandler));
             client.Send(new TradeInventoryUnlockPacket(client.Tamer.GeneralHandler));
-            _logger.Verbose($"Character {client.TamerId} inventory unlock "); ;
-
-
+            _logger.Verbose($"Character {client.TamerId} inventory unlock ");
         }
-
     }
 }
 

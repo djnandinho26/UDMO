@@ -172,7 +172,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// <summary>
         /// Character leveling status details.
         /// </summary>
-        public CharacterLevelStatusAssetModel LevelingStatus { get; private set; }
+        public CharacterLevelStatusAssetModel? LevelingStatus { get; private set; }
 
         /// <summary>
         /// Character seal list.

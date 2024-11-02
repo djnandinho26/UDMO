@@ -58,7 +58,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var x = packet.ReadByte();
             var NpcId = packet.ReadInt();
 
-            var extraEvolutionNpc = _assets.ExtraEvolutions.FirstOrDefault(x => x.NpcId == NpcId);
+            var extraEvolutionNpc = _assets.ExtraEvolutions.FirstOrDefault(extraEvolutionNpcAssetModel =>
+                extraEvolutionNpcAssetModel.NpcId == NpcId);
 
             if (extraEvolutionNpc == null)
             {
@@ -66,15 +67,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            var extraEvolutionInfo = extraEvolutionNpc.ExtraEvolutionInformation.FirstOrDefault(x => x.ExtraEvolution.Any(x => x.DigimonId == targetType))?.ExtraEvolution;
+            var extraEvolutionInfo = extraEvolutionNpc.ExtraEvolutionInformation
+                .FirstOrDefault(extraEvolutionInformationAssetModel =>
+                    extraEvolutionInformationAssetModel.ExtraEvolution.Any(extraEvolutionAssetModel =>
+                        extraEvolutionAssetModel.DigimonId == targetType))?.ExtraEvolution;
 
             if (extraEvolutionInfo == null)
             {
                 _logger.Warning($"extraEvolutionInfo == null");
                 return;
             }
-                
-            var extraEvolution = extraEvolutionInfo.FirstOrDefault(x => x.DigimonId == targetType);
+
+            var extraEvolution = extraEvolutionInfo.FirstOrDefault(extraEvolutionAssetModel =>
+                extraEvolutionAssetModel.DigimonId == targetType);
 
             if (extraEvolution == null)
             {
@@ -99,8 +104,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 if (itemToRemove != null)
                 {
                     materialToPacket.Add(material);
-                    client.Tamer.Inventory.RemoveOrReduceItemWithoutSlot(new ItemModel(material.ItemId, material.Amount));
-                 
+                    client.Tamer.Inventory.RemoveOrReduceItemWithoutSlot(
+                        new ItemModel(material.ItemId, material.Amount));
+
                     break;
                 }
             }
@@ -112,24 +118,25 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 if (itemToRemove != null)
                 {
                     requiredsToPacket.Add(material);
-                    client.Tamer.Inventory.RemoveOrReduceItemWithoutSlot(new ItemModel(material.ItemId, material.Amount));
+                    client.Tamer.Inventory.RemoveOrReduceItemWithoutSlot(
+                        new ItemModel(material.ItemId, material.Amount));
 
-                    if(extraEvolution.Requireds.Count <=3)
+                    if (extraEvolution.Requireds.Count <= 3)
                     {
                         break;
-                    }    
+                    }
                 }
             }
 
             byte i = 0;
             while (i < client.Tamer.DigimonSlots)
             {
-                if (client.Tamer.Digimons.FirstOrDefault(x => x.Slot == i) == null)
+                if (client.Tamer.Digimons.FirstOrDefault(digimonModel => digimonModel.Slot == i) == null)
                     break;
 
                 i++;
             }
-            
+
             var newDigimon = DigimonModel.Create(
                 digiName,
                 targetType,
@@ -143,9 +150,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             newDigimon.SetBaseInfo(_statusManager.GetDigimonBaseInfo(newDigimon.BaseType));
 
-            newDigimon.SetBaseStatus(_statusManager.GetDigimonBaseStatus(newDigimon.BaseType, newDigimon.Level, newDigimon.Size));
+            newDigimon.SetBaseStatus(
+                _statusManager.GetDigimonBaseStatus(newDigimon.BaseType, newDigimon.Level, newDigimon.Size));
 
-            newDigimon.AddEvolutions(_assets.EvolutionInfo.First(x => x.Type == newDigimon.BaseType));
+            newDigimon.AddEvolutions(_assets.EvolutionInfo.First(evolutionAssetModel =>
+                evolutionAssetModel.Type == newDigimon.BaseType));
 
             if (newDigimon.BaseInfo == null || newDigimon.BaseStatus == null || !newDigimon.Evolutions.Any())
             {
@@ -160,15 +169,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             if (client.Tamer.Incubator.PerfectSize(newDigimon.HatchGrade, newDigimon.Size))
             {
-                _mapServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name, newDigimon.BaseType, newDigimon.Size).Serialize());
-                _dungeonServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name, newDigimon.BaseType, newDigimon.Size).Serialize());
+                _mapServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name,
+                    newDigimon.BaseType, newDigimon.Size).Serialize());
+                _dungeonServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name,
+                    newDigimon.BaseType, newDigimon.Size).Serialize());
             }
 
             var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
 
-            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), client.Tamer.Digimons.FindIndex(x => x == newDigimon)));
+            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000),
+                client.Tamer.Digimons.FindIndex(digimonModel => digimonModel == newDigimon)));
 
-            client.Send(new HatchSpiritEvolutionPacket(targetType, (int)client.Tamer.Inventory.Bits, materialToPacket, requiredsToPacket));
+            client.Send(new HatchSpiritEvolutionPacket(targetType, (int)client.Tamer.Inventory.Bits, materialToPacket,
+                requiredsToPacket));
             client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory));
 
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
@@ -203,7 +216,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
             }
 
-            _logger.Verbose($"Character {client.TamerId} hatched spirit {newDigimon.Id}({newDigimon.BaseType}) with grade {newDigimon.HatchGrade} and size {newDigimon.Size}.");
+            _logger.Verbose(
+                $"Character {client.TamerId} hatched spirit {newDigimon.Id}({newDigimon.BaseType}) with grade {newDigimon.HatchGrade} and size {newDigimon.Size}.");
         }
     }
 }

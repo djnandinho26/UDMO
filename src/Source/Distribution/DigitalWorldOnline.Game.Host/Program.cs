@@ -72,7 +72,7 @@ namespace DigitalWorldOnline.Game
 
                     services.AddScoped<IConfigQueriesRepository, ConfigQueriesRepository>();
                     services.AddScoped<IConfigCommandsRepository, ConfigCommandsRepository>();
-                    
+
                     services.AddScoped<IRoutineRepository, RoutineRepository>();
 
                     //services.AddScoped<IEmailService, EmailService>();
@@ -83,7 +83,7 @@ namespace DigitalWorldOnline.Game
                     services.AddSingleton<PartyManager>();
 
                     services.AddSingleton<EventQueueManager>();
-                    
+
                     services.AddSingleton<MapServer>();
                     services.AddSingleton<PvpServer>();
                     //services.AddSingleton<EventServer>();
@@ -108,8 +108,8 @@ namespace DigitalWorldOnline.Game
                 .ConfigureHostConfiguration(hostConfig =>
                 {
                     hostConfig.SetBasePath(Directory.GetCurrentDirectory())
-                              .AddEnvironmentVariables(Constants.Configuration.EnvironmentPrefix)
-                              .AddUserSecrets<Program>();
+                        .AddEnvironmentVariables(Constants.Configuration.EnvironmentPrefix)
+                        .AddUserSecrets<Program>();
                 })
                 .Build();
         }
@@ -133,32 +133,35 @@ namespace DigitalWorldOnline.Game
                 .Where(t => typeof(IGamePacketProcessor).IsAssignableFrom(t) && !t.IsInterface)
                 .ToList();
 
-            packetProcessors.ForEach(processor =>
-            {
-                services.AddSingleton(typeof(IGamePacketProcessor), processor);
-            });
+            packetProcessors.ForEach(processor => { services.AddSingleton(typeof(IGamePacketProcessor), processor); });
         }
 
         private static ILogger ConfigureLogger(IConfiguration configuration)
         {
             return new LoggerConfiguration()
                 .MinimumLevel.Verbose()
-                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}", restrictedToMinimumLevel: LogEventLevel.Information)
+                .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+                    restrictedToMinimumLevel: LogEventLevel.Information)
                 .WriteTo.Logger(lc => lc
                     .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Verbose)
-                    .WriteTo.RollingFile(configuration["Log:VerboseRepository"] ?? "logs\\Verbose\\GameServer", retainedFileCountLimit: 10))
+                    .WriteTo.RollingFile(configuration["Log:VerboseRepository"] ?? "logs\\Verbose\\GameServer",
+                        retainedFileCountLimit: 10))
                 .WriteTo.Logger(lc => lc
                     .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Debug)
-                    .WriteTo.RollingFile(configuration["Log:DebugRepository"] ?? "logs\\Debug\\GameServer", retainedFileCountLimit: 5))
+                    .WriteTo.RollingFile(configuration["Log:DebugRepository"] ?? "logs\\Debug\\GameServer",
+                        retainedFileCountLimit: 5))
                 .WriteTo.Logger(lc => lc
                     .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Information)
-                    .WriteTo.RollingFile(configuration["Log:InformationRepository"] ?? "logs\\Information\\GameServer", retainedFileCountLimit: 5))
+                    .WriteTo.RollingFile(configuration["Log:InformationRepository"] ?? "logs\\Information\\GameServer",
+                        retainedFileCountLimit: 5))
                 .WriteTo.Logger(lc => lc
                     .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Warning)
-                    .WriteTo.RollingFile(configuration["Log:WarningRepository"] ?? "logs\\Warning\\GameServer", retainedFileCountLimit: 5))
+                    .WriteTo.RollingFile(configuration["Log:WarningRepository"] ?? "logs\\Warning\\GameServer",
+                        retainedFileCountLimit: 5))
                 .WriteTo.Logger(lc => lc
                     .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Error)
-                    .WriteTo.RollingFile(configuration["Log:ErrorRepository"] ?? "logs\\Error\\GameServer", retainedFileCountLimit: 5))
+                    .WriteTo.RollingFile(configuration["Log:ErrorRepository"] ?? "logs\\Error\\GameServer",
+                        retainedFileCountLimit: 5))
                 .CreateLogger();
         }
     }

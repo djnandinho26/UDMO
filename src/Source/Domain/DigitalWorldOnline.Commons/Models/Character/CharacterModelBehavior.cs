@@ -21,17 +21,16 @@ namespace DigitalWorldOnline.Commons.Models.Character
 {
     public sealed partial class CharacterModel
     {
-
         //Temp
         public bool TempRecalculate { get; set; } //TODO: Remover após abstração da movimentação
         public bool TempCalculating { get; set; } //TODO: Remover após abstração da movimentação
         public DateTime TempUpdating { get; set; } = DateTime.Now; //TODO: Remover após abstração da movimentação
 
         private int _baseMs => BaseStatus.MSValue + LevelingStatus.MSValue;
-        private int _baseHp => Math.Max(LevelingStatus.HPValue, 100);
-        private int _baseDs => LevelingStatus.DSValue;
-        private int _baseAt => LevelingStatus.ATValue;
-        private int _baseDe => LevelingStatus.DEValue;
+        private int _baseHp => LevelingStatus == null ? 0 : LevelingStatus.HPValue;
+        private int _baseDs => LevelingStatus == null ? 0 : LevelingStatus.DSValue;
+        private int _baseAt => LevelingStatus == null ? 0 : LevelingStatus.ATValue;
+        private int _baseDe => LevelingStatus == null ? 0 : LevelingStatus.DEValue;
         private int _baseExp => 1;
 
         private int _handlerValue;
@@ -70,7 +69,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
         public bool CanMissHit()
         {
             var debuff = TargetMob?.DebuffList.ActiveBuffs.Where(buff => buff.BuffInfo.SkillInfo.Apply.Any(apply =>
-                                   apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.CrowdControl || !buff.DebuffExpired)).ToList();
+                    apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.CrowdControl || !buff.DebuffExpired))
+                .ToList();
 
             if (debuff.Any())
             {
@@ -100,13 +100,16 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
                     double attributeAdvantage = 1.5; // Defina o valor do attributeAdvantage conforme necessário
 
-                    if (Partner.BaseInfo.Attribute.HasAttributeAdvantage(TargetMob.Attribute) || Partner.BaseInfo.Element.HasElementAdvantage(TargetMob.Element))
+                    if (Partner.BaseInfo.Attribute.HasAttributeAdvantage(TargetMob.Attribute) ||
+                        Partner.BaseInfo.Element.HasElementAdvantage(TargetMob.Element))
                         attributeAdvantage = 2.0;
 
-                    if (TargetMob.Attribute.HasAttributeAdvantage(Partner.BaseInfo.Attribute) || TargetMob.Element.HasElementAdvantage(Partner.BaseInfo.Element))
+                    if (TargetMob.Attribute.HasAttributeAdvantage(Partner.BaseInfo.Attribute) ||
+                        TargetMob.Element.HasElementAdvantage(Partner.BaseInfo.Element))
                         attributeAdvantage = 1.0;
 
-                    double adjustedPercent = CalcularProbabilidadeAcerto(AttackerHitRate, Partner.Level, TargetMob.Level, TargetEvasion, attributeAdvantage);
+                    double adjustedPercent = CalcularProbabilidadeAcerto(AttackerHitRate, Partner.Level,
+                        TargetMob.Level, TargetEvasion, attributeAdvantage);
 
                     if (adjustedPercent <= 1.0)
                         adjustedPercent = 0;
@@ -124,7 +127,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
             }
             catch (Exception ex)
             {
-
                 return true;
             }
 
@@ -133,8 +135,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
         public bool CanMissHit(bool summon)
         {
-
-
             if (TargetSummonMob == null)
                 return true;
 
@@ -156,13 +156,16 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
                 double attributeAdvantage = 1.5; // Defina o valor do attributeAdvantage conforme necessário
 
-                if (Partner.BaseInfo.Attribute.HasAttributeAdvantage(TargetMob.Attribute) || Partner.BaseInfo.Element.HasElementAdvantage(TargetMob.Element))
+                if (Partner.BaseInfo.Attribute.HasAttributeAdvantage(TargetMob.Attribute) ||
+                    Partner.BaseInfo.Element.HasElementAdvantage(TargetMob.Element))
                     attributeAdvantage = 2.0;
 
-                if (TargetMob.Attribute.HasAttributeAdvantage(Partner.BaseInfo.Attribute) || TargetMob.Element.HasElementAdvantage(Partner.BaseInfo.Element))
+                if (TargetMob.Attribute.HasAttributeAdvantage(Partner.BaseInfo.Attribute) ||
+                    TargetMob.Element.HasElementAdvantage(Partner.BaseInfo.Element))
                     attributeAdvantage = 1.0;
 
-                double adjustedPercent = CalcularProbabilidadeAcerto(AttackerHitRate, Partner.Level, TargetSummonMob.Level, TargetEvasion, attributeAdvantage);
+                double adjustedPercent = CalcularProbabilidadeAcerto(AttackerHitRate, Partner.Level,
+                    TargetSummonMob.Level, TargetEvasion, attributeAdvantage);
 
                 if (adjustedPercent <= 1.0)
                     adjustedPercent = 0;
@@ -181,8 +184,9 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             return true;
         }
-        
-        public static double CalcularProbabilidadeAcerto(double seuHitRate, int seuNivel, int nivelDoMonstro, double evDoMonstro, double attributeAdvantage)
+
+        public static double CalcularProbabilidadeAcerto(double seuHitRate, int seuNivel, int nivelDoMonstro,
+            double evDoMonstro, double attributeAdvantage)
         {
             double diferencaDeNiveis = seuNivel - nivelDoMonstro;
             double levelMultiplier = 1 / (1 + Math.Exp(-diferencaDeNiveis / 9.0));
@@ -194,7 +198,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// <summary>
         /// Flag for no active threats.
         /// </summary>
-        public bool NoThreats => !TargetMobs.Any(x => x.TargetTamer != null && x.TargetTamer.GeneralHandler == GeneralHandler);
+        public bool NoThreats =>
+            !TargetMobs.Any(x => x.TargetTamer != null && x.TargetTamer.GeneralHandler == GeneralHandler);
 
         /// <summary>
         /// Flag for tamer riding state;
@@ -209,7 +214,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// <summary>
         /// Returns the current character target mob.
         /// </summary>
-        public SummonMobModel? TargetSummonMob => TargetSummonMobs.FirstOrDefault(x => x.GeneralHandler == _targetHandler);
+        public SummonMobModel? TargetSummonMob =>
+            TargetSummonMobs.FirstOrDefault(x => x.GeneralHandler == _targetHandler);
 
         /// <summary>
         /// Returns the current character target partner.
@@ -220,8 +226,9 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// Indicates that the tamer has a valid Aura equiped.
         /// </summary>
         public bool HasAura => Aura.ItemId > 0 &&
-            (Aura.ItemInfo?.UseTimeType == 0 ||
-            (Aura.ItemInfo?.UseTimeType > 0 && Aura.RemainingMinutes() > 0 || Aura.RemainingMinutes() != 0xFFFFFFFF));
+                               (Aura.ItemInfo?.UseTimeType == 0 ||
+                                (Aura.ItemInfo?.UseTimeType > 0 && Aura.RemainingMinutes() > 0 ||
+                                 Aura.RemainingMinutes() != 0xFFFFFFFF));
 
         /// <summary>
         /// Gets the Aura equipment slot.
@@ -390,13 +397,17 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// Returns the flag for verifying character buffs.
         /// </summary>
         public bool CheckBuffsTime => DateTime.Now >= LastBuffsCheck;
+
         public bool CheckExpiredItemsTime => DateTime.Now >= LastExpiredItemsCheck;
-        public bool HaveActiveCashSkill => ActiveSkill.FirstOrDefault(x => x.Type == TamerSkillTypeEnum.Cash || x.SkillId > 0) != null;
+
+        public bool HaveActiveCashSkill =>
+            ActiveSkill.FirstOrDefault(x => x.Type == TamerSkillTypeEnum.Cash || x.SkillId > 0) != null;
+
         /// <summary>
         /// Returns true if the active evolution has broken.
         /// </summary>
         public bool BreakEvolution => (ActiveEvolution.DsPerSecond > 0 && CurrentDs == 0) ||
-            (ActiveEvolution.XgPerSecond > 0 && XGauge == 0);
+                                      (ActiveEvolution.XgPerSecond > 0 && XGauge == 0);
 
         /// <summary>
         /// Informs if the tamer has an equipped XAI.
@@ -424,59 +435,63 @@ namespace DigitalWorldOnline.Commons.Models.Character
         // --------------------------------------------------------------------------------------------------
 
         public int HP => _baseHp +
-                        EquipmentAttribute(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) +
-                        //SocketAttribute(AccessoryStatusTypeEnum.HP, _baseHp) +
-                        BuffAttribute(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) +
-                        DigiviceAccessoryStatus(AccessoryStatusTypeEnum.HP, _baseHp) +
-                        ChipsetStatus(_baseHp, SkillCodeApplyAttributeEnum.MaxHP);
+                         EquipmentAttribute(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) +
+                         //SocketAttribute(AccessoryStatusTypeEnum.HP, _baseHp) +
+                         BuffAttribute(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) +
+                         DigiviceAccessoryStatus(AccessoryStatusTypeEnum.HP, _baseHp) +
+                         ChipsetStatus(_baseHp, SkillCodeApplyAttributeEnum.MaxHP);
 
         public int DS => _baseDs +
-                        EquipmentAttribute(_baseDs, SkillCodeApplyAttributeEnum.MaxDS) +
-                        //SocketAttribute(AccessoryStatusTypeEnum.DS, _baseDs) +
-                        BuffAttribute(_baseDs, SkillCodeApplyAttributeEnum.MaxDS) +
-                        DigiviceAccessoryStatus(AccessoryStatusTypeEnum.DS, _baseDs) +
-                        ChipsetStatus(_baseDs, SkillCodeApplyAttributeEnum.MaxDS);
+                         EquipmentAttribute(_baseDs, SkillCodeApplyAttributeEnum.MaxDS) +
+                         //SocketAttribute(AccessoryStatusTypeEnum.DS, _baseDs) +
+                         BuffAttribute(_baseDs, SkillCodeApplyAttributeEnum.MaxDS) +
+                         DigiviceAccessoryStatus(AccessoryStatusTypeEnum.DS, _baseDs) +
+                         ChipsetStatus(_baseDs, SkillCodeApplyAttributeEnum.MaxDS);
 
         public short AT => (short)
             (_baseAt +
-            EquipmentAttribute(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) +
-            //SocketAttribute(AccessoryStatusTypeEnum.AT, _baseAt) +
-            BuffAttribute(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) +
-            DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AT, _baseAt) +
-            ChipsetStatus(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA));
+             EquipmentAttribute(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) +
+             //SocketAttribute(AccessoryStatusTypeEnum.AT, _baseAt) +
+             BuffAttribute(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) +
+             DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AT, _baseAt) +
+             ChipsetStatus(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA));
 
         public short DE => (short)
             (_baseDe +
-            EquipmentAttribute(_baseDe, SkillCodeApplyAttributeEnum.DP) +
-            //SocketAttribute(AccessoryStatusTypeEnum.DE, _baseDe) +
-            BuffAttribute(_baseDe, SkillCodeApplyAttributeEnum.DP) +
-            DigiviceAccessoryStatus(AccessoryStatusTypeEnum.DE, _baseDe) +
-            ChipsetStatus(_baseDe, SkillCodeApplyAttributeEnum.DP));
+             EquipmentAttribute(_baseDe, SkillCodeApplyAttributeEnum.DP) +
+             //SocketAttribute(AccessoryStatusTypeEnum.DE, _baseDe) +
+             BuffAttribute(_baseDe, SkillCodeApplyAttributeEnum.DP) +
+             DigiviceAccessoryStatus(AccessoryStatusTypeEnum.DE, _baseDe) +
+             ChipsetStatus(_baseDe, SkillCodeApplyAttributeEnum.DP));
 
         public int MS
         {
             get
             {
                 int calculatedMS = _baseMs +
-                    EquipmentAttribute(_baseMs, SkillCodeApplyAttributeEnum.MS, SkillCodeApplyAttributeEnum.MovementSpeedComparisonCorrectionBuff, SkillCodeApplyAttributeEnum.MovementSpeedIncrease) +
-                    //SocketAttribute(AccessoryStatusTypeEnum.MS, _baseMs) +
-                    BuffAttribute(_baseMs, SkillCodeApplyAttributeEnum.MS, SkillCodeApplyAttributeEnum.MovementSpeedComparisonCorrectionBuff, SkillCodeApplyAttributeEnum.MovementSpeedIncrease);
+                                   EquipmentAttribute(_baseMs, SkillCodeApplyAttributeEnum.MS,
+                                       SkillCodeApplyAttributeEnum.MovementSpeedComparisonCorrectionBuff,
+                                       SkillCodeApplyAttributeEnum.MovementSpeedIncrease) +
+                                   //SocketAttribute(AccessoryStatusTypeEnum.MS, _baseMs) +
+                                   BuffAttribute(_baseMs, SkillCodeApplyAttributeEnum.MS,
+                                       SkillCodeApplyAttributeEnum.MovementSpeedComparisonCorrectionBuff,
+                                       SkillCodeApplyAttributeEnum.MovementSpeedIncrease);
 
                 return Math.Min(calculatedMS, 15000); // Max value of MS = 3500
             }
         }
 
         public int KillExp => _baseExp +
-                        EquipmentAttribute(_baseExp, SkillCodeApplyAttributeEnum.EXP) +
-                        BuffAttribute(_baseExp, SkillCodeApplyAttributeEnum.EXP);
+                              EquipmentAttribute(_baseExp, SkillCodeApplyAttributeEnum.EXP) +
+                              BuffAttribute(_baseExp, SkillCodeApplyAttributeEnum.EXP);
 
         public short BonusEXP
         {
             get
             {
                 int calculatedBonusEXP = (0 +
-                    EquipmentAttribute(0, SkillCodeApplyAttributeEnum.EXP) +
-                    BuffAttribute(0, SkillCodeApplyAttributeEnum.EXP));
+                                          EquipmentAttribute(0, SkillCodeApplyAttributeEnum.EXP) +
+                                          BuffAttribute(0, SkillCodeApplyAttributeEnum.EXP));
 
                 return (short)calculatedBonusEXP;
             }
@@ -541,7 +556,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
         public void AddPoints(int points)
         {
-
             if (DailyPoints.InsertDate.Day == DateTime.Now.Day)
             {
                 DailyPoints.AddPoints(points);
@@ -550,7 +564,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
             {
                 DailyPoints = new CharacterArenaDailyPointsModel(DateTime.Now, points);
             }
-
         }
 
 
@@ -607,6 +620,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
             TargetMobs.Clear();
             InBattle = false;
         }
+
         public void StopBattle(bool summon)
         {
             _targetHandler = 0;
@@ -625,6 +639,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             _targetHandler = mobConfig.GeneralHandler;
         }
+
         public void UpdateTarget(SummonMobModel mobConfig)
         {
             if (!TargetSummonMobs.Any(x => x.Id == mobConfig.Id))
@@ -632,6 +647,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             _targetHandler = mobConfig.GeneralHandler;
         }
+
         /// <summary>
         /// Updates the character target partner.
         /// </summary>
@@ -664,6 +680,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
                     break;
             }
         }
+
         public void UpdateTargetWithSkill(List<SummonMobModel> mobs, SkillTypeEnum skillType)
         {
             mobs.ForEach(mob =>
@@ -706,7 +723,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             ResetAfkNotifications();
         }
-        
+
         /// <summary>
         /// Engages battle with target mob.
         /// </summary>
@@ -722,6 +739,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
                 InBattle = true;
             }
         }
+
         public void StartBattle(SummonMobModel mobConfig)
         {
             if (TargetSummonMobs == null)
@@ -771,6 +789,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             InBattle = true;
         }
+
         public void StartBattleWithSkill(List<SummonMobModel> mobs, SkillTypeEnum skillType)
         {
             if (TargetSummonMobs == null)
@@ -806,6 +825,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             if (!TargetMobs.Any()) InBattle = false;
         }
+
         public void RemoveTarget(SummonMobModel mobConfig)
         {
             if (TargetSummonMobs == null)
@@ -890,15 +910,15 @@ namespace DigitalWorldOnline.Commons.Models.Character
                         switch (apply.Type)
                         {
                             case SkillCodeApplyTypeEnum.Default:
-                                {
-                                    totalValue += apply.Value;
-                                }
+                            {
+                                totalValue += apply.Value;
+                            }
                                 break;
 
                             case SkillCodeApplyTypeEnum.Unknown105:
-                                {
-                                    totalValue += apply.Value;
-                                }
+                            {
+                                totalValue += apply.Value;
+                            }
                                 break;
 
                             case SkillCodeApplyTypeEnum.Percent:
@@ -906,12 +926,12 @@ namespace DigitalWorldOnline.Commons.Models.Character
                                 break;
 
                             case SkillCodeApplyTypeEnum.AlsoPercent:
-                                {
-                                    if (apply.Attribute == SkillCodeApplyAttributeEnum.EXP)
-                                        totalValue += (apply.Value * item.ItemInfo.TypeN);
-                                    else
-                                        totalValue += (int)(baseValue * 0.10);
-                                }
+                            {
+                                if (apply.Attribute == SkillCodeApplyAttributeEnum.EXP)
+                                    totalValue += (apply.Value * item.ItemInfo.TypeN);
+                                else
+                                    totalValue += (int)(baseValue * 0.10);
+                            }
                                 break;
                         }
                     }
@@ -980,7 +1000,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
                         }
                     }
                 }
-
             }
 
             return totalValue;
@@ -1018,25 +1037,26 @@ namespace DigitalWorldOnline.Commons.Models.Character
                                 break;
 
                             case SkillCodeApplyTypeEnum.AlsoPercent:
-                                {
-                                    if (apply.Attribute == SkillCodeApplyAttributeEnum.EXP)
-                                        totalValue += (apply.Value * item.ItemInfo.TypeN);
-                                    else
-                                        totalValue += (int)(baseValue * 0.10);
-                                }
+                            {
+                                if (apply.Attribute == SkillCodeApplyAttributeEnum.EXP)
+                                    totalValue += (apply.Value * item.ItemInfo.TypeN);
+                                else
+                                    totalValue += (int)(baseValue * 0.10);
+                            }
                                 break;
                         }
                     }
                 }
-
             }
 
             return totalValue;
         }
-        
+
         public bool IsSameFamily(ItemModel item)
         {
-            if ((DigimonFamilyEnum)item.FamilyType == Partner.BaseInfo.Family1 || (DigimonFamilyEnum)item.FamilyType == Partner.BaseInfo.Family2 || (DigimonFamilyEnum)item.FamilyType == Partner.BaseInfo.Family3)
+            if ((DigimonFamilyEnum)item.FamilyType == Partner.BaseInfo.Family1 ||
+                (DigimonFamilyEnum)item.FamilyType == Partner.BaseInfo.Family2 ||
+                (DigimonFamilyEnum)item.FamilyType == Partner.BaseInfo.Family3)
             {
                 return true;
             }
@@ -1055,7 +1075,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             foreach (var item in Digivice.EquippedItems)
             {
-                if (!item.HasAccessoryStatus && Level >= item.ItemInfo.TamerMinLevel && Partner.Level >= item.ItemInfo.DigimonMinLevel)
+                if (!item.HasAccessoryStatus && Level >= item.ItemInfo.TamerMinLevel &&
+                    Partner.Level >= item.ItemInfo.DigimonMinLevel)
                     continue;
 
                 foreach (var statusValue in item.AccessoryStatus.Where(x => x.Type == type).Select(x => x.Value))
@@ -1066,7 +1087,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
                     {
                         if (type >= AccessoryStatusTypeEnum.Data)
                         {
-                            bool IsPossible = HasAcessoryAttribute(Partner.BaseInfo.Attribute, type) || HasAcessoryElement(Partner.BaseInfo.Element, type);
+                            bool IsPossible = HasAcessoryAttribute(Partner.BaseInfo.Attribute, type) ||
+                                              HasAcessoryElement(Partner.BaseInfo.Element, type);
                             if (!IsPossible)
                                 break;
                         }
@@ -1078,7 +1100,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
                         totalValue += (short)reductionValue;
                         //totalValue += statusValue;
                     }
-                    else if (type == AccessoryStatusTypeEnum.CT || type == AccessoryStatusTypeEnum.EV || type == AccessoryStatusTypeEnum.ATT)
+                    else if (type == AccessoryStatusTypeEnum.CT || type == AccessoryStatusTypeEnum.EV ||
+                             type == AccessoryStatusTypeEnum.ATT)
                     {
                         totalValue += (short)(statusValue * percent * 100);
                     }
@@ -1107,7 +1130,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             foreach (var item in Equipment.EquippedItems)
             {
-                if (!item.HasAccessoryStatus && Level >= item.ItemInfo.TamerMinLevel && Partner.Level >= item.ItemInfo.DigimonMinLevel)
+                if (!item.HasAccessoryStatus && Level >= item.ItemInfo.TamerMinLevel &&
+                    Partner.Level >= item.ItemInfo.DigimonMinLevel)
                     continue;
 
                 foreach (var statusValue in item.AccessoryStatus.Where(x => x.Type == type).Select(x => x.Value))
@@ -1123,7 +1147,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
                     {
                         if (type >= AccessoryStatusTypeEnum.Data)
                         {
-                            if (!HasAcessoryAttribute(Partner.BaseInfo.Attribute, type) || !HasAcessoryElement(Partner.BaseInfo.Element, type))
+                            if (!HasAcessoryAttribute(Partner.BaseInfo.Attribute, type) ||
+                                !HasAcessoryElement(Partner.BaseInfo.Element, type))
                                 break;
                         }
 
@@ -1131,7 +1156,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
                         totalValue += (short)((percent * percentValue * baseValue) / 100);
                     }
-                    else if (type == AccessoryStatusTypeEnum.CT || type == AccessoryStatusTypeEnum.EV || type == AccessoryStatusTypeEnum.ATT)
+                    else if (type == AccessoryStatusTypeEnum.CT || type == AccessoryStatusTypeEnum.EV ||
+                             type == AccessoryStatusTypeEnum.ATT)
                     {
                         totalValue += (short)(statusValue * percent * 100);
                     }
@@ -1144,7 +1170,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
                         totalValue += (short)(percent * statusValue);
                     }
                 }
-
             }
 
             return totalValue;
@@ -1180,6 +1205,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
                    accessory == AccessoryStatusTypeEnum.Thunder && hitter == DigimonElementEnum.Thunder ||
                    accessory == AccessoryStatusTypeEnum.Steel && hitter == DigimonElementEnum.Steel;
         }
+
         /// <summary>
         /// Returns the target attribute buffs value.
         /// </summary>
@@ -1199,7 +1225,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
                 {
                     if (attributes.Any(x => x == apply.Attribute))
                     {
-
                         switch (apply.Type)
                         {
                             case SkillCodeApplyTypeEnum.Default:
@@ -1208,24 +1233,24 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
                             case SkillCodeApplyTypeEnum.AlsoPercent:
                             case SkillCodeApplyTypeEnum.Percent:
+                            {
+                                SomaValue += apply.Value + (buff.TypeN) * apply.IncreaseValue;
+
+                                if (apply.Attribute == SkillCodeApplyAttributeEnum.SCD)
                                 {
-
-                                    SomaValue += apply.Value + (buff.TypeN) * apply.IncreaseValue;
-
-                                    if (apply.Attribute == SkillCodeApplyAttributeEnum.SCD)
-                                    {
-                                        totalValue = SomaValue * 100;
-                                        break;
-                                    }
-                                    else if (apply.Attribute == SkillCodeApplyAttributeEnum.CAT || apply.Attribute == SkillCodeApplyAttributeEnum.EXP)
-                                    {
-                                        totalValue = SomaValue;
-                                        break;
-                                    }
-
-                                    //totalValue = (int)Math.Ceiling((double)(SomaValue) / 100 * baseValue);    // arredonda valores
-                                    totalValue += (SomaValue / 100.0) * baseValue;
+                                    totalValue = SomaValue * 100;
+                                    break;
                                 }
+                                else if (apply.Attribute == SkillCodeApplyAttributeEnum.CAT ||
+                                         apply.Attribute == SkillCodeApplyAttributeEnum.EXP)
+                                {
+                                    totalValue = SomaValue;
+                                    break;
+                                }
+
+                                //totalValue = (int)Math.Ceiling((double)(SomaValue) / 100 * baseValue);    // arredonda valores
+                                totalValue += (SomaValue / 100.0) * baseValue;
+                            }
                                 break;
                         }
                     }
@@ -1328,7 +1353,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// </summary>
         public void CheckExpiredItems()
         {
-
         }
 
         /// <summary>
@@ -1342,6 +1366,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         }
 
         public void SetLastExpiredItemsCheck() => LastExpiredItemsCheck = DateTime.Now.AddSeconds(60);
+
         /// <summary>
         /// Restores the previous character condition.
         /// </summary>
@@ -1384,6 +1409,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// Updates the character's sync resources timer.
         /// </summary>
         public void UpdateSyncResourcesTime() => LastSyncResources = DateTime.Now.AddSeconds(5);
+
         public void UpdateDebuffTime() => LastDebuffUpdate = DateTime.Now.AddSeconds(5);
 
         /// <summary>
@@ -1505,7 +1531,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// <returns>True if it's possible to reduce, false if it's not.</returns>
         public bool ConsumeXg(int value)
         {
-
             if (XGauge >= value)
             {
                 XGauge -= value;
@@ -1516,11 +1541,12 @@ namespace DigitalWorldOnline.Commons.Models.Character
                 }
                 else return true;
             }
+
             return false;
         }
+
         public bool ConsumeXCrystal(short value)
         {
-
             if (XCrystals >= value)
             {
                 XCrystals -= value;
@@ -1536,7 +1562,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
         }
 
 
-
         /// <summary>
         /// Gets the tamer's passive skill buff.
         /// </summary>
@@ -1549,364 +1574,364 @@ namespace DigitalWorldOnline.Commons.Models.Character
             switch (model)
             {
                 case CharacterModelEnum.MarcusDamon:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Data:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40212, 8000131));
-                                break;
+                        case DigimonAttributeEnum.Data:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40212, 8000131));
+                            break;
 
-                            case DigimonAttributeEnum.Vaccine:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40211, 8000121));
-                                break;
-                        }
+                        case DigimonAttributeEnum.Vaccine:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40211, 8000121));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.ThomasNorstein:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Data:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40214, 8000221));
-                                break;
+                        case DigimonAttributeEnum.Data:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40214, 8000221));
+                            break;
 
-                            case DigimonAttributeEnum.Virus:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40215, 8000231));
-                                break;
-                        }
+                        case DigimonAttributeEnum.Virus:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40215, 8000231));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.YoshinoFujieda:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Data:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40217, 8000321));
-                                break;
+                        case DigimonAttributeEnum.Data:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40217, 8000321));
+                            break;
 
-                            case DigimonAttributeEnum.Vaccine:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40218, 8000331));
-                                break;
-                        }
+                        case DigimonAttributeEnum.Vaccine:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40218, 8000331));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.KeenanKrier:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.None:
+                        case DigimonAttributeEnum.None:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40221, 8000431));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40221, 8000431));
+                            break;
 
-                            case DigimonAttributeEnum.Vaccine:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40220, 8000421));
-                                break;
-                        }
+                        case DigimonAttributeEnum.Vaccine:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40220, 8000421));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.TaiKamiya:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Virus:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40224, 8000531));
-                                break;
+                        case DigimonAttributeEnum.Virus:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40224, 8000531));
+                            break;
 
-                            case DigimonAttributeEnum.Vaccine:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40223, 8000521));
-                                break;
-                        }
+                        case DigimonAttributeEnum.Vaccine:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40223, 8000521));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.MimiTachikawa:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Data:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40226, 8000621));
-                                break;
+                        case DigimonAttributeEnum.Data:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40226, 8000621));
+                            break;
 
-                            case DigimonAttributeEnum.None:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40227, 8000631));
-                                break;
-                        }
+                        case DigimonAttributeEnum.None:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40227, 8000631));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.MattIshida:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Virus:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40229, 8000721));
-                                break;
+                        case DigimonAttributeEnum.Virus:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40229, 8000721));
+                            break;
 
-                            case DigimonAttributeEnum.Data:
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40230, 8000731));
-                                break;
-                        }
+                        case DigimonAttributeEnum.Data:
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40230, 8000731));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.TakeruaKaishi:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Virus:
+                        case DigimonAttributeEnum.Virus:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40232, 8000821));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40232, 8000821));
+                            break;
 
-                            case DigimonAttributeEnum.None:
+                        case DigimonAttributeEnum.None:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40233, 8000831));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40233, 8000831));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.HikariKamiya:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Virus:
+                        case DigimonAttributeEnum.Virus:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40235, 8000921));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40235, 8000921));
+                            break;
 
-                            case DigimonAttributeEnum.Vaccine:
+                        case DigimonAttributeEnum.Vaccine:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40236, 8000931));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40236, 8000931));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.SoraTakenoushi:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Vaccine:
+                        case DigimonAttributeEnum.Vaccine:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40238, 8001021));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40238, 8001021));
+                            break;
 
-                            case DigimonAttributeEnum.Unknown:
+                        case DigimonAttributeEnum.Unknown:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40239, 8001031));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40239, 8001031));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.IzzyIzumi:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Virus:
+                        case DigimonAttributeEnum.Virus:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40275, 8001421));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40275, 8001421));
+                            break;
 
-                            case DigimonAttributeEnum.Unknown:
+                        case DigimonAttributeEnum.Unknown:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40276, 8001431));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40276, 8001431));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.JoeKido:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Virus:
+                        case DigimonAttributeEnum.Virus:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40278, 8001521));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40278, 8001521));
+                            break;
 
-                            case DigimonAttributeEnum.Unknown:
+                        case DigimonAttributeEnum.Unknown:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40279, 8001531));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40279, 8001531));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.TakatoMatsuki:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Virus:
+                        case DigimonAttributeEnum.Virus:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40282, 8001621));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40282, 8001621));
+                            break;
 
-                            case DigimonAttributeEnum.Vaccine:
+                        case DigimonAttributeEnum.Vaccine:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40283, 8001631));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40283, 8001631));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.RikaNonaka:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Data:
+                        case DigimonAttributeEnum.Data:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40285, 8001721));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40285, 8001721));
+                            break;
 
-                            case DigimonAttributeEnum.Virus:
+                        case DigimonAttributeEnum.Virus:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40286, 8001731));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40286, 8001731));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.HenryWong:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Vaccine:
+                        case DigimonAttributeEnum.Vaccine:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40288, 8001821));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40288, 8001821));
+                            break;
 
-                            case DigimonAttributeEnum.Data:
+                        case DigimonAttributeEnum.Data:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40289, 8001831));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40289, 8001831));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.KatoJeri:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Vaccine:
+                        case DigimonAttributeEnum.Vaccine:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40294, 8001921));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40294, 8001921));
+                            break;
 
-                            case DigimonAttributeEnum.Unknown:
+                        case DigimonAttributeEnum.Unknown:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40295, 8001931));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40295, 8001931));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.AkiyamaRyo:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Vaccine:
+                        case DigimonAttributeEnum.Vaccine:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40297, 8002021));
-                                break;
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40297, 8002021));
+                            break;
 
-                            case DigimonAttributeEnum.None:
+                        case DigimonAttributeEnum.None:
 
-                                Partner.BuffList.Add(
-                                    DigimonBuffModel.Create(40298, 8002031));
-                                break;
-                        }
+                            Partner.BuffList.Add(
+                                DigimonBuffModel.Create(40298, 8002031));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.HiroAmanokawa:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Vaccine:
+                        case DigimonAttributeEnum.Vaccine:
 
-                                Partner.BuffList.Add(DigimonBuffModel.Create(40300, 8002121));
-                                break;
+                            Partner.BuffList.Add(DigimonBuffModel.Create(40300, 8002121));
+                            break;
 
-                            case DigimonAttributeEnum.None:
+                        case DigimonAttributeEnum.None:
 
-                                Partner.BuffList.Add(DigimonBuffModel.Create(40301, 8002131));
-                                break;
-                        }
+                            Partner.BuffList.Add(DigimonBuffModel.Create(40301, 8002131));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.RuliTsukiyono:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Vaccine:
+                        case DigimonAttributeEnum.Vaccine:
 
-                                Partner.BuffList.Add(DigimonBuffModel.Create(40303, 8002221));
-                                break;
+                            Partner.BuffList.Add(DigimonBuffModel.Create(40303, 8002221));
+                            break;
 
-                            case DigimonAttributeEnum.None:
+                        case DigimonAttributeEnum.None:
 
-                                Partner.BuffList.Add(DigimonBuffModel.Create(40304, 8002231));
-                                break;
-                        }
+                            Partner.BuffList.Add(DigimonBuffModel.Create(40304, 8002231));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.KiyoshirouHigashimitarai:
+                {
+                    switch (Partner.BaseInfo.Attribute)
                     {
-                        switch (Partner.BaseInfo.Attribute)
-                        {
-                            case DigimonAttributeEnum.Vaccine:
+                        case DigimonAttributeEnum.Vaccine:
 
-                                Partner.BuffList.Add(DigimonBuffModel.Create(40306, 8002321));
-                                break;
+                            Partner.BuffList.Add(DigimonBuffModel.Create(40306, 8002321));
+                            break;
 
-                            case DigimonAttributeEnum.None:
+                        case DigimonAttributeEnum.None:
 
-                                Partner.BuffList.Add(DigimonBuffModel.Create(40307, 8002331));
-                                break;
-                        }
+                            Partner.BuffList.Add(DigimonBuffModel.Create(40307, 8002331));
+                            break;
                     }
+                }
                     break;
 
                 case CharacterModelEnum.KanbaraTakuya:
@@ -1917,9 +1942,9 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
                 case CharacterModelEnum.Cleiton:
                     break;
-
             }
         }
+
         public void RemovePartnerPassiveBuff()
         {
             var targetPassiveBuff = Partner.BuffList.TamerBaseSkill();
@@ -1962,6 +1987,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         public void UpdateEventState(CharacterEventStateEnum state) => EventState = state;
 
         public void UpdateName(string name) => Name = name;
+
         /// <summary>
         /// Updates the tamer base status values.
         /// </summary>
@@ -1988,7 +2014,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// <summary>
         /// Updates the location.
         /// </summary>
-
         public void NewLocation(int x, int y, float z = 0)
         {
             Location.SetX(x);

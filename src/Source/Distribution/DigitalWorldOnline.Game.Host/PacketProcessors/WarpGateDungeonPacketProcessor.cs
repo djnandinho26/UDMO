@@ -59,7 +59,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var portalId = packet.ReadInt();
 
-            _logger.Information($"Dungeon PortalId: {portalId}");
+            // _logger.Information($"Dungeon PortalId: {portalId}");
 
             var portal = _assets.Portal.FirstOrDefault(x => x.Id == portalId);
 
@@ -68,7 +68,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (portal == null)
             {
                 client.Send(new SystemMessagePacket($"Portal {portalId} not found."));
-                _logger.Error($"Portal id {portalId} not found.");
+                // _logger.Error($"Portal id {portalId} not found.");
 
                 var mapId = client.Tamer.Location.MapId;
 
@@ -77,7 +77,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 if (mapConfig == null || waypoints == null || !waypoints.Regions.Any())
                 {
                     client.Send(new SystemMessagePacket($"Map information not found for {mapId}"));
-                    _logger.Error($"Map information not found for {mapId}");
+                    // _logger.Error($"Map information not found for {mapId}");
                     return;
                 }
 
@@ -154,7 +154,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     if (!portal.IsLocal && tamerMap.IsRoyalBase)
                     {
                         int MapId = tamerMap.MapId;
-                        _logger.Information($"Going MapID: {portal.DestinationMapId} and is allowed to enter floor 3 {(tamerMap?.RoyalBaseMap?.AllowUsingPortalFromFloorTwoToFloorThree == false || tamerMap?.RoyalBaseMap?.AllowUsingPortalFromFloorTwoToFloorThree == null).ToString()}");
+                        // _logger.Information($"Going MapID: {portal.DestinationMapId} and is allowed to enter floor 3 {(tamerMap?.RoyalBaseMap?.AllowUsingPortalFromFloorTwoToFloorThree == false || tamerMap?.RoyalBaseMap?.AllowUsingPortalFromFloorTwoToFloorThree == null).ToString()}");
                         if ((tamerMap?.RoyalBaseMap?.AllowUsingPortalFromFloorOneToFloorTwo == false || tamerMap?.RoyalBaseMap?.AllowUsingPortalFromFloorOneToFloorTwo == null) && portal.DestinationMapId == 1702)
                         {
                             int LocationX = 32000;

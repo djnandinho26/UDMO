@@ -17,7 +17,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.5")
+                .HasAnnotation("ProductVersion", "7.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -2616,7 +2616,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                     b.Property<int>("Slot")
                         .HasColumnType("int");
 
-                    b.Property<int>("TamerShopSellPrice")
+                    b.Property<long>("TamerShopSellPrice")
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
@@ -3610,7 +3610,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2024, 10, 26, 6, 15, 27, 916, DateTimeKind.Local).AddTicks(7852),
+                            CreatedAt = new DateTime(2024, 11, 2, 4, 32, 54, 240, DateTimeKind.Local).AddTicks(1663),
                             Hash = "pMgM+NOH0Z+RwR9F1iFVOOwKrW1iDaifx4jWDnH1Dbo="
                         });
                 });
@@ -5387,10 +5387,10 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         {
                             Id = 1L,
                             Active = true,
-                            CreatedAt = new DateTime(2024, 10, 26, 6, 15, 27, 922, DateTimeKind.Local).AddTicks(2598),
+                            CreatedAt = new DateTime(2024, 11, 2, 4, 32, 54, 250, DateTimeKind.Local).AddTicks(371),
                             Interval = 1,
                             Name = "Daily Quests",
-                            NextRunTime = new DateTime(2024, 10, 27, 0, 0, 0, 0, DateTimeKind.Local),
+                            NextRunTime = new DateTime(2024, 11, 3, 0, 0, 0, 0, DateTimeKind.Local),
                             Type = 1
                         });
                 });

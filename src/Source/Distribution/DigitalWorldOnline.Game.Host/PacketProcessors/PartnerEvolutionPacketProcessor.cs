@@ -135,7 +135,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             await _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
 
             // ---------------------------------------
-            _logger.Information($"Evolving....");
+            // _logger.Information($"Evolving....");
             DigimonEvolutionEffectEnum evoEffect;
 
             if (evoStage == 8)
@@ -430,7 +430,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     default:
                     {
-                        _logger.Error($"EvolutionRankEnum not registered: {(EvolutionRankEnum)evolutionType}");
+                        // _logger.Error($"EvolutionRankEnum not registered: {(EvolutionRankEnum)evolutionType}");
                         client.Send(new DigimonEvolutionFailPacket());
                         return;
                     }
@@ -443,7 +443,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
             }
 
-            _logger.Information($"Evo ds set...");
+            // _logger.Information($"Evo ds set...");
             if (evoStage == 8)
                 _logger.Verbose(
                     $"Tamer {client.Tamer.Name} devolved partner ({client.Partner.Id}:{client.Partner.Name}) " +
@@ -453,12 +453,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     $"Tamer {client.Tamer.Name} evolved partner ({client.Partner.Id}:{client.Partner.Name}) " +
                     $"from {client.Partner.CurrentType}:{client.Partner.BaseInfo.Name} to {evoLine[evoStage]?.Type}");
 
-            _logger.Information($"update current type...");
+            // _logger.Information($"update current type...");
             client.Partner.UpdateCurrentType(evoLine[evoStage].Type);
 
             // ------------------------------------------------------------
 
-            _logger.Information($"Check if dungeon");
+            // _logger.Information($"Check if dungeon");
             if (client.DungeonMap)
             {
                 if (client.Tamer.Riding)
@@ -483,8 +483,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             else
             {
-                
-                _logger.Information($"Check if riding");
+                // _logger.Information($"Check if riding");
                 if (client.Tamer.Riding)
                 {
                     client.Tamer.StopRideMode();
@@ -496,8 +495,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         new RideModeStopPacket(client.Tamer.GeneralHandler, client.Partner.GeneralHandler).Serialize());
                 }
 
-                _logger.Information($"evo success");
-                
+                // _logger.Information($"evo success");
+
                 _mapServer.BroadcastForTamerViewsAndSelf(client,
                     new DigimonEvolutionSucessPacket(
                         client.Tamer.GeneralHandler,
@@ -545,19 +544,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         .ToList();
 
 
-                    buffToApply.ForEach(buffToApply =>
+                    buffToApply.ForEach(digimonBuffModel =>
                     {
                         if (client.DungeonMap)
                         {
                             _dungeonServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
-                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buffToApply.BuffId,
-                                    buffToApply.SkillId, (short)buffToApply.TypeN, 0).Serialize());
+                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
+                                    digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
                         }
                         else
                         {
                             _mapServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
-                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buffToApply.BuffId,
-                                    buffToApply.SkillId, (short)buffToApply.TypeN, 0).Serialize());
+                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
+                                    digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
                         }
                     });
                 }
@@ -573,25 +572,25 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     var buffToApply = client.Tamer.Partner.BuffList.Buffs.Where(x => x.Duration == 0).ToList();
 
-                    buffToApply.ForEach(buffToApply =>
+                    buffToApply.ForEach(digimonBuffModel =>
                     {
                         if (client.DungeonMap)
                         {
                             _dungeonServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
-                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buffToApply.BuffId,
-                                    buffToApply.SkillId, (short)buffToApply.TypeN, 0).Serialize());
+                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
+                                    digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
                         }
                         else
                         {
                             _mapServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
-                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buffToApply.BuffId,
-                                    buffToApply.SkillId, (short)buffToApply.TypeN, 0).Serialize());
+                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
+                                    digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
                         }
                     });
                 }
             }
 
-            _logger.Information($"Evolved");
+            // _logger.Information($"Evolved");
             client.Send(new UpdateStatusPacket(client.Tamer));
             client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory));
 
@@ -616,7 +615,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
             }
 
-            _logger.Information($"Updating statuses");
+            // _logger.Information($"Updating statuses");
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
             await _sender.Send(new UpdatePartnerCurrentTypeCommand(client.Partner));
             await _sender.Send(new UpdateCharacterActiveEvolutionCommand(client.Tamer.ActiveEvolution));

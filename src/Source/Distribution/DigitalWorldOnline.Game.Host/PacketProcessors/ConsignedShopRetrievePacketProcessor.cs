@@ -58,7 +58,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _logger.Debug($"Removing consigned shop items...");
                 client.Tamer.ConsignedShopItems.RemoveOrReduceItems(items.Clone());
 
-                _logger.Debug($"Deleting consigned shop {shop.GeneralHandler}...");
+                _logger.Information($"Deleting consigned shop {shop.GeneralHandler}...");
                 await _sender.Send(new DeleteConsignedShopCommand(shop.GeneralHandler));
 
                 _logger.Debug($"Adding consigned shop items to consigned shop warehouse...");
@@ -71,7 +71,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.ConsignedWarehouse));
             }
 
-            _logger.Debug($"Sending consigned shop close packet...");
+            _logger.Information($"Sending consigned shop close packet...");
             client.Send(new ConsignedShopClosePacket());
         }
     }

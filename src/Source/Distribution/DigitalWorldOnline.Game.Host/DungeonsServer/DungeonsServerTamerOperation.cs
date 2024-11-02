@@ -48,10 +48,10 @@ namespace DigitalWorldOnline.GameHost
 
                 if (tamer.TargetMobs.Count > 0)
                     PartnerAutoAttack(tamer);
-                    
+
                 if (tamer.TargetSummonMobs.Count > 0)
                     PartnerAutoAttackSummon(tamer);
-                
+
                 tamer.AutoRegen();
                 tamer.ActiveEvolutionReduction();
 
@@ -60,7 +60,8 @@ namespace DigitalWorldOnline.GameHost
                     tamer.StopRideMode();
 
                     BroadcastForTamerViewsAndSelf(tamer.Id, new UpdateMovementSpeedPacket(tamer).Serialize());
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new RideModeStopPacket(tamer.GeneralHandler, tamer.Partner.GeneralHandler).Serialize());
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new RideModeStopPacket(tamer.GeneralHandler, tamer.Partner.GeneralHandler).Serialize());
                 }
 
                 if (tamer.BreakEvolution)
@@ -72,7 +73,8 @@ namespace DigitalWorldOnline.GameHost
 
                     if (buffToRemove != null)
                     {
-                        BroadcastForTamerViewsAndSelf(client.TamerId, new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
+                        BroadcastForTamerViewsAndSelf(client.TamerId,
+                            new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
                     }
 
                     client.Tamer.RemovePartnerPassiveBuff();
@@ -109,22 +111,24 @@ namespace DigitalWorldOnline.GameHost
                     client.Partner.AdjustHpAndDs(currentHp, currentMaxHp, currentDs, currentMaxDs);
 
                     foreach (var buff in client.Tamer.Partner.BuffList.ActiveBuffs)
-                        buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x => x.SkillCode == buff.SkillId && buff.BuffInfo == null || x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
+                        buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
+                            x.SkillCode == buff.SkillId && buff.BuffInfo == null ||
+                            x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
 
                     client.Send(new UpdateStatusPacket(tamer));
 
                     if (client.Tamer.Partner.BuffList.TamerBaseSkill() != null)
                     {
                         var buffToApply = client.Tamer.Partner.BuffList.Buffs
-                                    .Where(x => x.Duration == 0)
-                                    .ToList();
+                            .Where(x => x.Duration == 0)
+                            .ToList();
 
-                        buffToApply.ForEach(buffToApply =>
+                        buffToApply.ForEach(digimonBuffModel =>
                         {
-
-                            BroadcastForTamerViewsAndSelf(client.Tamer.Id, new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buffToApply.BuffId, buffToApply.SkillId, (short)buffToApply.TypeN, 0).Serialize());
+                            BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
+                                    digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
                         });
-
                     }
 
                     var party = _partyManager.FindParty(client.TamerId);
@@ -150,12 +154,12 @@ namespace DigitalWorldOnline.GameHost
                     {
                         if (item.ItemInfo != null && item.IsTemporary && item.Expired)
                         {
-
                             if (item.ItemInfo.UseTimeType == 2 || item.ItemInfo.UseTimeType == 3)
                             {
                                 item.SetFirstExpired(false);
 
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabInven, item.Slot, item.ItemId, ExpiredTypeEnum.Quit));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabInven, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
                             }
                             else if (item.ItemInfo.UseTimeType == 4)
                             {
@@ -163,8 +167,8 @@ namespace DigitalWorldOnline.GameHost
                             }
                             else
                             {
-
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabInven, item.Slot, item.ItemId, ExpiredTypeEnum.Remove));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabInven, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
                                 tamer.Inventory.RemoveOrReduceItem(item, item.Amount);
                             }
                         }
@@ -174,17 +178,17 @@ namespace DigitalWorldOnline.GameHost
                     {
                         if (item.ItemInfo != null && item.IsTemporary && item.Expired)
                         {
-
                             if (item.ItemInfo.UseTimeType == 2 || item.ItemInfo.UseTimeType == 3)
                             {
                                 item.SetFirstExpired(false);
 
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabWarehouse, item.Slot, item.ItemId, ExpiredTypeEnum.Quit));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabWarehouse, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
                             }
                             else
                             {
-
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabWarehouse, item.Slot, item.ItemId, ExpiredTypeEnum.Remove));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabWarehouse, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
                                 tamer.Inventory.RemoveOrReduceItem(item, item.Amount);
                             }
                         }
@@ -194,17 +198,17 @@ namespace DigitalWorldOnline.GameHost
                     {
                         if (item.ItemInfo != null && item.IsTemporary && item.Expired)
                         {
-
                             if (item.ItemInfo.UseTimeType == 2 || item.ItemInfo.UseTimeType == 3)
                             {
                                 item.SetFirstExpired(false);
 
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabShareStash, item.Slot, item.ItemId, ExpiredTypeEnum.Quit));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabShareStash, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
                             }
                             else
                             {
-
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabShareStash, item.Slot, item.ItemId, ExpiredTypeEnum.Remove));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabShareStash, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
                                 tamer.AccountWarehouse.RemoveOrReduceItem(item, item.Amount);
                             }
                         }
@@ -214,17 +218,17 @@ namespace DigitalWorldOnline.GameHost
                     {
                         if (item.ItemInfo != null && item.IsTemporary && item.Expired)
                         {
-
                             if (item.ItemInfo.UseTimeType == 2)
                             {
                                 item.SetFirstExpired(false);
 
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabEquip, item.Slot, item.ItemId, ExpiredTypeEnum.Quit));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabEquip, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
                             }
                             else
                             {
-
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabEquip, item.Slot, item.ItemId, ExpiredTypeEnum.Remove));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabEquip, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
                                 tamer.Equipment.RemoveOrReduceItem(item, item.Amount);
                             }
                         }
@@ -234,17 +238,17 @@ namespace DigitalWorldOnline.GameHost
                     {
                         if (item.ItemInfo != null && item.IsTemporary && item.Expired)
                         {
-
                             if (item.ItemInfo.UseTimeType == 2)
                             {
                                 item.SetFirstExpired(false);
 
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabChipset, item.Slot, item.ItemId, ExpiredTypeEnum.Quit));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabChipset, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
                             }
                             else
                             {
-
-                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabChipset, item.Slot, item.ItemId, ExpiredTypeEnum.Remove));
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabChipset, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
                                 tamer.ChipSets.RemoveOrReduceItem(item, item.Amount);
                             }
                         }
@@ -268,16 +272,16 @@ namespace DigitalWorldOnline.GameHost
                         buffsToRemove.ForEach(buffToRemove =>
                         {
                             tamer.BuffList.Remove(buffToRemove.BuffId);
-                            map.BroadcastForTamerViewsAndSelf(tamer.Id, new RemoveBuffPacket(tamer.GeneralHandler, buffToRemove.BuffId).Serialize());
+                            map.BroadcastForTamerViewsAndSelf(tamer.Id,
+                                new RemoveBuffPacket(tamer.GeneralHandler, buffToRemove.BuffId).Serialize());
                         });
 
                         if (buffsToRemove.Any())
                         {
-
                             client?.Send(new UpdateStatusPacket(tamer));
-                            map.BroadcastForTargetTamers(tamer.Id, new UpdateCurrentHPRatePacket(tamer.GeneralHandler, tamer.HpRate).Serialize());
+                            map.BroadcastForTargetTamers(tamer.Id,
+                                new UpdateCurrentHPRatePacket(tamer.GeneralHandler, tamer.HpRate).Serialize());
                             _sender.Send(new UpdateCharacterBuffListCommand(tamer.BuffList));
-
                         }
                     }
 
@@ -288,13 +292,16 @@ namespace DigitalWorldOnline.GameHost
                         buffsToRemove.ForEach(buffToRemove =>
                         {
                             tamer.Partner.BuffList.Remove(buffToRemove.BuffId);
-                            map.BroadcastForTamerViewsAndSelf(tamer.Id, new RemoveBuffPacket(tamer.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
+                            map.BroadcastForTamerViewsAndSelf(tamer.Id,
+                                new RemoveBuffPacket(tamer.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
                         });
 
                         if (buffsToRemove.Any())
                         {
                             client?.Send(new UpdateStatusPacket(tamer));
-                            map.BroadcastForTargetTamers(tamer.Id, new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate).Serialize());
+                            map.BroadcastForTargetTamers(tamer.Id,
+                                new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate)
+                                    .Serialize());
                             _sender.Send(new UpdateDigimonBuffListCommand(tamer.Partner.BuffList));
                         }
                     }
@@ -304,13 +311,19 @@ namespace DigitalWorldOnline.GameHost
                 {
                     tamer.UpdateSyncResourcesTime();
 
-                    client?.Send(new UpdateCurrentResourcesPacket(tamer.GeneralHandler, (short)tamer.CurrentHp, (short)tamer.CurrentDs, 0));
-                    client?.Send(new UpdateCurrentResourcesPacket(tamer.Partner.GeneralHandler, (short)tamer.Partner.CurrentHp, (short)tamer.Partner.CurrentDs, 0));
+                    client?.Send(new UpdateCurrentResourcesPacket(tamer.GeneralHandler, (short)tamer.CurrentHp,
+                        (short)tamer.CurrentDs, 0));
+                    client?.Send(new UpdateCurrentResourcesPacket(tamer.Partner.GeneralHandler,
+                        (short)tamer.Partner.CurrentHp, (short)tamer.Partner.CurrentDs, 0));
                     client?.Send(new TamerXaiResourcesPacket(client.Tamer.XGauge, client.Tamer.XCrystals));
 
-                    map.BroadcastForTargetTamers(tamer.Id, new UpdateCurrentHPRatePacket(tamer.GeneralHandler, tamer.HpRate).Serialize());
-                    map.BroadcastForTargetTamers(tamer.Id, new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate).Serialize());
-                    map.BroadcastForTamerViewsAndSelf(tamer.Id, new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName).Serialize());
+                    map.BroadcastForTargetTamers(tamer.Id,
+                        new UpdateCurrentHPRatePacket(tamer.GeneralHandler, tamer.HpRate).Serialize());
+                    map.BroadcastForTargetTamers(tamer.Id,
+                        new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate).Serialize());
+                    map.BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName)
+                            .Serialize());
 
                     var party = _partyManager.FindParty(tamer.Id);
 
@@ -318,7 +331,8 @@ namespace DigitalWorldOnline.GameHost
                     {
                         party.UpdateMember(party[tamer.Id], tamer);
 
-                        map.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyMemberInfoPacket(party[tamer.Id]).Serialize());
+                        map.BroadcastForTargetTamers(party.GetMembersIdList(),
+                            new PartyMemberInfoPacket(party[tamer.Id]).Serialize());
                     }
                 }
 
@@ -373,14 +387,14 @@ namespace DigitalWorldOnline.GameHost
                 if (client.Tamer.Location.MapId == 2001 || client.Tamer.Location.MapId == 2002)
                 {
                     var debuff = client.Tamer.Partner.DebuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == 63000);
-                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType).EvolutionType;
+                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType)
+                        .EvolutionType;
 
                     if (debuff == null)
                     {
-
-                        if ((EvolutionRankEnum)evolutionType == EvolutionRankEnum.Jogress || (EvolutionRankEnum)evolutionType == EvolutionRankEnum.JogressX)
+                        if ((EvolutionRankEnum)evolutionType == EvolutionRankEnum.Jogress ||
+                            (EvolutionRankEnum)evolutionType == EvolutionRankEnum.JogressX)
                         {
-
                             var duration = 0xffffffff;
 
                             var buffInfo = _assets.BuffInfo.FirstOrDefault(x => x.BuffId == 63000);
@@ -389,27 +403,33 @@ namespace DigitalWorldOnline.GameHost
                             newDigimonDebuff.SetBuffInfo(buffInfo);
                             client.Tamer.Partner.DebuffList.Buffs.Add(newDigimonDebuff);
 
-                            BroadcastForTamerViewsAndSelf(client.TamerId, new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buffInfo, (short)0, duration).Serialize());
+                            BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buffInfo, (short)0, duration)
+                                    .Serialize());
                         }
                     }
-                    else if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Jogress && (EvolutionRankEnum)evolutionType != EvolutionRankEnum.JogressX)
+                    else if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Jogress &&
+                             (EvolutionRankEnum)evolutionType != EvolutionRankEnum.JogressX)
                     {
-                        BroadcastForTamerViewsAndSelf(client.TamerId, new RemoveBuffPacket(client.Tamer.Partner.GeneralHandler, debuff.BuffId).Serialize());
+                        BroadcastForTamerViewsAndSelf(client.TamerId,
+                            new RemoveBuffPacket(client.Tamer.Partner.GeneralHandler, debuff.BuffId).Serialize());
                         client.Tamer.Partner.DebuffList.Buffs.Remove(debuff);
                     }
-
                 }
 
                 // Verification for Kaiser Lab
                 if (client.Tamer.Location.MapId >= 1110 && client.Tamer.Location.MapId <= 1112)
                 {
                     //var debuff = client.Partner.DebuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == 50101);
-                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType).EvolutionType;
+                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType)
+                        .EvolutionType;
 
                     _logger.Information($"EvolutionType: {evolutionType}");
 
                     // Break Digimon evolution
-                    if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie && (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Capsule && (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Spirit)
+                    if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie &&
+                        (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Capsule &&
+                        (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Spirit)
                     {
                         client.Tamer.ActiveEvolution.SetDs(0);
                         client.Tamer.ActiveEvolution.SetXg(0);
@@ -418,13 +438,16 @@ namespace DigitalWorldOnline.GameHost
 
                         if (buffToRemove != null)
                         {
-                            BroadcastForTamerViewsAndSelf(client.TamerId, new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
+                            BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
                         }
 
                         client.Tamer.RemovePartnerPassiveBuff();
 
-                        BroadcastForTamerViewsAndSelf(client.TamerId, new DigimonEvolutionSucessPacket(client.Tamer.GeneralHandler,
-                            client.Partner.GeneralHandler, client.Partner.BaseType, DigimonEvolutionEffectEnum.Back).Serialize());
+                        BroadcastForTamerViewsAndSelf(client.TamerId, new DigimonEvolutionSucessPacket(
+                                client.Tamer.GeneralHandler,
+                                client.Partner.GeneralHandler, client.Partner.BaseType, DigimonEvolutionEffectEnum.Back)
+                            .Serialize());
 
                         var currentHp = client.Partner.CurrentHp;
                         var currentMaxHp = client.Partner.HP;
@@ -433,14 +456,17 @@ namespace DigitalWorldOnline.GameHost
 
                         client.Partner.UpdateCurrentType(client.Partner.BaseType);
                         client.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(client.Partner.CurrentType));
-                        client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Partner.CurrentType, client.Partner.Level, client.Partner.Size));
+                        client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Partner.CurrentType,
+                            client.Partner.Level, client.Partner.Size));
 
                         client.Tamer.SetPartnerPassiveBuff();
 
                         client.Partner.AdjustHpAndDs(currentHp, currentMaxHp, currentDs, currentMaxDs);
 
                         foreach (var buff in client.Partner.BuffList.ActiveBuffs)
-                            buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x => x.SkillCode == buff.SkillId && buff.BuffInfo == null || x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
+                            buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
+                                x.SkillCode == buff.SkillId && buff.BuffInfo == null ||
+                                x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
 
                         client.Send(new UpdateStatusPacket(client.Tamer));
 
@@ -448,9 +474,11 @@ namespace DigitalWorldOnline.GameHost
                         {
                             var buffToApply = client.Partner.BuffList.Buffs.Where(x => x.Duration == 0).ToList();
 
-                            buffToApply.ForEach(buffToApply =>
+                            buffToApply.ForEach(digimonBuffModel =>
                             {
-                                BroadcastForTamerViewsAndSelf(client.Tamer.Id, new AddBuffPacket(client.Partner.GeneralHandler, buffToApply.BuffId, buffToApply.SkillId, (short)buffToApply.TypeN, 0).Serialize());
+                                BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                                    new AddBuffPacket(client.Partner.GeneralHandler, digimonBuffModel.BuffId,
+                                        digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
                             });
                         }
 
@@ -460,7 +488,8 @@ namespace DigitalWorldOnline.GameHost
                         {
                             party.UpdateMember(party[client.TamerId], client.Tamer);
 
-                            BroadcastForTargetTamers(party.GetMembersIdList(), new PartyMemberInfoPacket(party[client.TamerId]).Serialize());
+                            BroadcastForTargetTamers(party.GetMembersIdList(),
+                                new PartyMemberInfoPacket(party[client.TamerId]).Serialize());
                         }
 
                         _sender.Send(new UpdatePartnerCurrentTypeCommand(client.Partner));
@@ -468,7 +497,6 @@ namespace DigitalWorldOnline.GameHost
                         _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
                     }
                 }
-
             }
         }
 
@@ -550,7 +578,7 @@ namespace DigitalWorldOnline.GameHost
             mobsToAdd.ForEach(id => tamer.MobsInView.Add(id));
             mobsToRemove.ForEach(id => tamer.MobsInView.Remove(id));
         }
-        
+
         /// <summary>
         /// Updates the current partners handler values;
         /// </summary>
@@ -565,7 +593,7 @@ namespace DigitalWorldOnline.GameHost
         /// Swaps the digimons current handler.
         /// </summary>
         /// <param name="mapId">Target map handler manager</param>
-        /// <param name="oldPartnerId">Old partner identifier</param>
+        /// <param name="oldPartner">Old partner identifier</param>
         /// <param name="newPartner">New partner</param>
         public void SwapDigimonHandlers(int mapId, DigimonModel oldPartner, DigimonModel newPartner)
         {
@@ -710,16 +738,20 @@ namespace DigitalWorldOnline.GameHost
 
                 if (!tamer.InBattle)
                 {
-                    _logger.Verbose($"Player {tamer.Name} engaged battle with MobID: {tamer.TargetMob.Id} - {tamer.TargetMob.Name}");
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
+                    _logger.Verbose(
+                        $"Player {tamer.Name} engaged battle with MobID: {tamer.TargetMob.Id} - {tamer.TargetMob.Name}");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
                     tamer.StartBattle(tamer.TargetMob);
                     tamer.Partner.StartAutoAttack();
                 }
 
                 if (!tamer.TargetMob.InBattle)
                 {
-                    _logger.Verbose($"Mob {tamer.TargetMob.Name} engaged battle with TamerID: {tamer.Id} - {tamer.Name}");
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.TargetMob.GeneralHandler).Serialize());
+                    _logger.Verbose(
+                        $"Mob {tamer.TargetMob.Name} engaged battle with TamerID: {tamer.Id} - {tamer.Name}");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SetCombatOnPacket(tamer.TargetMob.GeneralHandler).Serialize());
                     tamer.TargetMob.StartBattle(tamer);
                     tamer.Partner.StartAutoAttack();
                 }
@@ -733,8 +765,10 @@ namespace DigitalWorldOnline.GameHost
 
                 if (missed)
                 {
-                    _logger.Verbose($"Partner {tamer.Partner.Id} missed hit on {tamer.TargetMob.Id} - {tamer.TargetMob.Name}.");
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new MissHitPacket(tamer.Partner.GeneralHandler, tamer.TargetMob.GeneralHandler).Serialize());
+                    _logger.Verbose(
+                        $"Partner {tamer.Partner.Id} missed hit on {tamer.TargetMob.Id} - {tamer.TargetMob.Name}.");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new MissHitPacket(tamer.Partner.GeneralHandler, tamer.TargetMob.GeneralHandler).Serialize());
                 }
                 else
                 {
@@ -742,7 +776,9 @@ namespace DigitalWorldOnline.GameHost
 
                     var critBonusMultiplier = 0.00;
                     var blocked = false;
-                    var finalDmg = tamer.GodMode ? tamer.TargetMob.CurrentHP : CalculateDamage(tamer, out critBonusMultiplier, out blocked);
+                    var finalDmg = tamer.GodMode
+                        ? tamer.TargetMob.CurrentHP
+                        : CalculateDamage(tamer, out critBonusMultiplier, out blocked);
 
                     #endregion
 
@@ -755,15 +791,21 @@ namespace DigitalWorldOnline.GameHost
 
                     if (newHp > 0)
                     {
-                        _logger.Verbose($"Partner {tamer.Partner.Id} inflicted {finalDmg} to mob {tamer.TargetMob?.Id} - {tamer.TargetMob?.Name}({tamer.TargetMob?.Type}).");
+                        _logger.Verbose(
+                            $"Partner {tamer.Partner.Id} inflicted {finalDmg} to mob {tamer.TargetMob?.Id} - {tamer.TargetMob?.Name}({tamer.TargetMob?.Type}).");
 
-                        BroadcastForTamerViewsAndSelf(tamer.Id, new HitPacket(tamer.Partner.GeneralHandler, tamer.TargetMob.GeneralHandler, finalDmg, tamer.TargetMob.HPValue, newHp, hitType).Serialize());
+                        BroadcastForTamerViewsAndSelf(tamer.Id,
+                            new HitPacket(tamer.Partner.GeneralHandler, tamer.TargetMob.GeneralHandler, finalDmg,
+                                tamer.TargetMob.HPValue, newHp, hitType).Serialize());
                     }
                     else
                     {
-                        _logger.Verbose($"Partner {tamer.Partner.Id} killed mob {tamer.TargetMob?.Id} - {tamer.TargetMob?.Name}({tamer.TargetMob?.Type}) with {finalDmg} damage.");
+                        _logger.Verbose(
+                            $"Partner {tamer.Partner.Id} killed mob {tamer.TargetMob?.Id} - {tamer.TargetMob?.Name}({tamer.TargetMob?.Type}) with {finalDmg} damage.");
 
-                        BroadcastForTamerViewsAndSelf(tamer.Id, new KillOnHitPacket(tamer.Partner.GeneralHandler, tamer.TargetMob.GeneralHandler, finalDmg, hitType).Serialize());
+                        BroadcastForTamerViewsAndSelf(tamer.Id,
+                            new KillOnHitPacket(tamer.Partner.GeneralHandler, tamer.TargetMob.GeneralHandler, finalDmg,
+                                hitType).Serialize());
 
                         tamer.TargetMob?.Die();
 
@@ -771,9 +813,9 @@ namespace DigitalWorldOnline.GameHost
                         {
                             tamer.StopBattle();
 
-                            BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOffPacket(tamer.Partner.GeneralHandler).Serialize());
+                            BroadcastForTamerViewsAndSelf(tamer.Id,
+                                new SetCombatOffPacket(tamer.Partner.GeneralHandler).Serialize());
                         }
-
                     }
                 }
 
@@ -783,30 +825,33 @@ namespace DigitalWorldOnline.GameHost
             bool StopAttackMob = tamer.TargetMob == null || tamer.TargetMob.Dead;
 
             if (StopAttackMob) tamer.Partner?.StopAutoAttack();
-             
         }
 
         public void PartnerAutoAttackSummon(CharacterModel tamer)
         {
             if (!tamer.Partner.AutoAttack)
                 return;
-                
-            if (!tamer.Partner.IsAttacking && tamer.TargetSummonMob != null && tamer.TargetSummonMob.Alive & tamer.Partner.Alive)
+
+            if (!tamer.Partner.IsAttacking && tamer.TargetSummonMob != null &&
+                tamer.TargetSummonMob.Alive & tamer.Partner.Alive)
             {
                 tamer.Partner.SetEndAttacking(tamer.Partner.AS);
                 tamer.SetHidden(false);
 
                 if (!tamer.InBattle)
                 {
-                    _logger.Verbose($"Character {tamer.Id} engaged {tamer.TargetSummonMob.Id} - {tamer.TargetSummonMob.Name}.");
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
+                    _logger.Verbose(
+                        $"Character {tamer.Id} engaged {tamer.TargetSummonMob.Id} - {tamer.TargetSummonMob.Name}.");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
                     tamer.StartBattle(tamer.TargetSummonMob);
                     tamer.Partner.StartAutoAttack();
                 }
 
                 if (!tamer.TargetSummonMob.InBattle)
                 {
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.TargetSummonMob.GeneralHandler).Serialize());
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SetCombatOnPacket(tamer.TargetSummonMob.GeneralHandler).Serialize());
                     tamer.TargetSummonMob.StartBattle(tamer);
                     tamer.Partner.StartAutoAttack();
                 }
@@ -820,15 +865,22 @@ namespace DigitalWorldOnline.GameHost
 
                 if (missed)
                 {
-                    _logger.Verbose($"Partner {tamer.Partner.Id} missed hit on {tamer.TargetSummonMob.Id} - {tamer.TargetSummonMob.Name}.");
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new MissHitPacket(tamer.Partner.GeneralHandler, tamer.TargetSummonMob.GeneralHandler).Serialize());
+                    _logger.Verbose(
+                        $"Partner {tamer.Partner.Id} missed hit on {tamer.TargetSummonMob.Id} - {tamer.TargetSummonMob.Name}.");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new MissHitPacket(tamer.Partner.GeneralHandler, tamer.TargetSummonMob.GeneralHandler)
+                            .Serialize());
                 }
                 else
                 {
                     #region Hit Damage
+
                     var critBonusMultiplier = 0.00;
                     var blocked = false;
-                    var finalDmg = tamer.GodMode ? tamer.TargetSummonMob.CurrentHP : CalculateDamageSummon(tamer, out critBonusMultiplier, out blocked);
+                    var finalDmg = tamer.GodMode
+                        ? tamer.TargetSummonMob.CurrentHP
+                        : CalculateDamageSummon(tamer, out critBonusMultiplier, out blocked);
+
                     #endregion
 
                     if (tamer.TargetSummonMob == null) return;
@@ -842,7 +894,8 @@ namespace DigitalWorldOnline.GameHost
 
                     if (newHp > 0)
                     {
-                        _logger.Verbose($"Partner {tamer.Partner.Id} inflicted {finalDmg} to mob {tamer.TargetSummonMob?.Id} - {tamer.TargetSummonMob?.Name}({tamer.TargetSummonMob?.Type}).");
+                        _logger.Verbose(
+                            $"Partner {tamer.Partner.Id} inflicted {finalDmg} to mob {tamer.TargetSummonMob?.Id} - {tamer.TargetSummonMob?.Name}({tamer.TargetSummonMob?.Type}).");
 
                         BroadcastForTamerViewsAndSelf(
                             tamer.Id,
@@ -856,12 +909,13 @@ namespace DigitalWorldOnline.GameHost
                     }
                     else
                     {
-                        _logger.Verbose($"Partner {tamer.Partner.Id} killed mob {tamer.TargetSummonMob?.Id} - {tamer.TargetSummonMob?.Name}({tamer.TargetSummonMob?.Type}) with {finalDmg} damage.");
+                        _logger.Verbose(
+                            $"Partner {tamer.Partner.Id} killed mob {tamer.TargetSummonMob?.Id} - {tamer.TargetSummonMob?.Name}({tamer.TargetSummonMob?.Type}) with {finalDmg} damage.");
 
                         BroadcastForTamerViewsAndSelf(tamer.Id, new KillOnHitPacket(
-                                tamer.Partner.GeneralHandler,
-                                tamer.TargetSummonMob.GeneralHandler,
-                                finalDmg, hitType).Serialize());
+                            tamer.Partner.GeneralHandler,
+                            tamer.TargetSummonMob.GeneralHandler,
+                            finalDmg, hitType).Serialize());
 
                         tamer.TargetSummonMob?.Die();
 
@@ -869,7 +923,8 @@ namespace DigitalWorldOnline.GameHost
                         {
                             tamer.StopBattle(true);
 
-                            BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOffPacket(tamer.Partner.GeneralHandler).Serialize());
+                            BroadcastForTamerViewsAndSelf(tamer.Id,
+                                new SetCombatOffPacket(tamer.Partner.GeneralHandler).Serialize());
                         }
                     }
                 }
@@ -907,29 +962,35 @@ namespace DigitalWorldOnline.GameHost
             return tamerResult;
         }
 
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, MobConfigModel targetMob, long partnerExpToReceive)
+        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, MobConfigModel targetMob,
+            long partnerExpToReceive)
         {
             var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
 
-            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element, targetMob.ExpReward);
+            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element,
+                targetMob.ExpReward);
 
             if (partnerResult.LevelGain > 0)
             {
-                partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(partner.CurrentType, partner.Level, partner.Size));
+                partner.SetBaseStatus(
+                    _statusManager.GetDigimonBaseStatus(partner.CurrentType, partner.Level, partner.Size));
 
-                BroadcastForTamerViewsAndSelf(partner.Character.Id, new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
+                BroadcastForTamerViewsAndSelf(partner.Character.Id,
+                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
 
                 partner.FullHeal();
             }
 
             return partnerResult;
         }
-        
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, SummonMobModel targetMob, long partnerExpToReceive)
+
+        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, SummonMobModel targetMob,
+            long partnerExpToReceive)
         {
             var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
 
-            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element, targetMob.ExpReward);
+            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element,
+                targetMob.ExpReward);
 
             if (partnerResult.LevelGain > 0)
             {
@@ -1029,7 +1090,8 @@ namespace DigitalWorldOnline.GameHost
                 baseDamage /= 2;
 
             int finalDamage = (int)Math.Max(1, Math.Floor(baseDamage + critBonusMultiplier + levelBonus +
-                (baseDamage * attributeMultiplier) + (baseDamage * elementMultiplier)));
+                                                          (baseDamage * attributeMultiplier) +
+                                                          (baseDamage * elementMultiplier)));
 
             //Console.WriteLine($"BaseDamage: {baseDamage} | critBonusMultiplier: {critBonusMultiplier} | LevelBonus: {levelBonus}");
             //Console.WriteLine($"Attribute: {baseDamage * attributeMultiplier} | Element: {baseDamage * elementMultiplier}");
@@ -1115,7 +1177,8 @@ namespace DigitalWorldOnline.GameHost
                 baseDamage /= 2;
 
             int finalDamage = (int)Math.Max(1, Math.Floor(baseDamage + critBonusMultiplier + levelBonus +
-                (baseDamage * attributeMultiplier) + (baseDamage * elementMultiplier)));
+                                                          (baseDamage * attributeMultiplier) +
+                                                          (baseDamage * elementMultiplier)));
 
             return finalDamage;
         }

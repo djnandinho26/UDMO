@@ -57,7 +57,8 @@ namespace DigitalWorldOnline.Commons.Models.Map
                 mob.UpdateCurrentHp(mob.HPValue);
                 mob.SetInitialLocation();
 
-                var mobKillSpawn = KillSpawns.FirstOrDefault(x => x.TargetMobs.Any(x => x.TargetMobType == mob.Type));
+                var mobKillSpawn = KillSpawns.FirstOrDefault(x => x.TargetMobs.Any(killSpawnTargetMobConfigModel =>
+                    killSpawnTargetMobConfigModel.TargetMobType == mob.Type));
 
                 if (mobKillSpawn != null)
                 {
@@ -110,13 +111,13 @@ namespace DigitalWorldOnline.Commons.Models.Map
         }
 
         public bool MobsAttacking(long tamerId) =>
-            Mobs.Any(x => !x.Dead && x.TargetTamers.Exists(x => x.Id == tamerId));
+            Mobs.Any(x => !x.Dead && x.TargetTamers.Exists(characterModel => characterModel.Id == tamerId));
 
         public bool MobsAttacking(long tamerId, bool Summon) =>
-            SummonMobs.Any(x => !x.Dead && x.TargetTamers.Exists(x => x.Id == tamerId));
+            SummonMobs.Any(x => !x.Dead && x.TargetTamers.Exists(characterModel => characterModel.Id == tamerId));
 
         public bool PlayersAttacking(long partnerId) =>
-            ConnectedTamers.Any(x => x.Alive && x.TargetPartners.Exists(x => x.Id == partnerId));
+            ConnectedTamers.Any(x => x.Alive && x.TargetPartners.Exists(digimonModel => digimonModel.Id == partnerId));
 
         public void BroadcastForMap(byte[] packet)
         {

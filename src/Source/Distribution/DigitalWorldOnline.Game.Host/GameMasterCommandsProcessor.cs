@@ -1787,7 +1787,8 @@ namespace DigitalWorldOnline.Game
                     }
 
                     var mapTamers =
-                        _mapServer.Maps.FirstOrDefault(x => x.Clients.Exists(x => x.TamerId == client.Tamer.Id));
+                        _mapServer.Maps.FirstOrDefault(x =>
+                            x.Clients.Exists(gameClient => gameClient.TamerId == client.Tamer.Id));
 
                     if (mapTamers != null)
                     {
@@ -1797,7 +1798,7 @@ namespace DigitalWorldOnline.Game
                     else
                     {
                         mapTamers = _dungeonServer.Maps.FirstOrDefault(x =>
-                            x.Clients.Exists(x => x.TamerId == client.Tamer.Id));
+                            x.Clients.Exists(gameClient => gameClient.TamerId == client.Tamer.Id));
 
                         client.Send(
                             new SystemMessagePacket($"Total Tamers in Dungeon Map: {mapTamers.ConnectedTamers.Count}",
@@ -2000,52 +2001,52 @@ namespace DigitalWorldOnline.Game
                         Task task = Task.Run(async () =>
                         {
                             Thread.Sleep(60000);
-                            var packet = new PacketWriter();
-                            packet.Type(1006);
-                            packet.WriteByte(10);
-                            packet.WriteByte(1);
-                            packet.WriteString("Server shutdown for maintenance in 60s");
-                            packet.WriteByte(0);
-                            _mapServer.BroadcastGlobal(packet.Serialize());
-                            _dungeonServer.BroadcastGlobal(packet.Serialize());
+                            var packetWriter = new PacketWriter();
+                            packetWriter.Type(1006);
+                            packetWriter.WriteByte(10);
+                            packetWriter.WriteByte(1);
+                            packetWriter.WriteString("Server shutdown for maintenance in 60s");
+                            packetWriter.WriteByte(0);
+                            _mapServer.BroadcastGlobal(packetWriter.Serialize());
+                            _dungeonServer.BroadcastGlobal(packetWriter.Serialize());
 
                             Thread.Sleep(30000);
-                            packet = new PacketWriter();
-                            packet.Type(1006);
-                            packet.WriteByte(10);
-                            packet.WriteByte(1);
-                            packet.WriteString("Server shutdown for maintenance in 30s");
-                            packet.WriteByte(0);
-                            _mapServer.BroadcastGlobal(packet.Serialize());
-                            _dungeonServer.BroadcastGlobal(packet.Serialize());
+                            packetWriter = new PacketWriter();
+                            packetWriter.Type(1006);
+                            packetWriter.WriteByte(10);
+                            packetWriter.WriteByte(1);
+                            packetWriter.WriteString("Server shutdown for maintenance in 30s");
+                            packetWriter.WriteByte(0);
+                            _mapServer.BroadcastGlobal(packetWriter.Serialize());
+                            _dungeonServer.BroadcastGlobal(packetWriter.Serialize());
 
                             Thread.Sleep(20000);
-                            packet = new PacketWriter();
-                            packet.Type(1006);
-                            packet.WriteByte(10);
-                            packet.WriteByte(1);
-                            packet.WriteString("Server shutdown for maintenance in 10s");
-                            packet.WriteByte(0);
-                            _mapServer.BroadcastGlobal(packet.Serialize());
-                            _dungeonServer.BroadcastGlobal(packet.Serialize());
+                            packetWriter = new PacketWriter();
+                            packetWriter.Type(1006);
+                            packetWriter.WriteByte(10);
+                            packetWriter.WriteByte(1);
+                            packetWriter.WriteString("Server shutdown for maintenance in 10s");
+                            packetWriter.WriteByte(0);
+                            _mapServer.BroadcastGlobal(packetWriter.Serialize());
+                            _dungeonServer.BroadcastGlobal(packetWriter.Serialize());
 
                             Thread.Sleep(5000);
                             for (int i = 10; i >= 0; i--)
                             {
                                 Thread.Sleep(1300);
-                                packet = new PacketWriter();
-                                packet.Type(1006);
-                                packet.WriteByte(10);
-                                packet.WriteByte(1);
-                                packet.WriteString($"Server shutdown for maintenance in {i}s");
-                                packet.WriteByte(0);
+                                packetWriter = new PacketWriter();
+                                packetWriter.Type(1006);
+                                packetWriter.WriteByte(10);
+                                packetWriter.WriteByte(1);
+                                packetWriter.WriteString($"Server shutdown for maintenance in {i}s");
+                                packetWriter.WriteByte(0);
 
-                                _mapServer.BroadcastGlobal(packet.Serialize());
-                                _dungeonServer.BroadcastGlobal(packet.Serialize());
+                                _mapServer.BroadcastGlobal(packetWriter.Serialize());
+                                _dungeonServer.BroadcastGlobal(packetWriter.Serialize());
                             }
 
-                            var server = await _sender.Send(new GetServerByIdQuery(ServerId));
-                            if (server.Register.Maintenance)
+                            var currentServer = await _sender.Send(new GetServerByIdQuery(ServerId));
+                            if (currentServer.Register.Maintenance)
                             {
                                 _mapServer.BroadcastGlobal(new DisconnectUserPacket("Server maintenance").Serialize());
                                 _dungeonServer.BroadcastGlobal(
@@ -2313,7 +2314,8 @@ namespace DigitalWorldOnline.Game
                         break;
                     }
 
-                    var map = _mapServer.Maps.FirstOrDefault(x => x.Clients.Exists(x => x.Tamer.Name == TamerName));
+                    var map = _mapServer.Maps.FirstOrDefault(x =>
+                        x.Clients.Exists(gameClient => gameClient.Tamer.Name == TamerName));
 
                     if (map != null)
                     {
@@ -2362,7 +2364,7 @@ namespace DigitalWorldOnline.Game
                         _logger.Verbose($"Dungeon Map");
 
                         var mapdg = _dungeonServer.Maps.FirstOrDefault(x =>
-                            x.Clients.Exists(x => x.TamerId == targetClientD.TamerId));
+                            x.Clients.Exists(gameClient => gameClient.TamerId == targetClientD.TamerId));
 
                         client.Tamer.SetTamerTP(targetClientD.TamerId);
                         await _sender.Send(new ChangeTamerIdTPCommand(client.Tamer.Id, (int)targetClientD.TamerId));
@@ -2844,49 +2846,49 @@ namespace DigitalWorldOnline.Game
 
                 // -- PVP ----------------------------------------
 
-                /*case "pvp":
+                case "pvp":
+                {
+                    var regex = @"(pvp\son){1}|(pvp\soff){1}";
+                    var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+
+                    if (!match.Success)
                     {
-                        var regex = @"(pvp\son){1}|(pvp\soff){1}";
-                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
-
-                        if (!match.Success)
-                        {
-                            client.Send(new SystemMessagePacket($"Unknown command.\nType !pvp (on/off)"));
-                            break;
-                        }
-
-                        if (client.Tamer.InBattle)
-                        {
-                            client.Send(new SystemMessagePacket($"You can't turn off pvp on battle !"));
-                            break;
-                        }
-
-                        switch (command[1])
-                        {
-                            case "on":
-                                {
-                                    if (client.Tamer.PvpMap == false)
-                                    {
-                                        client.Tamer.PvpMap = true;
-                                        client.Send(new NoticeMessagePacket($"PVP turned on !!"));
-                                    }
-                                    else client.Send(new NoticeMessagePacket($"PVP is already on ..."));
-                                }
-                                break;
-
-                            case "off":
-                                {
-                                    if (client.Tamer.PvpMap == true)
-                                    {
-                                        client.Tamer.PvpMap = false;
-                                        client.Send(new NoticeMessagePacket($"PVP turned off !!"));
-                                    }
-                                    else client.Send(new NoticeMessagePacket($"PVP is already off ..."));
-                                }
-                                break;
-                        }
+                        client.Send(new SystemMessagePacket($"Unknown command.\nType !pvp (on/off)"));
+                        break;
                     }
-                    break;*/
+
+                    if (client.Tamer.InBattle)
+                    {
+                        client.Send(new SystemMessagePacket($"You can't turn off pvp on battle !"));
+                        break;
+                    }
+
+                    switch (command[1])
+                    {
+                        case "on":
+                        {
+                            if (client.Tamer.PvpMap == false)
+                            {
+                                client.Tamer.PvpMap = true;
+                                client.Send(new NoticeMessagePacket($"PVP turned on !!"));
+                            }
+                            else client.Send(new NoticeMessagePacket($"PVP is already on ..."));
+                        }
+                            break;
+
+                        case "off":
+                        {
+                            if (client.Tamer.PvpMap == true)
+                            {
+                                client.Tamer.PvpMap = false;
+                                client.Send(new NoticeMessagePacket($"PVP turned off !!"));
+                            }
+                            else client.Send(new NoticeMessagePacket($"PVP is already off ..."));
+                        }
+                            break;
+                    }
+                }
+                    break;
 
 
                 // -- Assets ----------------------------------------
@@ -3039,7 +3041,7 @@ namespace DigitalWorldOnline.Game
                 if (client.DungeonMap)
                 {
                     var map = _dungeonServer.Maps.FirstOrDefault(
-                        x => x.Clients.Exists(x => x.TamerId == client.TamerId));
+                        x => x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId));
 
                     var mobId = map.SummonMobs.Count + 1;
 
@@ -3063,7 +3065,8 @@ namespace DigitalWorldOnline.Game
                 }
                 else
                 {
-                    var map = _mapServer.Maps.FirstOrDefault(x => x.Clients.Exists(x => x.TamerId == client.TamerId));
+                    var map = _mapServer.Maps.FirstOrDefault(x =>
+                        x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId));
                     var mobId = map.SummonMobs.Count + 1;
 
                     mob.SetId(mobId);

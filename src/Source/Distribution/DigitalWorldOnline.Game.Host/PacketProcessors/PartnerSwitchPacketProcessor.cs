@@ -101,49 +101,50 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             client.Tamer.SetPartnerPassiveBuff();
 
             foreach (var buff in client.Tamer.Partner.BuffList.ActiveBuffs)
-                buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x => x.SkillCode == buff.SkillId && buff.BuffInfo == null || x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
+                buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
+                    x.SkillCode == buff.SkillId && buff.BuffInfo == null ||
+                    x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
 
             if (client.DungeonMap)
             {
                 _dungeonServer.BroadcastForTamerViewsAndSelf(
-                client.TamerId,
-                new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize()
-            );
-
+                    client.TamerId,
+                    new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize()
+                );
             }
             else
             {
                 _mapServer.BroadcastForTamerViewsAndSelf(
-                client.TamerId,
-                new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize()
-            );
-
+                    client.TamerId,
+                    new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize()
+                );
             }
 
             if (client.Tamer.Partner.BuffList.Buffs.Any())
             {
-
                 var buffToApply = client.Tamer.Partner.BuffList.Buffs;
 
 
-                buffToApply.ForEach(buffToApply =>
+                buffToApply.ForEach(digimonBuffModel =>
                 {
                     var Ts = 0;
 
-                    if (buffToApply.Duration != 0)
-                        Ts = UtilitiesFunctions.RemainingTimeSeconds(buffToApply.RemainingSeconds);
+                    if (digimonBuffModel.Duration != 0)
+                        Ts = UtilitiesFunctions.RemainingTimeSeconds(digimonBuffModel.RemainingSeconds);
 
                     if (client.DungeonMap)
                     {
-                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id, new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buffToApply.BuffInfo, (short)buffToApply.TypeN, Ts).Serialize());
+                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                            new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffInfo,
+                                (short)digimonBuffModel.TypeN, Ts).Serialize());
                     }
                     else
                     {
-                        _mapServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id, new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buffToApply.BuffInfo, (short)buffToApply.TypeN, Ts).Serialize());
+                        _mapServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                            new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffInfo,
+                                (short)digimonBuffModel.TypeN, Ts).Serialize());
                     }
-
                 });
-
             }
 
             client.Send(new UpdateStatusPacket(client.Tamer));
@@ -162,22 +163,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 foreach (var target in party.Members.Values)
                 {
-
                     var targetClient = _mapServer.FindClientByTamerId(target.Id);
                     if (targetClient == null) targetClient = _dungeonServer.FindClientByTamerId(target.Id);
 
                     if (targetClient == null) continue;
 
-                    if (target.Id != client.Tamer.Id) targetClient.Send(new PartyMemberPartnerSwitchPacket(party[client.TamerId]).Serialize());
+                    if (target.Id != client.Tamer.Id)
+                        targetClient.Send(new PartyMemberPartnerSwitchPacket(party[client.TamerId]).Serialize());
                 }
-
             }
 
             await _sender.Send(new UpdatePartnerCurrentTypeCommand(client.Partner));
             await _sender.Send(new UpdateCharacterDigimonsOrderCommand(client.Tamer));
             await _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
 
-            _logger.Verbose($"Character {client.TamerId} switched partner {previousId}({previousType}) with {client.Partner.Id}({client.Partner.BaseType}).");
+            _logger.Verbose(
+                $"Character {client.TamerId} switched partner {previousId}({previousType}) with {client.Partner.Id}({client.Partner.BaseType}).");
         }
     }
 }

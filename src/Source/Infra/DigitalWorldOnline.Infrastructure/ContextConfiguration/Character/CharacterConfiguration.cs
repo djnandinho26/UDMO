@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using DigitalWorldOnline.Commons.Models.Character;
 using System.Reflection.Emit;
+using DigitalWorldOnline.Commons.DTOs.Assets;
+using DigitalWorldOnline.Commons.Models.Asset;
 
 namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
 {
@@ -71,7 +73,7 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
                     x => (CharacterStateEnum)x))
                 .HasDefaultValue(CharacterStateEnum.Disconnected)
                 .IsRequired();
-            
+
             builder
                 .Property(x => x.EventState)
                 .HasColumnType("int")
@@ -183,9 +185,9 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
                 .HasForeignKey(x => x.CharacterId);
 
             builder
-             .HasOne(x => x.Points)
-             .WithOne(x => x.Character)
-           .HasForeignKey<CharacterArenaPointsDTO>(x => x.CharacterId);
+                .HasOne(x => x.Points)
+                .WithOne(x => x.Character)
+                .HasForeignKey<CharacterArenaPointsDTO>(x => x.CharacterId);
 
             builder
                 .HasOne(x => x.Incubator)
@@ -218,9 +220,9 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
                 .HasForeignKey<AttendanceRewardDTO>(x => x.CharacterId);
 
             builder
-              .HasOne(x => x.DailyPoints)
-              .WithOne(x => x.Character)
-              .HasForeignKey<CharacterArenaDailyPointsDTO>(x => x.CharacterId);
+                .HasOne(x => x.DailyPoints)
+                .WithOne(x => x.Character)
+                .HasForeignKey<CharacterArenaDailyPointsDTO>(x => x.CharacterId);
 
             builder
                 .HasOne(x => x.ConsignedShop)
@@ -236,7 +238,7 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
                 .HasOne(x => x.ActiveEvolution)
                 .WithOne(x => x.Character)
                 .HasForeignKey<CharacterActiveEvolutionDTO>(x => x.CharacterId);
-            
+
             builder
                 .HasOne(x => x.DigimonArchive)
                 .WithOne(x => x.Character)

@@ -52,7 +52,6 @@ namespace DigitalWorldOnline.Commons.Models.Base
                     new ItemSocketStatusModel(0),
                     new ItemSocketStatusModel(1),
                     new ItemSocketStatusModel(2)
-
                 };
             }
         }
@@ -195,7 +194,7 @@ namespace DigitalWorldOnline.Commons.Models.Base
         /// <param name="info">The extra information</param>
         public void SetItemInfo(ItemAssetModel? info) => ItemInfo = info;
 
-        public void SetFirstExpired(bool firstExpired) => FirstExpired = firstExpired;  
+        public void SetFirstExpired(bool firstExpired) => FirstExpired = firstExpired;
 
         /// <summary>
         /// Increases the current amount.
@@ -223,7 +222,6 @@ namespace DigitalWorldOnline.Commons.Models.Base
                     }
                     else
                     {
-                   
                         m.Write(BitConverter.GetBytes(0), 0, 2);
                         m.Write(BitConverter.GetBytes(0), 0, 2);
                         m.Write(BitConverter.GetBytes((short)Power), 0, 1);
@@ -263,7 +261,7 @@ namespace DigitalWorldOnline.Commons.Models.Base
                         {
                             var ts = UtilitiesFunctions.RemainingTimeMinutes((int)RemainingMinutes());
 
-                            m.Write(BitConverter.GetBytes(ts), 0, 4) ;
+                            m.Write(BitConverter.GetBytes(ts), 0, 4);
                         }
 
                         m.Write(BitConverter.GetBytes(0), 0, 4);
@@ -280,6 +278,7 @@ namespace DigitalWorldOnline.Commons.Models.Base
 
             return buffer;
         }
+
         /// <summary>
         /// Serializes the current item into byte array.
         /// </summary>
@@ -316,13 +315,14 @@ namespace DigitalWorldOnline.Commons.Models.Base
                     m.Write(BitConverter.GetBytes(0), 0, 1);
 
                     var orderedAccessoryStatus = AccessoryStatus.OrderBy(x => x.Slot);
+                    var orderedAccessoryStatusList = orderedAccessoryStatus.ToList();
 
-                    foreach (var accessoryStatus in orderedAccessoryStatus)
+                    foreach (var accessoryStatus in orderedAccessoryStatusList)
                     {
                         m.Write(BitConverter.GetBytes(accessoryStatus.Type.GetHashCode()), 0, 2);
                     }
 
-                    foreach (var accessoryStatus in orderedAccessoryStatus)
+                    foreach (var accessoryStatus in orderedAccessoryStatusList)
                     {
                         m.Write(BitConverter.GetBytes(accessoryStatus.Value), 0, 2);
                     }
@@ -334,8 +334,10 @@ namespace DigitalWorldOnline.Commons.Models.Base
                     }
                     else
                     {
-                        m.Write(BitConverter.GetBytes(UtilitiesFunctions.RemainingTimeMinutes((int)RemainingMinutes())), 0, 4);
+                        m.Write(BitConverter.GetBytes(UtilitiesFunctions.RemainingTimeMinutes((int)RemainingMinutes())),
+                            0, 4);
                     }
+
                     m.Write(BitConverter.GetBytes(0), 0, 4);
                 }
 
@@ -378,13 +380,14 @@ namespace DigitalWorldOnline.Commons.Models.Base
                 m.Write(BitConverter.GetBytes(0), 0, 1);
 
                 var orderedAccessoryStatus = AccessoryStatus.OrderBy(x => x.Slot);
+                var orderedAccessoryStatusList = orderedAccessoryStatus.ToList();
 
-                foreach (var accessoryStatus in orderedAccessoryStatus)
+                foreach (var accessoryStatus in orderedAccessoryStatusList)
                 {
                     m.Write(BitConverter.GetBytes(accessoryStatus.Type.GetHashCode()), 0, 2);
                 }
 
-                foreach (var accessoryStatus in orderedAccessoryStatus)
+                foreach (var accessoryStatus in orderedAccessoryStatusList)
                 {
                     m.Write(BitConverter.GetBytes(accessoryStatus.Value), 0, 2);
                 }

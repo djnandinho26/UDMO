@@ -38,13 +38,16 @@ namespace DigitalWorldOnline.GameHost
         {
             if (DateTime.Now > _lastMapsSearch)
             {
-                var mapsToLoad = _mapper.Map<List<GameMap>>(await _sender.Send(new GameMapsConfigQuery(MapTypeEnum.Pvp), cancellationToken));
+                var mapsToLoad =
+                    _mapper.Map<List<GameMap>>(await _sender.Send(new GameMapsConfigQuery(MapTypeEnum.Pvp),
+                        cancellationToken));
 
                 foreach (var newMap in mapsToLoad)
                 {
                     if (!Maps.Any(x => x.Id == newMap.Id))
                     {
-                        _logger.Debug($"Initializing new instance for {newMap.Type} map {newMap.Id} - {newMap.Name}...");
+                        _logger.Debug(
+                            $"Initializing new instance for {newMap.Type} map {newMap.Id} - {newMap.Name}...");
                         Maps.Add(newMap);
                     }
                 }
@@ -185,7 +188,7 @@ namespace DigitalWorldOnline.GameHost
 
         public void BroadcastForUniqueTamer(long tamerId, byte[] packet)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Exists(x => x.TamerId == tamerId));
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
 
             map?.BroadcastForUniqueTamer(tamerId, packet);
         }
@@ -202,21 +205,22 @@ namespace DigitalWorldOnline.GameHost
 
         public void BroadcastForTargetTamers(List<long> targetTamers, byte[] packet)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Exists(x => targetTamers.Contains(x.TamerId)));
+            var map = Maps.FirstOrDefault(
+                x => x.Clients.Exists(gameClient => targetTamers.Contains(gameClient.TamerId)));
 
             map?.BroadcastForTargetTamers(targetTamers, packet);
         }
 
         public void BroadcastForTargetTamers(long sourceId, byte[] packet)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Exists(x => x.TamerId == sourceId));
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == sourceId));
 
             map?.BroadcastForTargetTamers(map.TamersView[sourceId], packet);
         }
 
         public void BroadcastForTamerViewsAndSelf(long sourceId, byte[] packet)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Exists(x => x.TamerId == sourceId));
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == sourceId));
 
             map?.BroadcastForTamerViewsAndSelf(sourceId, packet);
         }
@@ -230,8 +234,7 @@ namespace DigitalWorldOnline.GameHost
 
         public DigimonModel? GetEnemyByHandler(short mapId, int handler)
         {
-            return Maps.
-                FirstOrDefault(x => x.MapId == mapId)?
+            return Maps.FirstOrDefault(x => x.MapId == mapId)?
                 .ConnectedTamers
                 .Select(x => x.Partner)
                 .FirstOrDefault(x => x.GeneralHandler == handler);
@@ -246,7 +249,8 @@ namespace DigitalWorldOnline.GameHost
             var originX = location.X;
             var originY = location.Y;
 
-            return GetTargetMobs(targetMap.Mobs.Where(x => x.Alive).ToList(), originX, originY, range).DistinctBy(x => x.Id).ToList();
+            return GetTargetMobs(targetMap.Mobs.Where(x => x.Alive).ToList(), originX, originY, range)
+                .DistinctBy(x => x.Id).ToList();
         }
 
         public List<MobConfigModel> GetMobsNearbyTargetMob(short mapId, int handler, int range)

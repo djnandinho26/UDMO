@@ -212,7 +212,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory));
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
         }
-        private ItemModel? ApplyValuesChipset(ItemModel newItem)
+        private ItemModel ApplyValuesChipset(ItemModel newItem)
         {
 
             var ChipsetInfo = _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == newItem.ItemInfo.SkillCode).Apply.FirstOrDefault(x => x.Type > 0);

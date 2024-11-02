@@ -35,7 +35,6 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Config
                 .HasColumnType("numeric(9,2)")
                 .HasDefaultValue(0)
                 .IsRequired();
-            ;
         }
     }
 }

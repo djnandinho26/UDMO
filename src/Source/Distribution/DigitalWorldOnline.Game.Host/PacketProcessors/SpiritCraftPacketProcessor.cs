@@ -39,28 +39,36 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var x = packet.ReadByte();
             var npcId = packet.ReadInt();
 
-            var digimonId = client.Tamer.Digimons.First(x => x.Slot == slot).Id;
-            var targetType = client.Tamer.Digimons.First(x => x.Slot == slot).BaseType;
+            var targetDigimon = client.Tamer.Digimons.First(digimonModel => digimonModel.Slot == slot);
+            var digimonId = targetDigimon.Id;
+            var targetType = targetDigimon.BaseType;
 
             var result = client.PartnerDeleteValidation(validation);
 
-            var extraEvolutionNpc = _assets.ExtraEvolutions.FirstOrDefault(x => x.NpcId == npcId);
+            var extraEvolutionNpc = _assets.ExtraEvolutions.FirstOrDefault(extraEvolutionNpcAssetModel =>
+                extraEvolutionNpcAssetModel.NpcId == npcId);
 
             if (extraEvolutionNpc == null)
             {
                 _logger.Warning($"Extra Evolution NPC not found for Item Craft !!");
                 return;
             }
-            
-            var extraEvolutionInfo = extraEvolutionNpc.ExtraEvolutionInformation.FirstOrDefault(x => x.ExtraEvolution.Any(extra => extra.Requireds.Any(required => required.ItemId == targetType)))?.ExtraEvolution;
-            
+
+            var extraEvolutionInfo = extraEvolutionNpc.ExtraEvolutionInformation.FirstOrDefault(
+                    extraEvolutionInformationAssetModel =>
+                        extraEvolutionInformationAssetModel.ExtraEvolution.Any(extra =>
+                            extra.Requireds.Any(required => required.ItemId == targetType)))
+                ?.ExtraEvolution;
+
             if (extraEvolutionInfo == null)
             {
                 _logger.Warning($"Extra Evolution information not found for Item Craft !!");
                 return;
             }
 
-            var extraEvolution = extraEvolutionInfo.FirstOrDefault(x => x.Requireds.Any(x => x.ItemId == targetType));
+            var extraEvolution = extraEvolutionInfo.FirstOrDefault(extraEvolutionAssetModel =>
+                extraEvolutionAssetModel.Requireds.Any(extraEvolutionRequiredAssetModel =>
+                    extraEvolutionRequiredAssetModel.ItemId == targetType));
 
             if (extraEvolution == null)
             {
@@ -89,7 +97,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     if (itemToRemove != null)
                     {
                         materialToPacket.Add(material);
-                        client.Tamer.Inventory.RemoveOrReduceItemWithoutSlot(new ItemModel(material.ItemId, material.Amount));
+                        client.Tamer.Inventory.RemoveOrReduceItemWithoutSlot(new ItemModel(material.ItemId,
+                            material.Amount));
 
                         break;
                     }
@@ -102,7 +111,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     if (itemToRemove != null)
                     {
                         requiredsToPacket.Add(material);
-                        client.Tamer.Inventory.RemoveOrReduceItemWithoutSlot(new ItemModel(material.ItemId, material.Amount));
+                        client.Tamer.Inventory.RemoveOrReduceItemWithoutSlot(new ItemModel(material.ItemId,
+                            material.Amount));
 
                         if (extraEvolution.Requireds.Count <= 3)
                         {
@@ -114,10 +124,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 // ------------------------------------------------------------------------
 
                 var craftedItem = new ItemModel(extraEvolution.DigimonId, 1);
-                craftedItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == craftedItem.ItemId));
+                craftedItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(itemAssetModel =>
+                    itemAssetModel.ItemId == craftedItem.ItemId));
 
                 var tempItem = (ItemModel)craftedItem.Clone();
-                
+
                 client.Tamer.Inventory.AddItem(tempItem);
 
                 client.Tamer.RemoveDigimon(slot);
@@ -127,14 +138,16 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 await _sender.Send(new DeleteDigimonCommand(digimonId));
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory.Id, client.Tamer.Inventory.Bits));
+                await _sender.Send(
+                    new UpdateItemListBitsCommand(client.Tamer.Inventory.Id, client.Tamer.Inventory.Bits));
 
                 _logger.Verbose($"Character {client.TamerId} deleted partner {digimonId}.");
             }
             else
             {
                 client.Send(new PartnerDeletePacket(result));
-                _logger.Verbose($"Character {client.TamerId} failed to deleted partner {digimonId} with invalid account information.");
+                _logger.Verbose(
+                    $"Character {client.TamerId} failed to deleted partner {digimonId} with invalid account information.");
             }
         }
     }

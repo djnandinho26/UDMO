@@ -9,6 +9,7 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
         public DigimonProfile()
         {
             CreateMap<DigimonModel, DigimonDTO>()
+                .ForMember(dest => dest.Character, opt => opt.Ignore())
                 .ReverseMap();
 
             CreateMap<DigimonLocationModel, DigimonLocationDTO>()

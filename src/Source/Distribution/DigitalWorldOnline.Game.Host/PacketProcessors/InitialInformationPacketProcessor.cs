@@ -68,15 +68,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             packet.Skip(4);
             var accountId = packet.ReadUInt();
             var accessCode = packet.ReadUInt();
-            
+
             var account = _mapper.Map<AccountModel>(await _sender.Send(new AccountByIdQuery(accountId)));
             client.SetAccountInfo(account);
 
             try
             {
-                var character = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterByIdQuery(account.LastPlayedCharacter)));
+                var character =
+                    _mapper.Map<CharacterModel>(
+                        await _sender.Send(new CharacterByIdQuery(account.LastPlayedCharacter)));
 
-                _logger.Information($"Search character with id {account.LastPlayedCharacter} for account {account.Id}...");
+                _logger.Information(
+                    $"Search character with id {account.LastPlayedCharacter} for account {account.Id}...");
 
                 if (character.Partner == null)
                 {
@@ -92,15 +95,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     digimon.SetBaseInfo(_statusManager.GetDigimonBaseInfo(digimon.CurrentType));
 
-                    digimon.SetBaseStatus(_statusManager.GetDigimonBaseStatus(digimon.CurrentType, digimon.Level, digimon.Size));
+                    digimon.SetBaseStatus(
+                        _statusManager.GetDigimonBaseStatus(digimon.CurrentType, digimon.Level, digimon.Size));
 
                     digimon.SetTitleStatus(_statusManager.GetTitleStatus(character.CurrentTitle));
 
                     digimon.SetSealStatus(_assets.SealInfo);
                 }
 
+                var tamerLevelStatus = _statusManager.GetTamerLevelStatus(character.Model, character.Level);
+
+                _logger.Information($"Leveling status for character {character.Name} is: {tamerLevelStatus.Id}");
+
                 character.SetBaseStatus(_statusManager.GetTamerBaseStatus(character.Model));
-                character.SetLevelStatus(_statusManager.GetTamerLevelStatus(character.Model, character.Level));
+
+                character.SetLevelStatus(tamerLevelStatus);
 
                 character.NewViewLocation(character.Location.X, character.Location.Y);
                 character.NewLocation(character.Location.MapId, character.Location.X, character.Location.Y);
@@ -108,17 +117,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 character.RemovePartnerPassiveBuff();
                 character.SetPartnerPassiveBuff();
-
+                character.Partner.SetTamer(character);
                 await _sender.Send(new UpdateDigimonBuffListCommand(character.Partner.BuffList));
 
                 foreach (var item in character.ItemList.SelectMany(x => x.Items).Where(x => x.ItemId > 0))
                     item.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == item?.ItemId));
 
                 foreach (var buff in character.BuffList.ActiveBuffs)
-                    buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x => x.SkillCode == buff.SkillId || x.DigimonSkillCode == buff.SkillId));
+                    buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
+                        x.SkillCode == buff.SkillId || x.DigimonSkillCode == buff.SkillId));
 
                 foreach (var buff in character.Partner.BuffList.ActiveBuffs)
-                    buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x => x.SkillCode == buff.SkillId || x.DigimonSkillCode == buff.SkillId));
+                    buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
+                        x.SkillCode == buff.SkillId || x.DigimonSkillCode == buff.SkillId));
 
                 _logger.Debug($"Getting available channels...");
 
@@ -144,7 +155,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     channels.Add(channels.Keys.GetNewChannel(), 1);
                     channel = channels.OrderByDescending(x => x.Value).FirstOrDefault(x => x.Value < byte.MaxValue).Key;
                 }
-                
+
                 if (character.Channel == 255)
                 {
                     character.SetCurrentChannel(channel);
@@ -163,12 +174,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 if (client.DungeonMap)
                 {
                     _dungeonsServer.AddClient(client);
-                    _logger.Information($"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
+                    _logger.Information(
+                        $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                 }
                 else
                 {
                     _mapServer.AddClient(client);
-                    _logger.Information($"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
+                    _logger.Information(
+                        $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
                 }
 
                 while (client.Loading) await Task.Delay(1000);
@@ -193,9 +206,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         {
                             targetClient.Send(
                                 UtilitiesFunctions.GroupPackets(
-                                new PartyMemberWarpGatePacket(party[client.TamerId]).Serialize(),
-                                new PartyMemberMovimentationPacket(party[client.TamerId]).Serialize()
-                            ));
+                                    new PartyMemberWarpGatePacket(party[client.TamerId]).Serialize(),
+                                    new PartyMemberMovimentationPacket(party[client.TamerId]).Serialize()
+                                ));
                         }
                     }
 
@@ -226,11 +239,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 _logger.Debug($"Updating character channel...");
                 await _sender.Send(new UpdateCharacterChannelCommand(character.Id, character.Channel));
-
             }
             catch (Exception ex)
             {
-                _logger.Error($"[{account.LastPlayedCharacter}] An error occurred: {ex.Message}, Line: {ex.Source.ToString()}, Stacktrace: {ex.StackTrace.ToString()}", ex);
+                _logger.Error(
+                    $"[{account.LastPlayedCharacter}] An error occurred: {ex.Message}, Line: {ex.Source.ToString()}, Stacktrace: {ex.StackTrace.ToString()}",
+                    ex);
                 client.Disconnect();
             }
             finally

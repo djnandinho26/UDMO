@@ -77,6 +77,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
         /// Runs the target map operations.
         /// </summary>
         /// <param name="map">the target map</param>
+        /// <param name="token">CancellationToken</param>
         private async Task RunMap(GameMap map, CancellationToken token)
         {
             try
@@ -176,28 +177,28 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
         public void BroadcastForUniqueTamer(long tamerId, byte[] packet)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Any(x => x.TamerId == tamerId));
+            var map = Maps.FirstOrDefault(x => x.Clients.Any(gameClient => gameClient.TamerId == tamerId));
 
             map?.BroadcastForUniqueTamer(tamerId, packet);
         }
 
         public void BroadcastForTargetTamers(List<long> targetTamers, byte[] packet)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Any(x => targetTamers.Contains(x.TamerId)));
+            var map = Maps.FirstOrDefault(x => x.Clients.Any(gameClient => targetTamers.Contains(gameClient.TamerId)));
 
             map?.BroadcastForTargetTamers(targetTamers, packet);
         }
 
         public void BroadcastForTargetTamers(long sourceId, byte[] packet)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Any(x => x.TamerId == sourceId));
+            var map = Maps.FirstOrDefault(x => x.Clients.Any(gameClient => gameClient.TamerId == sourceId));
 
             map?.BroadcastForTargetTamers(map.TamersView[sourceId], packet);
         }
 
         public void BroadcastForTamerViewsAndSelf(long sourceId, byte[] packet)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Any(x => x.TamerId == sourceId));
+            var map = Maps.FirstOrDefault(x => x.Clients.Any(gameClient => gameClient.TamerId == sourceId));
 
             map?.BroadcastForTamerViewsAndSelf(sourceId, packet);
         }

@@ -278,7 +278,7 @@ namespace DigitalWorldOnline.Game
         {
             gameClientEvent.Client.Tamer.Friends.ForEach(friend =>
             {
-                _logger.Information($"Sending friend disconnection packet for character {friend.FriendId}...");
+                // _logger.Information($"Sending friend disconnection packet for character {friend.FriendId}...");
                 //_mapServer.BroadcastForUniqueTamer(friend.FriendId, new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
                 //_dungeonsServer.BroadcastForUniqueTamer(friend.FriendId, new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
 

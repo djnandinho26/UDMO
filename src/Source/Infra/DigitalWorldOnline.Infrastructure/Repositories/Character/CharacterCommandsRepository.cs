@@ -49,20 +49,29 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             var tamerDto = await _context.Character
                 .AsNoTracking()
                 .Include(x => x.Digimons)
+                .ThenInclude(x => x.Evolutions)
                 .SingleOrDefaultAsync(x => x.Id == digimon.CharacterId);
 
-            var dto = _mapper.Map<DigimonDTO>(digimon);
-
-            if (tamerDto != null)
+            try
             {
-                tamerDto.Digimons.Add(dto);
+                var dto = _mapper.Map<DigimonDTO>(digimon);
 
-                _context.Update(tamerDto);
+                if (tamerDto != null)
+                {
+                    tamerDto.Digimons.Add(dto);
 
-                _context.SaveChanges();
+                    _context.Update(tamerDto);
+
+                    _context.SaveChanges();
+                }
+
+                return dto;
             }
-
-            return dto;
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
 
         public async Task<CharacterFriendDTO> AddFriendAsync(CharacterFriendModel friend)
@@ -86,7 +95,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             return dto;
         }
 
-        public async Task<DeleteCharacterResultEnum> DeleteCharacterByAccountAndPositionAsync(long accountId, byte characterPosition)
+        public async Task<DeleteCharacterResultEnum> DeleteCharacterByAccountAndPositionAsync(long accountId,
+            byte characterPosition)
         {
             try
             {
@@ -104,24 +114,24 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                     .Include(x => x.MapRegions)
                     .Include(x => x.Points)
                     .Include(x => x.BuffList)
-                        .ThenInclude(y => y.Buffs)
+                    .ThenInclude(y => y.Buffs)
                     .Include(x => x.SealList)
-                        .ThenInclude(y => y.Seals)
+                    .ThenInclude(y => y.Seals)
                     .Include(x => x.ItemList)
-                        .ThenInclude(y => y.Items)
+                    .ThenInclude(y => y.Items)
                     .Include(x => x.Digimons)
-                        .ThenInclude(y => y.Digiclone)
+                    .ThenInclude(y => y.Digiclone)
                     .Include(x => x.Digimons)
-                        .ThenInclude(y => y.AttributeExperience)
+                    .ThenInclude(y => y.AttributeExperience)
                     .Include(x => x.Digimons)
-                        .ThenInclude(y => y.Location)
+                    .ThenInclude(y => y.Location)
                     .Include(x => x.Digimons)
-                        .ThenInclude(y => y.BuffList)
-                            .ThenInclude(z => z.Buffs)
+                    .ThenInclude(y => y.BuffList)
+                    .ThenInclude(z => z.Buffs)
                     .Include(x => x.Digimons)
-                        .ThenInclude(z => z.Evolutions)
+                    .ThenInclude(z => z.Evolutions)
                     .SingleOrDefaultAsync(x => x.AccountId == accountId &&
-                                                x.Position == characterPosition);
+                                               x.Position == characterPosition);
 
                 if (dto != null)
                 {
@@ -420,7 +430,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
             if (dto != null)
             {
-
                 dto.CompletedData = progress.CompletedData;
                 dto.CompletedDataValue = progress.CompletedDataValue;
 
@@ -429,7 +438,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 _context.SaveChanges();
             }
         }
-
 
 
         public async Task UpdateCharacterBuffListAsync(CharacterBuffListModel buffList)
@@ -442,7 +450,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             if (dto != null)
             {
                 // Remove os buffs em dto que não existem em buffList
-                var buffsToRemove = dto.Buffs.Where(dtoBuff => !buffList.Buffs.Any(buff => buff.Id == dtoBuff.Id)).ToList();
+                var buffsToRemove = dto.Buffs.Where(dtoBuff => !buffList.Buffs.Any(buff => buff.Id == dtoBuff.Id))
+                    .ToList();
                 foreach (var buffToRemove in buffsToRemove)
                 {
                     dto.Buffs.Remove(buffToRemove);
@@ -470,7 +479,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 }
 
                 _context.SaveChanges();
-
             }
         }
 
@@ -484,7 +492,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             if (dto != null)
             {
                 // Remove os buffs em dto que não existem em buffList
-                var buffsToRemove = dto.Buffs.Where(dtoBuff => !buffList.Buffs.Any(buff => buff.Id == dtoBuff.Id)).ToList();
+                var buffsToRemove = dto.Buffs.Where(dtoBuff => !buffList.Buffs.Any(buff => buff.Id == dtoBuff.Id))
+                    .ToList();
                 foreach (var buffToRemove in buffsToRemove)
                 {
                     dto.Buffs.Remove(buffToRemove);
@@ -517,9 +526,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                         _context.SaveChanges();
                     }
                 }
-
-
-
             }
         }
 
@@ -633,6 +639,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                         dtoStatus.Type = modelStatus.Type;
                         dtoStatus.Value = modelStatus.Value;
                     }
+
                     foreach (var dtoStatus in dto.SocketStatus)
                     {
                         var modelStatus = item.SocketStatus.First(x => x.Slot == dtoStatus.Slot);
@@ -652,7 +659,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
         }
 
 
-
         private async Task RemoveDeletedItems(List<ItemModel> items)
         {
             if (!items.Any())
@@ -667,10 +673,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .Where(x => !items.Select(y => y.Id).Contains(x.Id))
                 .ToList();
 
-            itemsToRemove.ForEach(itemToRemove =>
-            {
-                _context.Remove(itemToRemove);
-            });
+            itemsToRemove.ForEach(itemToRemove => { _context.Remove(itemToRemove); });
         }
 
         public async Task UpdateItemAccessoryStatusAsync(ItemModel item)
@@ -696,6 +699,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 _context.SaveChanges();
             }
         }
+
         public async Task UpdateItemSocketStatusAsync(ItemModel item)
         {
             var dto = await _context.Items
@@ -751,6 +755,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                     dtoStatus.Type = modelStatus.Type;
                     dtoStatus.Value = modelStatus.Value;
                 }
+
                 foreach (var dtoStatus in dto.SocketStatus)
                 {
                     var modelStatus = item.SocketStatus.First(x => x.Slot == dtoStatus.Slot);
@@ -784,7 +789,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .AsNoTracking()
                 .Include(x => x.Items)
                 .ThenInclude(y => y.AccessoryStatus)
-                  .Include(x => x.Items)
+                .Include(x => x.Items)
                 .ThenInclude(y => y.SocketStatus)
                 .FirstOrDefaultAsync(x => x.Id == items.First().ItemListId);
 
@@ -812,14 +817,14 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
                 _context.Update(dto);
 
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
             }
         }
 
         public async Task UpdateEvolutionAsync(DigimonEvolutionModel evolution)
         {
             var dto = await _context.DigimonEvolution
-                 .AsNoTracking()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == evolution.Id);
 
             if (dto != null)
@@ -961,7 +966,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             }
         }
 
-        public async Task UpdateCharacterDigimonArchiveItemAsync(CharacterDigimonArchiveItemModel characterDigimonArchiveItem)
+        public async Task UpdateCharacterDigimonArchiveItemAsync(
+            CharacterDigimonArchiveItemModel characterDigimonArchiveItem)
         {
             var dto = await _context.CharacterDigimonArchiveItem
                 .AsNoTracking()
@@ -1041,9 +1047,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 _context.SaveChanges();
             }
         }
+
         public async Task<CharacterDTO> ChangeCharacterNameAsync(long characterId, string NewCharacterName)
         {
-
             var dto = await _context.Character
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == characterId);
@@ -1059,9 +1065,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
             return dto;
         }
+
         public async Task<CharacterDTO> ChangeCharacterIdTpAsync(long characterId, int TargetTamerIdTP)
         {
-
             var dto = await _context.Character
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == characterId);
@@ -1111,6 +1117,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
             return dto;
         }
+
         public async Task UpdateTamerSkillCooldownAsync(CharacterTamerSkillModel activeSkill)
         {
             var dto = await _context.ActiveSkills
@@ -1129,7 +1136,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
                 _context.SaveChanges();
             }
-
         }
 
         public async Task AddInventorySlotAsync(ItemModel newSlot)
@@ -1155,7 +1161,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
         public async Task UpdateCharacterArenaPointsAsync(CharacterArenaPointsModel points)
         {
             var dto = await _context.CharacterPoints
-            .AsNoTracking()
+                .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == points.Id);
 
             if (dto != null)
@@ -1176,7 +1182,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
             if (dto != null)
             {
-
                 dto.FirstCondition = progress.FirstCondition;
                 dto.SecondCondition = progress.SecondCondition;
                 dto.ThirdCondition = progress.ThirdCondition;
@@ -1186,8 +1191,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 _context.InProgressQuest.Update(dto);
                 _context.SaveChanges();
             }
-
-
         }
 
         public async Task AddCharacterProgressAsync(CharacterProgressModel progress)
@@ -1210,15 +1213,13 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                     _context.InProgressQuest.Add(questDto);
                     _context.SaveChanges();
                 }
-
             }
         }
 
         public async Task UpdateTamerAttendanceRewardAsync(AttendanceRewardModel attendanceRewardModel)
         {
-            var dto = await _context.AttendanceReward.
-                 AsNoTracking()
-                 .FirstOrDefaultAsync(x => x.CharacterId == attendanceRewardModel.CharacterId);
+            var dto = await _context.AttendanceReward.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.CharacterId == attendanceRewardModel.CharacterId);
 
             if (dto != null)
             {
@@ -1231,11 +1232,12 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
             return;
         }
+
         public async Task UpdateCharacterDeckbuffAsync(CharacterModel character)
         {
             var dto = await _context.Character
                 .AsNoTracking()
-                 .FirstOrDefaultAsync(x => x.Id == character.Id);
+                .FirstOrDefaultAsync(x => x.Id == character.Id);
 
             if (dto != null)
             {
@@ -1251,7 +1253,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
         public async Task UpdateTamerTimeRewardAsync(TimeRewardModel timeRewardModel)
         {
             var dto = await _context.TimeReward.AsNoTracking()
-                 .FirstOrDefaultAsync(x => x.CharacterId == timeRewardModel.CharacterId);
+                .FirstOrDefaultAsync(x => x.CharacterId == timeRewardModel.CharacterId);
 
             if (dto != null)
             {
@@ -1281,7 +1283,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             }
         }
 
-        public async Task<CharacterEncyclopediaModel> CreateCharacterEncyclopediaAsync(CharacterEncyclopediaModel characterEncyclopedia)
+        public async Task<CharacterEncyclopediaModel> CreateCharacterEncyclopediaAsync(
+            CharacterEncyclopediaModel characterEncyclopedia)
         {
             var tamerDto = await _context.Character
                 .AsNoTracking()
@@ -1305,7 +1308,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 {
                     Console.WriteLine(ex.ToString());
                 }
-
             }
 
             return _mapper.Map<CharacterEncyclopediaModel>(dto);
@@ -1329,13 +1331,15 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 dto.IsRewardAllowed = characterEncyclopedia.IsRewardAllowed;
                 dto.IsRewardReceived = characterEncyclopedia.IsRewardReceived;
                 dto.CreateDate = DateTime.Now;
-                dto.Evolutions = _mapper.Map<List<CharacterEncyclopediaEvolutionsDTO>>(characterEncyclopedia.Evolutions);
+                dto.Evolutions =
+                    _mapper.Map<List<CharacterEncyclopediaEvolutionsDTO>>(characterEncyclopedia.Evolutions);
                 _context.Update(dto);
                 _context.SaveChanges();
             }
         }
 
-        public async Task UpdateCharacterEncyclopediaEvolutionsAsync(CharacterEncyclopediaEvolutionsModel characterEncyclopediaEvolution)
+        public async Task UpdateCharacterEncyclopediaEvolutionsAsync(
+            CharacterEncyclopediaEvolutionsModel characterEncyclopediaEvolution)
         {
             var dto = await _context.CharacterEncyclopediaEvolutions
                 .AsNoTracking()
@@ -1349,6 +1353,5 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 _context.SaveChanges();
             }
         }
-    
     }
 }
