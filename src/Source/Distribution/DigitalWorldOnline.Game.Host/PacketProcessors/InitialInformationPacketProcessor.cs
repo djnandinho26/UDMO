@@ -104,9 +104,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
 
                 var tamerLevelStatus = _statusManager.GetTamerLevelStatus(character.Model, character.Level);
-
-                _logger.Information($"Leveling status for character {character.Name} is: {tamerLevelStatus.Id}");
-
+                
                 character.SetBaseStatus(_statusManager.GetTamerBaseStatus(character.Model));
 
                 character.SetLevelStatus(tamerLevelStatus);
@@ -118,6 +116,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 character.RemovePartnerPassiveBuff();
                 character.SetPartnerPassiveBuff();
                 character.Partner.SetTamer(character);
+               
                 await _sender.Send(new UpdateDigimonBuffListCommand(character.Partner.BuffList));
 
                 foreach (var item in character.ItemList.SelectMany(x => x.Items).Where(x => x.ItemId > 0))
@@ -173,15 +172,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (client.DungeonMap)
                 {
-                    _dungeonsServer.AddClient(client);
-                    _logger.Information(
-                        $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
+                   await _dungeonsServer.AddClient(client);
+                    _logger.Information($"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                 }
                 else
                 {
-                    _mapServer.AddClient(client);
-                    _logger.Information(
-                        $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
+                    await _mapServer.AddClient(client);
+                    _logger.Information($"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
                 }
 
                 while (client.Loading) await Task.Delay(1000);
