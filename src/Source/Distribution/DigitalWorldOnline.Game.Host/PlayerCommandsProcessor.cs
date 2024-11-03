@@ -213,6 +213,29 @@ namespace DigitalWorldOnline.Game
                 }
                     break;
 
+                case "deckload":
+                {
+                    var regex = @"^deckload\s*$";
+                    var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+
+                    if (!match.Success)
+                    {
+                        client.Send(new SystemMessagePacket($"Unknown command.\nType !deckload"));
+                        break;
+                    }
+
+                    var evolution = client.Partner.Evolutions[0];
+
+                    _logger.Information(
+                        $"Evolution ID: {evolution.Id} | Evolution Type: {evolution.Type} | Evolution Unlocked: {evolution.Unlocked}");
+
+                    var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines
+                        .FirstOrDefault(x => x.Type == evolution.Type);
+
+                    _logger.Information($"EvoInfo ID: {evoInfo.Id}");
+                    _logger.Information($"EvoInfo EvolutionId: {evoInfo.EvolutionId}");
+                }
+                    break;
                 default:
                     client.Send(new SystemMessagePacket($"Invalid Command !!\nType !help"));
                     break;
