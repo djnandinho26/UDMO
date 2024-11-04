@@ -100,8 +100,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 )
             );
 
-            // Get evolution info
-            EvolutionAssetModel digimonEvolutionInfo = _assets.EvolutionInfo.First(x => x.Type == newDigimon.BaseType);
+            var digimonEvolutionInfo = _assets.EvolutionInfo.First(x => x.Type == newDigimon.BaseType);
 
             newDigimon.AddEvolutions(digimonEvolutionInfo);
 
@@ -126,17 +125,52 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             client.Tamer.Incubator.RemoveEgg();
 
-            // Get digimon base info
-            DigimonBaseInfoAssetModel digimonBaseInfo = newDigimon.BaseInfo;
+            var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
 
-            // Get digimon evolutions
+            await _sender.Send(new UpdateIncubatorCommand(client.Tamer.Incubator));
+
+            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), client.Tamer.Digimons.FindIndex(x => x == newDigimon)));
+
+            if (digimonInfo != null)
+            {
+                newDigimon.SetId(digimonInfo.Id);
+                var slot = -1;
+
+                foreach (var digimon in newDigimon.Evolutions)
+                {
+                    slot++;
+
+                    var evolution = digimonInfo.Evolutions[slot];
+
+                    if (evolution != null)
+                    {
+                        digimon.SetId(evolution.Id);
+
+                        var skillSlot = -1;
+
+                        foreach (var skill in digimon.Skills)
+                        {
+                            skillSlot++;
+
+                            var dtoSkill = evolution.Skills[skillSlot];
+
+                            skill.SetId(dtoSkill.Id);
+                        }
+                    }
+                }
+            }
+
+            _logger.Verbose(
+                $"Character {client.TamerId} hatched {newDigimon.Id}({newDigimon.BaseType}) with grade {newDigimon.HatchGrade} and size {newDigimon.Size}.");
+
+            // ------------------------------------------------------------------------------------------
+
+            var digimonBaseInfo = newDigimon.BaseInfo;
             var digimonEvolutions = newDigimon.Evolutions;
 
-            // Write log with encyclopedia
-            _logger.Information($"type: {newDigimon.BaseType}, info: {digimonEvolutionInfo?.Id.ToString()}");
+            //_logger.Information($"type: {newDigimon.BaseType}, info: {digimonEvolutionInfo?.Id.ToString()}");
 
-            var encyclopediaExists =
-                client.Tamer.Encyclopedia.Exists(x => x.DigimonEvolutionId == digimonEvolutionInfo?.Id);
+            var encyclopediaExists = client.Tamer.Encyclopedia.Exists(x => x.DigimonEvolutionId == digimonEvolutionInfo?.Id);
 
             // Check if encyclopedia exists
             if (encyclopediaExists)
@@ -176,45 +210,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             _logger.Information($"Hatching Leveling status for character {client.Tamer.Name} is: {client.Tamer.LevelingStatus?.Id}");
             _logger.Information($"Hatching Leveling status in digimon for character {newDigimon.Character.Name} is: {newDigimon.Character.LevelingStatus?.Id}");
             
-            var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
-            
-            await _sender.Send(new UpdateIncubatorCommand(client.Tamer.Incubator));
-            
-            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000),
-                client.Tamer.Digimons.FindIndex(x => x == newDigimon)));
-            
-            if (digimonInfo != null)
-            {
-                newDigimon.SetId(digimonInfo.Id);
-                var slot = -1;
-
-                foreach (var digimon in newDigimon.Evolutions)
-                {
-                    slot++;
-
-                    var evolution = digimonInfo.Evolutions[slot];
-
-                    if (evolution != null)
-                    {
-                        digimon.SetId(evolution.Id);
-
-                        var skillSlot = -1;
-
-                        foreach (var skill in digimon.Skills)
-                        {
-                            skillSlot++;
-
-                            var dtoSkill = evolution.Skills[skillSlot];
-
-                            skill.SetId(dtoSkill.Id);
-                        }
-                    }
-                }
-            }
-
-            _logger.Verbose(
-                $"Character {client.TamerId} hatched {newDigimon.Id}({newDigimon.BaseType}) with grade {newDigimon.HatchGrade} and size {newDigimon.Size}.");
-
         }
     }
 }

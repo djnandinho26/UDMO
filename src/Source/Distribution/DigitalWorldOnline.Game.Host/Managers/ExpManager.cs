@@ -164,7 +164,8 @@ namespace DigitalWorldOnline.Game.Managers
 
         public ReceiveExpResult ReceiveMaxDigimonExperience(DigimonModel digimon)
         {
-            if (digimon.Level >= (int)GeneralSizeEnum.DigimonLevelMax) return new ReceiveExpResult(0, false);
+            if (digimon.Level >= (int)GeneralSizeEnum.DigimonLevelMax)
+                return new ReceiveExpResult(0, false);
 
             var digimonInfos = _assets.DigimonLevelInfo.Where(x => x.ScaleType == digimon.BaseInfo.ScaleType).ToList();
 

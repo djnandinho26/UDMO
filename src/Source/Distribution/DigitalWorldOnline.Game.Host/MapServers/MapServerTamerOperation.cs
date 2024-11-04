@@ -80,15 +80,13 @@ namespace DigitalWorldOnline.GameHost
                         tamer.StopRideMode();
 
                         BroadcastForTamerViewsAndSelf(tamer.Id, new UpdateMovementSpeedPacket(tamer).Serialize());
-                        BroadcastForTamerViewsAndSelf(tamer.Id,
-                            new RideModeStopPacket(tamer.GeneralHandler, tamer.Partner.GeneralHandler).Serialize());
+                        BroadcastForTamerViewsAndSelf(tamer.Id, new RideModeStopPacket(tamer.GeneralHandler, tamer.Partner.GeneralHandler).Serialize());
                     }
 
                     var buffToRemove = client.Tamer.Partner.BuffList.TamerBaseSkill();
                     if (buffToRemove != null)
                     {
-                        BroadcastForTamerViewsAndSelf(client.TamerId,
-                            new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
+                        BroadcastForTamerViewsAndSelf(client.TamerId, new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
                     }
 
                     client.Tamer.RemovePartnerPassiveBuff();
@@ -106,11 +104,7 @@ namespace DigitalWorldOnline.GameHost
 
                     tamer.Partner.UpdateCurrentType(tamer.Partner.BaseType);
 
-                    tamer.Partner.SetBaseInfo(
-                        _statusManager.GetDigimonBaseInfo(
-                            tamer.Partner.CurrentType
-                        )
-                    );
+                    tamer.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(tamer.Partner.CurrentType));
 
                     tamer.Partner.SetBaseStatus(
                         _statusManager.GetDigimonBaseStatus(
@@ -352,10 +346,8 @@ namespace DigitalWorldOnline.GameHost
                 {
                     tamer.UpdateSyncResourcesTime();
 
-                    client?.Send(new UpdateCurrentResourcesPacket(tamer.GeneralHandler, (short)tamer.CurrentHp,
-                        (short)tamer.CurrentDs, 0));
-                    client?.Send(new UpdateCurrentResourcesPacket(tamer.Partner.GeneralHandler,
-                        (short)tamer.Partner.CurrentHp, (short)tamer.Partner.CurrentDs, 0));
+                    client?.Send(new UpdateCurrentResourcesPacket(tamer.GeneralHandler, (short)tamer.CurrentHp, (short)tamer.CurrentDs, 0));
+                    client?.Send(new UpdateCurrentResourcesPacket(tamer.Partner.GeneralHandler, (short)tamer.Partner.CurrentHp, (short)tamer.Partner.CurrentDs, 0));
                     client?.Send(new TamerXaiResourcesPacket(client.Tamer.XGauge, client.Tamer.XCrystals));
 
                     map.BroadcastForTargetTamers(tamer.Id,
@@ -500,6 +492,8 @@ namespace DigitalWorldOnline.GameHost
             Maps.FirstOrDefault(x => x.MapId == mapId)?.SetDigimonHandlers(digimons);
         }
 
+        // -----------------------------------------------------------------------------------------------------------------------
+
         /// <summary>
         /// Swaps the digimons current handler.
         /// </summary>
@@ -509,6 +503,11 @@ namespace DigitalWorldOnline.GameHost
         public void SwapDigimonHandlers(int mapId, DigimonModel oldPartner, DigimonModel newPartner)
         {
             Maps.FirstOrDefault(x => x.MapId == mapId)?.SwapDigimonHandlers(oldPartner, newPartner);
+        }
+
+        public void SwapDigimonHandlers(int mapId, int channel, DigimonModel oldPartner, DigimonModel newPartner)
+        {
+            Maps.FirstOrDefault(x => x.MapId == mapId && x.Channel == channel)?.SwapDigimonHandlers(oldPartner, newPartner);
         }
 
         // -----------------------------------------------------------------------------------------------------------------------
@@ -1057,13 +1056,11 @@ namespace DigitalWorldOnline.GameHost
             return tamerResult;
         }
 
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, MobConfigModel targetMob,
-            long partnerExpToReceive)
+        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, MobConfigModel targetMob, long partnerExpToReceive)
         {
             var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
 
-            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element,
-                targetMob.ExpReward);
+            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element, targetMob.ExpReward);
 
             if (partnerResult.LevelGain > 0)
             {
@@ -1079,8 +1076,7 @@ namespace DigitalWorldOnline.GameHost
             return partnerResult;
         }
 
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, SummonMobModel targetMob,
-            long partnerExpToReceive)
+        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, SummonMobModel targetMob, long partnerExpToReceive)
         {
             var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
 
@@ -1348,6 +1344,7 @@ namespace DigitalWorldOnline.GameHost
         {
             if (client.Tamer.TimeReward.ReedemRewards)
             {
+                _logger.Debug($"Reward Index: {client.Tamer.TimeReward.RewardIndex}");
                 client.Tamer.TimeReward.SetStartTime();
                 await _sender.Send(new UpdateTamerAttendanceTimeRewardCommand(client.Tamer.TimeReward));
             }

@@ -61,6 +61,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         public async Task Process(GameClient client, byte[] packetData)
         {
+            //_logger.Information($"Runing ComplementarInformationPacketProcessor ... **************************");
+
             _logger.Debug($"Sending seal info packet for character {client.TamerId}...");
             client.Send(new SealsPacket(client.Tamer.SealList));
 

@@ -47,7 +47,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Information($"PersonalShop View Packet 1515");
+            //_logger.Information($"--- PersonalShop View Packet 1515 ---");
 
             packet.Skip(4);
             var handler = packet.ReadInt();
@@ -57,7 +57,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             if (PersonalShop != null)
             {
-                _logger.Debug($"Encontrado jogador {PersonalShop.Tamer.Name} com a Loja {PersonalShop.Tamer.ShopName} {handler}.");
+                _logger.Debug($"Find Tamer {PersonalShop.Tamer.Name} with shop {PersonalShop.Tamer.ShopName} - {handler}.");
+
                 foreach (var item in PersonalShop.Tamer.TamerShop.Items)
                 {
                     item.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == item.ItemId));
@@ -87,41 +88,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     int count = seller.ConsignedShopItems.EquippedItems.GroupBy(x => x.ItemId).ToList().Count;
 
-
                     if (seller != null)
                     {
                         foreach (var item in seller.ConsignedShopItems.EquippedItems)
                         {
                             item.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == item.ItemId));
   
-
                             if (item.ItemId > 0 && item.ItemInfo == null)
                             {
-
                                 item.SetItemId();
-
-                                // Logger: Itens atuais na lojinha (antes de CheckEmptyItems)
-                                Console.WriteLine("Itens atuais na lojinha (antes de CheckEmptyItems):");
-                             
 
                                 PersonalShop.Tamer.TamerShop.CheckEmptyItems();
 
-                                // Logger: Itens atuais na lojinha (após CheckEmptyItems)
-                                Console.WriteLine("Itens atuais na lojinha (após CheckEmptyItems):");
-                            
-
                                 await _sender.Send(new UpdateItemsCommand(seller.ConsignedShopItems));
-
-                                // Logger: Itens finais na lojinha, antes de enviar para o cliente
-                                Console.WriteLine("Itens finais na lojinha, antes de enviar para o cliente:");
-                            
-
                             }
                            
                         }
-
-
-                        Console.WriteLine($"[ QUANTIDADE DE ITEMS ] - {count}");
                     }
 
                     if (seller.Name == client.Tamer.Name)
@@ -137,7 +119,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else
                 {
-                    _logger.Warning($"ConsignedlShop not found ...");
+                    _logger.Error($"Personal or Consigned Shop not found !!");
                 }
             }     
         }

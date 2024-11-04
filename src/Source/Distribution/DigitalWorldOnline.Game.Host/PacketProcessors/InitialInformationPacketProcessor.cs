@@ -65,6 +65,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
+            //_logger.Information($"Runing InitialInformationPacketProcessor ... **************************");
+
             packet.Skip(4);
             var accountId = packet.ReadUInt();
             var accessCode = packet.ReadUInt();
@@ -78,8 +80,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     _mapper.Map<CharacterModel>(
                         await _sender.Send(new CharacterByIdQuery(account.LastPlayedCharacter)));
 
-                _logger.Information(
-                    $"Search character with id {account.LastPlayedCharacter} for account {account.Id}...");
+                _logger.Information($"Search character with id {account.LastPlayedCharacter} for account {account.Id}...");
 
                 if (character.Partner == null)
                 {
@@ -240,8 +241,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"[{account.LastPlayedCharacter}] An error occurred: {ex.Message}, Line: {ex.Source.ToString()}, Stacktrace: {ex.StackTrace.ToString()}",
-                    ex);
+                    $"[{account.LastPlayedCharacter}] An error occurred: {ex.Message}, Line: {ex.Source.ToString()}, Stacktrace: {ex.StackTrace.ToString()}", ex);
                 client.Disconnect();
             }
             finally

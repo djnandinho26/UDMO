@@ -24,15 +24,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ILogger _logger;
         private readonly ISender _sender;
 
-        public PartnerSwitchPacketProcessor(
-            PartyManager partyManager,
-            StatusManager statusManager,
-            AssetsLoader assets,
-            MapServer mapServer,
-            DungeonsServer dungeonServer,
-            ILogger logger,
-            ISender sender
-        )
+        public PartnerSwitchPacketProcessor(PartyManager partyManager, StatusManager statusManager, AssetsLoader assets,
+            MapServer mapServer, DungeonsServer dungeonServer, ILogger logger, ISender sender)
         {
             _partyManager = partyManager;
             _statusManager = statusManager;
@@ -63,7 +56,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             else
             {
-                _mapServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Partner, newPartner);
+                //_mapServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Partner, newPartner);
+                _mapServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
             }
 
             client.Tamer.SwitchPartner(slot);
@@ -71,11 +65,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             client.Partner.SetTamer(client.Tamer);
             client.Partner.NewLocation(client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y);
 
-            client.Tamer.Partner.SetBaseInfo(
-                _statusManager.GetDigimonBaseInfo(
-                    client.Tamer.Partner.CurrentType
-                )
-            );
+            client.Tamer.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(client.Tamer.Partner.CurrentType));
 
             client.Tamer.Partner.SetBaseStatus(
                 _statusManager.GetDigimonBaseStatus(
@@ -102,22 +92,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             foreach (var buff in client.Tamer.Partner.BuffList.ActiveBuffs)
                 buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
-                    x.SkillCode == buff.SkillId && buff.BuffInfo == null ||
-                    x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
+                    x.SkillCode == buff.SkillId && buff.BuffInfo == null || x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
 
             if (client.DungeonMap)
             {
                 _dungeonServer.BroadcastForTamerViewsAndSelf(
-                    client.TamerId,
-                    new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize()
-                );
+                    client.TamerId, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
             }
             else
             {
-                _mapServer.BroadcastForTamerViewsAndSelf(
-                    client.TamerId,
-                    new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize()
-                );
+                //_mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                _mapServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
             }
 
             if (client.Tamer.Partner.BuffList.Buffs.Any())
@@ -173,12 +158,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
             }
 
+            //_logger.Information($"Tamer ActiveEvolution Gauge consume: {client.Tamer.ActiveEvolution.XgPerSecond}");
+
+            client.Tamer.ActiveEvolution.SetXg(0);
+
             await _sender.Send(new UpdatePartnerCurrentTypeCommand(client.Partner));
             await _sender.Send(new UpdateCharacterDigimonsOrderCommand(client.Tamer));
             await _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
+            await _sender.Send(new UpdateCharacterActiveEvolutionCommand(client.Tamer.ActiveEvolution));
 
-            _logger.Verbose(
-                $"Character {client.TamerId} switched partner {previousId}({previousType}) with {client.Partner.Id}({client.Partner.BaseType}).");
+            //_logger.Information($"Tamer ActiveEvolution Gauge consume: {client.Tamer.ActiveEvolution.XgPerSecond}");
+
+            _logger.Debug($"Tamer {client.Tamer.Name} switched partner {previousType} with {client.Partner.BaseType}.");
         }
     }
 }

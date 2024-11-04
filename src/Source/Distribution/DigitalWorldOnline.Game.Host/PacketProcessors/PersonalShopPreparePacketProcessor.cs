@@ -31,24 +31,33 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Information($"--- PersonalShop Create Packet 1510 ---");
-
+            //_logger.Information($"--- Personal/Consignment Shop Prepare Packet 1510 ---\n");
+            
             var requestType = (TamerShopActionEnum)packet.ReadInt();
             var itemSlot = packet.ReadShort();
 
-            _logger.Information($"RequestType: {requestType} | ItemSlot: {itemSlot}\n");
+            //_logger.Information($"---------------------------------------");
+            //_logger.Information($"RequestType: {(int)requestType} - {requestType} | ItemSlot: {itemSlot}");
+
+            if (requestType == TamerShopActionEnum.TamerShopRequest || requestType == TamerShopActionEnum.ConsignedShopRequest)
+            {
+                var itemUsed = client.Tamer.Inventory.FindItemBySlot(itemSlot);
+
+                //_logger.Information($"ItemUsed: {itemUsed.ItemId} - {itemUsed.ItemInfo?.Name} | Section: {itemUsed.ItemInfo?.Section}\n");
+
+                if (itemUsed.ItemInfo?.Section != 7601)
+                {
+                    if (client.Tamer.ConsignedShop != null)
+                    {
+                        _logger.Information($"Opening New PersonalShop !!");
+                        client.Send(new PersonalShopPacket(TamerShopActionEnum.TamerShopRequest, 0));
+                        return;
+                    }
+                }
+            }
 
             var itemId = 0;
             var action = TamerShopActionEnum.CloseWindow;
-
-            if(itemId != 131064 || itemId != 41072)
-            {
-                if(client.Tamer.ConsignedShop != null)
-                {
-                    client.Send(new PersonalShopPacket(TamerShopActionEnum.TamerShopRequest, itemId));
-                    return;
-                }
-            }
 
             switch (requestType)
             {
@@ -65,6 +74,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     break;
             }
 
+            //_logger.Information($"---------------------------------------");
+
             if (itemSlot <= GeneralSizeEnum.InventoryMaxSlot.GetHashCode())
             {
                 itemId = client.Tamer.Inventory.Items[itemSlot]?.ItemId ?? -1;
@@ -75,7 +86,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             client.Tamer.UpdateShopItemId(itemId);
 
-            _logger.Debug($"Sending sync condition packet...");
+            _logger.Verbose($"Sending sync condition packet...");
 
             if (requestType == TamerShopActionEnum.CloseShopRequest)
                 client.Tamer.RestorePreviousCondition();
@@ -87,13 +98,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
 
-            _logger.Debug($"Sending personal shop packet with action {action}...");
+            _logger.Verbose($"Sending personal shop packet with action {action}...");
 
             if (requestType == TamerShopActionEnum.TamerShopWithItensCloseRequest)
             {
-
                 client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
-                //TODO: esse cenário está incorreto, deveria apenas "reabrir" o preparing window
+                
                 client.Tamer.Inventory.AddItems(client.Tamer.TamerShop.Items);
                 client.Tamer.TamerShop.Clear();
 
@@ -114,6 +124,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 client.Send(new PersonalShopPacket(action, client.Tamer.ShopItemId));
             }
+
+            //_logger.Information($"---------------------------------------");
         }
     }
 }

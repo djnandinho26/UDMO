@@ -53,14 +53,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         public async Task Process(GameClient client, byte[] packetData)
         {
             var packet = new GamePacketReader(packetData);
+
             byte NewChannel = packet.ReadByte();
-            var account = _mapper.Map<AccountModel>(await _sender.Send(new AccountByIdQuery(client.AccountId)));
-            var character = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterByIdQuery(account.LastPlayedCharacter)));
 
-            character.SetCurrentChannel(NewChannel);
-            await _sender.Send(new UpdateCharacterChannelCommand(character.Id, NewChannel));
+            var oldChannel = client.Tamer.Channel;
 
-            _logger.Warning($"Character {client.Tamer.Name}({client.TamerId}) change Channel {client.Tamer.Channel} to {NewChannel}");
+            //var account = _mapper.Map<AccountModel>(await _sender.Send(new AccountByIdQuery(client.AccountId)));
+            //var character = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterByIdQuery(account.LastPlayedCharacter)));
+
+            //character.SetCurrentChannel(NewChannel);
+            //await _sender.Send(new UpdateCharacterChannelCommand(character.Id, NewChannel));
+
+            client.Tamer.SetCurrentChannel(NewChannel);
+            await _sender.Send(new UpdateCharacterChannelCommand(client.TamerId, NewChannel));
+
+            _logger.Information($"Tamer {client.TamerId}:{client.Tamer.Name} change Channel {oldChannel} to {NewChannel}");
+
+            // -- RELOAD -----------------------------------------------------------------
 
             client.Tamer.UpdateState(CharacterStateEnum.Loading);
 
@@ -69,12 +78,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             _mapServer.RemoveClient(client);
             client.SetGameQuit(false);
 
-            client.Send(new MapSwapPacket(
-                _configuration[GamerServerPublic],
-                _configuration[GameServerPort],
-                client.Tamer.Location.MapId,
-                client.Tamer.Location.X,
-                client.Tamer.Location.Y));
+            client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
+                client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y));
 
         }
     }

@@ -12,6 +12,7 @@ using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.GameHost;
 using MediatR;
 using Serilog;
+using DigitalWorldOnline.Commons.Packets.Chat;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -36,7 +37,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Verbose($"--- PersonalShop Open Packet 1511 ---");
+            _logger.Debug($"--- PersonalShop Open Packet 1511 ---\n");
             
             var shopName = packet.ReadString();
 
@@ -44,7 +45,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var sellQuantity = packet.ReadInt();
 
-            _logger.Verbose($"Shop Location: Map {client.Tamer.Location.MapId} ShopName: {shopName}, Items Amount: {sellQuantity}\n");
+            //_logger.Information($"Shop Location: Map {client.Tamer.Location.MapId} ShopName: {shopName}, Items Amount: {sellQuantity}\n");
             
             List<ItemModel> sellList = new(sellQuantity);
 
@@ -55,7 +56,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 var itemId = packet.ReadInt();
                 var itemAmount = packet.ReadInt();
 
-                _logger.Verbose($"Item Index: {i} | ItemId: {itemId} | ItemAmount: {itemAmount}");
+                //_logger.Information($"Item Index: {i} | ItemId: {itemId} | ItemAmount: {itemAmount}");
 
                 var sellItem = new ItemModel(itemId, itemAmount);
 
@@ -73,50 +74,93 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 
                 sellList.Add(sellItem);
 
-                _logger.Verbose($"Item Index: {i} | Price: {price}\n");
-                //break;
+                //_logger.Information($"Item Index: {i} | Price: {price}\n");
             }
 
             //_logger.Information($"-------------------------------------");
 
             foreach (var item in sellList)
             {
+                // Verification for selling the same item with different price
                 item.SetItemInfo(_assets.ItemInfo.First(x => x.ItemId == item.ItemId));
+
                 foreach (var item2 in sellList)
                 {
                     if (item2.ItemId == item.ItemId && item2.TamerShopSellPrice != item.TamerShopSellPrice)
                     {
-                        _logger.Error($"Tamer {client.Tamer.Name} tryed to add 2 items of same id with different price!");
-                        client.Send(new DisconnectUserPacket("You cant add 2 items of same id with different price!").Serialize());
+                        //client.Send(new DisconnectUserPacket("You cant add 2 items of same id with different price!").Serialize());
+                        _logger.Warning($"Tamer {client.Tamer.Name} tryed to sell 2 items of same id with different price !!");
+                        client.Send(new SystemMessagePacket($"You cant add 2 items of same id\n with different price!\n ShopClosed !!"));
+
+                        client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
+
+                        client.Tamer.Inventory.AddItems(client.Tamer.TamerShop.Items);
+                        client.Tamer.TamerShop.Clear();
+
+                        client.Send(new PersonalShopPacket());
+
+                        await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                        await _sender.Send(new UpdateItemsCommand(client.Tamer.TamerShop));
+
+                        client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
+
+                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
+
                         return;
                     }
                 }
 
+                // Verification of items amount more than he have in bag
                 var HasQuanty = client.Tamer.Inventory.CountItensById(item.ItemId);
+                
                 if (item.Amount > HasQuanty)
                 {
-                    client.Send(new DisconnectUserPacket($"You not have {item.Amount}x {item.ItemInfo.Name}!").Serialize());
+                    //client.Send(new DisconnectUserPacket($"You not have {item.Amount}x {item.ItemInfo.Name}!").Serialize());
+                    _logger.Warning($"Tamer {client.Tamer.Name} tryed to sell more itens than he have !!");
+                    client.Send(new SystemMessagePacket($"You don't have {item.Amount}x of {item.ItemInfo.Name}!\n ShopClosed !!"));
+
+                    client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
+
+                    client.Tamer.Inventory.AddItems(client.Tamer.TamerShop.Items);
+                    client.Tamer.TamerShop.Clear();
+
+                    client.Send(new PersonalShopPacket());
+
+                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                    await _sender.Send(new UpdateItemsCommand(client.Tamer.TamerShop));
+
+                    client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
+
+                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
+
                     return;
                 }
+
                 _logger.Debug($"{item.ItemId} {item.Amount} {item.TamerShopSellPrice}");
             }
 
-            _logger.Debug($"Updating tamer shop item list...");
-            client.Tamer.TamerShop.AddItems(sellList.Clone());
+            //_logger.Information($"TamerShop Items Amount: {client.Tamer.TamerShop.Count}\n");
+
+            _logger.Verbose($"Updating tamer shop item list...");
+            client.Tamer.TamerShop.AddItems(sellList.Clone(), true);
             await _sender.Send(new UpdateItemsCommand(client.Tamer.TamerShop));
 
-            _logger.Debug($"Updating tamer inventory item list...");
+            _logger.Verbose($"Updating tamer inventory item list...");
             client.Tamer.Inventory.RemoveOrReduceItems(sellList.Clone());
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
             client.Tamer.UpdateCurrentCondition(ConditionEnum.TamerShop);
             client.Tamer.UpdateShopName(shopName);
 
-            _logger.Debug($"Sending sync in condition packet...");
+            _logger.Verbose($"Sending sync in condition packet...");
             _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition, shopName).Serialize());
+
+            _logger.Verbose($"Sending tamer shop view packet...");
             client.Send(new PersonalShopItemsViewPacket(client.Tamer.TamerShop, client.Tamer.ShopName));
 
-            _logger.Debug($"Sending tamer shop open packet...");
+            //_logger.Information($"ShopName: {client.Tamer.ShopName}, Items Amount: {client.Tamer.TamerShop.Count}\n");
+
+            _logger.Verbose($"Sending tamer shop open packet...");
             client.Send(new PersonalShopPacket(client.Tamer.ShopItemId));
             client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
 

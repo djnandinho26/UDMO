@@ -42,8 +42,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var evolution = client.Partner.Evolutions[evoIndex];
 
-            var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines
-                .FirstOrDefault(x => x.Type == evolution.Type);
+            var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == evolution.Type);
 
             //_logger.Information($"evoIndex: {evoIndex}");
             //_logger.Information($"EvolutionID: {evolution.Id} | EvolutionType: {evolution.Type} | EvolutionUnlocked: {evolution.Unlocked}");
@@ -51,8 +50,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (evoInfo == null)
             {
                 _logger.Error($"Invalid evolution info for type {client.Partner.BaseType} and line {evolution.Type}.");
-                client.Send(new SystemMessagePacket(
-                    $"Invalid evolution info for type {client.Partner.BaseType} and line {evolution.Type}."));
+                client.Send(new SystemMessagePacket($"Invalid evolution info for type {client.Partner.BaseType} and line {evolution.Type}."));
                 return;
             }
 
@@ -151,8 +149,20 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 evolution.Unlock();
 
-                var encyclopedia =
-                    client.Tamer.Encyclopedia.FirstOrDefault(x => x.DigimonEvolutionId == evoInfo.EvolutionId);
+                if (Rare)
+                {
+                    _mapServer.BroadcastForChannel(client.Tamer.Channel, new NeonMessagePacket(NeonMessageTypeEnum.Evolution, client.Tamer.Name, ItemId, client.Tamer.Partner.CurrentType).Serialize());
+                }
+
+                _logger.Verbose($"Character {client.TamerId} unlocked evolution {evolution.Type} " +
+                                    $"for {client.Partner.Id} ({client.Partner.BaseType}) with item section {itemSection} x{evoInfo.UnlockItemSectionAmount}.");
+
+                await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                await _sender.Send(new UpdateEvolutionCommand(evolution));
+
+                // --------------------------------------------------------------------------------------------------
+
+                var encyclopedia = client.Tamer.Encyclopedia.FirstOrDefault(x => x.DigimonEvolutionId == evoInfo.EvolutionId);
 
                 //_logger.Information($"Encyclopedia is: {encyclopedia.Id}, evolution id: {evoInfo.EvolutionId}, count: {client.Tamer.Encyclopedia.Count}");
                 //_logger.Information($"Encyclopedia is: {client.Tamer.Encyclopedia.Last()?.Id}");
@@ -174,18 +184,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                 }
 
-                if (Rare)
-                {
-                    _mapServer.BroadcastForChannel(client.Tamer.Channel,
-                        new NeonMessagePacket(NeonMessageTypeEnum.Evolution, client.Tamer.Name, ItemId,
-                            client.Tamer.Partner.CurrentType).Serialize());
-                }
-
-                _logger.Verbose($"Character {client.TamerId} unlocked evolution {evolution.Type} " +
-                                    $"for {client.Partner.Id} ({client.Partner.BaseType}) with item section {itemSection} x{evoInfo.UnlockItemSectionAmount}.");
-
-                await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                await _sender.Send(new UpdateEvolutionCommand(evolution));
             }
         }
     }
