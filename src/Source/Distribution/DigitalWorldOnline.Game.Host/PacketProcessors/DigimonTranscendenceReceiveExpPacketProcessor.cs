@@ -80,7 +80,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             for (int i = 0; i < digimonCount; i++)
             {
                 var academySlot = packet.ReadShort();
-                _logger.Information($"academySlot: {academySlot}");
+                _logger.Debug($"academySlot: {academySlot}");
 
                 _transcendSlots.Add(academySlot);
             }

@@ -58,16 +58,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var oldChannel = client.Tamer.Channel;
 
-            //var account = _mapper.Map<AccountModel>(await _sender.Send(new AccountByIdQuery(client.AccountId)));
-            //var character = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterByIdQuery(account.LastPlayedCharacter)));
-
-            //character.SetCurrentChannel(NewChannel);
-            //await _sender.Send(new UpdateCharacterChannelCommand(character.Id, NewChannel));
-
             client.Tamer.SetCurrentChannel(NewChannel);
             await _sender.Send(new UpdateCharacterChannelCommand(client.TamerId, NewChannel));
 
-            _logger.Information($"Tamer {client.TamerId}:{client.Tamer.Name} change Channel {oldChannel} to {NewChannel}");
+            _logger.Debug($"Tamer {client.TamerId}:{client.Tamer.Name} change Channel {oldChannel} to {NewChannel}");
 
             // -- RELOAD -----------------------------------------------------------------
 

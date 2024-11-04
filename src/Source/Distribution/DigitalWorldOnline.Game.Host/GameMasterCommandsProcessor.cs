@@ -1656,7 +1656,7 @@ namespace DigitalWorldOnline.Game
 
                         if (!match.Success)
                         {
-                            client.Send(new SystemMessagePacket($"Unknown command.\nType !stats"));
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !encyclopedia"));
                             break;
                         }
 
@@ -1664,23 +1664,25 @@ namespace DigitalWorldOnline.Game
                         // DigimonBaseInfoAssetModel digimon = _mapper.Map<DigimonBaseInfoAssetModel>(await _sender.Send(new DigimonBaseInfoQuery(type)));
 
                         var digimonEvolutionInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == type);
+
                         _logger.Information($"type: {type}, info: {digimonEvolutionInfo?.ToString()}");
+
                         if (digimonEvolutionInfo == null)
                         {
                             client.Send(new SystemMessagePacket($"evolution info not found"));
                             return;
                         }
 
-                        List<EvolutionLineAssetModel> evolutionLines =
-                            digimonEvolutionInfo.Lines.OrderBy(x => x.Id).ToList();
+                        List<EvolutionLineAssetModel> evolutionLines = digimonEvolutionInfo.Lines.OrderBy(x => x.Id).ToList();
 
-                        var encyclopedia = CharacterEncyclopediaModel.Create(client.TamerId, digimonEvolutionInfo.Id, 120,
-                            14000, 15, 15, 15, 15, 15, false, false);
+                        var encyclopedia = CharacterEncyclopediaModel.Create(client.TamerId, digimonEvolutionInfo.Id, 120, 14000, 15, 15, 15, 15, 15, false, false);
+                        
                         evolutionLines?.ForEach(x =>
                         {
                             encyclopedia.Evolutions.Add(
                                 CharacterEncyclopediaEvolutionsModel.Create(x.Type, x.SlotLevel, false));
                         });
+
                         client.Tamer.Encyclopedia.Add(encyclopedia);
 
                         var encyclopediaAdded = await _sender.Send(new CreateCharacterEncyclopediaCommand(encyclopedia));

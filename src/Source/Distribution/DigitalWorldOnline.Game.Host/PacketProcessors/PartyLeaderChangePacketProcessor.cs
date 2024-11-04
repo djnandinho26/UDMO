@@ -47,7 +47,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     targetMessage.Send(new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
                 }
 
-                _logger.Information($"Character {client.TamerId} appointed party slot {newLeaderSlot} as leader.");
+                _logger.Debug($"Character {client.TamerId} appointed party slot {newLeaderSlot} as leader.");
             }
             else
             {

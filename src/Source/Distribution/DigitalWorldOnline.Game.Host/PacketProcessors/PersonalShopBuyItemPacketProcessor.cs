@@ -51,7 +51,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Information($"PersonalShopBuy");
+            _logger.Debug($"PersonalShopBuy");
 
             var shopHandler = packet.ReadInt();
             var shopSlot = packet.ReadInt();
@@ -60,7 +60,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             packet.Skip(60);
             var boughtUnitPrice = packet.ReadInt64();
 
-            _logger.Information($"Searching Personal Shop {shopHandler}...");
+            _logger.Debug($"Searching Personal Shop {shopHandler}...");
             var PersonalShop = _mapServer.FindClientByTamerHandle(shopHandler);
 
             if (PersonalShop != null)
@@ -68,7 +68,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 hasItem = false;
                 var totalValue = boughtUnitPrice * boughtAmount;
 
-                _logger.Information($"You spend {totalValue} bits");
+                _logger.Debug($"You spend {totalValue} bits");
                 client.Tamer.Inventory.RemoveBits(totalValue);
 
                 client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
@@ -126,7 +126,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             else
             {
-                _logger.Information($"PersonalShop not found ...");
+                _logger.Error($"PersonalShop not found ...");
             }
         }
     }

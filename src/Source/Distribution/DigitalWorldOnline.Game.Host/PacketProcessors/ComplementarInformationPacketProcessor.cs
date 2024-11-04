@@ -85,7 +85,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             catch (Exception ex)
             {
-                _logger.Information($"Erro loading inventory for Tamer {client.TamerId}.\n{ex.Message}\n");
+                _logger.Error($"Erro loading inventory for Tamer {client.TamerId}.\n{ex.Message}\n");
             }
 
             _logger.Debug($"Sending warehouse packet for character {client.TamerId}...");

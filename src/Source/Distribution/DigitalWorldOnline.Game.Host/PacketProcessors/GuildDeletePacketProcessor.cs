@@ -39,7 +39,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _logger.Debug($"Sending guild delete packet for character {client.TamerId}...");
                 client.Send(new GuildDeletePacket(client.Tamer.Guild.Name));
 
-                _logger.Information($"Deleting guild for guild {client.Tamer.Guild.Id}...");
+                _logger.Debug($"Deleting guild for guild {client.Tamer.Guild.Id}...");
                 await _sender.Send(new DeleteGuildCommand(client.Tamer.Guild.Id));
 
                 _logger.Verbose($"Character {client.TamerId} deleted guild {client.Tamer.Guild.Id} {client.Tamer.Guild.Name}.");
@@ -54,7 +54,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else
                 {
-
                     _mapServer.BroadcastForTargetTamers(client.TamerId, new UnloadTamerPacket(client.Tamer).Serialize());
                     _mapServer.BroadcastForTargetTamers(client.TamerId, new LoadTamerPacket(client.Tamer).Serialize());
                     _mapServer.BroadcastForTargetTamers(client.TamerId, new LoadBuffsPacket(client.Tamer).Serialize());

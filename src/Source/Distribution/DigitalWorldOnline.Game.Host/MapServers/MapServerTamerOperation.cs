@@ -261,14 +261,14 @@ namespace DigitalWorldOnline.GameHost
 
                     _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
                     _sender.Send(new UpdateItemsCommand(client.Tamer.Warehouse));
+                    
                     if (client.Tamer.AccountWarehouse != null)
                     {
                         _sender.Send(new UpdateItemsCommand(client.Tamer.AccountWarehouse));
                     }
                     else
                     {
-                        _logger.Information(
-                            $"Account warehouse for tamerId: {client.TamerId} with name: {client.Tamer.Name} is null");
+                        _logger.Debug($"Account warehouse for tamerId: {client.TamerId} with name: {client.Tamer.Name} is null");
                     }
 
                     _sender.Send(new UpdateItemsCommand(client.Tamer.Equipment));

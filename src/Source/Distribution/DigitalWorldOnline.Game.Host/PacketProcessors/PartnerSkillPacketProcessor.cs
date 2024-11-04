@@ -740,12 +740,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         if (targetType == 17)   // Mobs around partner
                         {
-                            _logger.Information($"Target 17");
                             targets = _mapServer.GetMobsNearbyPartner(client.Partner.Location, areaOfEffect, client.TamerId);
                         }
                         else if (targetType == 18)   // Mobs around mob
                         {
-                            _logger.Information($"Target 18");
                             targets = _mapServer.GetMobsNearbyTargetMob(client.Partner.Location.MapId, targetHandler, areaOfEffect, client.TamerId);
                         }
 

@@ -49,7 +49,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     if (client.Tamer.ConsignedShop != null)
                     {
-                        _logger.Information($"Opening New PersonalShop !!");
+                        _logger.Debug($"Opening New PersonalShop !!");
                         client.Send(new PersonalShopPacket(TamerShopActionEnum.TamerShopRequest, 0));
                         return;
                     }

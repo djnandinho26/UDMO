@@ -175,16 +175,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             // Check if encyclopedia exists
             if (encyclopediaExists)
             {
-                // Write log with encyclopedia
-                _logger.Information(
-                    $"type: {newDigimon.BaseType}, info: {digimonEvolutionInfo?.Id.ToString()}, encyclopedia exists");
+                _logger.Debug($"type: {newDigimon.BaseType}, info: {digimonEvolutionInfo?.Id.ToString()}, encyclopedia exists");
             }
             else
             {
                 if (digimonEvolutionInfo != null)
                 {
-                    var encyclopedia = CharacterEncyclopediaModel.Create(client.TamerId, digimonEvolutionInfo.Id,
-                        newDigimon.Level, newDigimon.Size, 0, 0, 0, 0, 0, false, false);
+                    var encyclopedia = CharacterEncyclopediaModel.Create(client.TamerId, digimonEvolutionInfo.Id, newDigimon.Level, newDigimon.Size, 0, 0, 0, 0, 0, false, false);
+                    
                     digimonEvolutions?.ForEach(x =>
                     {
                         var evolutionLine = digimonEvolutionInfo.Lines.FirstOrDefault(y => y.Type == x.Type);
@@ -202,13 +200,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     client.Tamer.Encyclopedia.Add(encyclopediaAdded);
 
-                    _logger.Information(
-                        $"Tamer encyclopedia count: {client.Tamer.Encyclopedia.Count} and last id is {client.Tamer.Encyclopedia.Last().Id}");
+                    _logger.Debug($"Tamer encyclopedia count: {client.Tamer.Encyclopedia.Count} and last id is {client.Tamer.Encyclopedia.Last().Id}");
                 }
             }
             
-            _logger.Information($"Hatching Leveling status for character {client.Tamer.Name} is: {client.Tamer.LevelingStatus?.Id}");
-            _logger.Information($"Hatching Leveling status in digimon for character {newDigimon.Character.Name} is: {newDigimon.Character.LevelingStatus?.Id}");
+            _logger.Debug($"Hatching Leveling status for character {client.Tamer.Name} is: {client.Tamer.LevelingStatus?.Id}");
+            _logger.Debug($"Hatching Leveling status in digimon for character {newDigimon.Character.Name} is: {newDigimon.Character.LevelingStatus?.Id}");
             
         }
     }

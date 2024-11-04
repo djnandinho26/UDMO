@@ -32,7 +32,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var encyclopedia = client.Tamer.Encyclopedia;
 
-            _logger.Information($"Getting encyclopedia data");
+            _logger.Debug($"Getting encyclopedia data");
 
             var character = client.Tamer;
 

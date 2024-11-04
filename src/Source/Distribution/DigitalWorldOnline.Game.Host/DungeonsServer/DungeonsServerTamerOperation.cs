@@ -421,10 +421,7 @@ namespace DigitalWorldOnline.GameHost
                 if (client.Tamer.Location.MapId >= 1110 && client.Tamer.Location.MapId <= 1112)
                 {
                     //var debuff = client.Partner.DebuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == 50101);
-                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType)
-                        .EvolutionType;
-
-                    _logger.Information($"EvolutionType: {evolutionType}");
+                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType).EvolutionType;
 
                     // Break Digimon evolution
                     if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie &&
