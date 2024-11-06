@@ -11,12 +11,16 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
         /// </summary>
         public MembershipPacket(DateTime membershipExpirationDate, int utcSeconds)
         {
-            Type(PacketNumber);
+            int miliseconds = utcSeconds * 776;     // 775 = 6 dias (776 = 96 dias)
+            //Console.WriteLine($"Miliseconds calculation: {(membershipExpirationDate - DateTime.UtcNow).TotalSeconds * 200}");   // 240
+            //Console.WriteLine($"miliseconds: {miliseconds} | duration: {utcSeconds}");
+
+            if (miliseconds <= 0)
+                miliseconds = 0;
             
-            // Should be sent in milliseconds not seconds
-            int remainingSeconds = (int)(membershipExpirationDate - DateTime.UtcNow).TotalMilliseconds;
-            WriteByte(Convert.ToByte(remainingSeconds > 0));
-            WriteInt(remainingSeconds);
+            Type(PacketNumber);
+            WriteByte(Convert.ToByte(utcSeconds > 0));
+            WriteInt(miliseconds);
         }
 
         public MembershipPacket()

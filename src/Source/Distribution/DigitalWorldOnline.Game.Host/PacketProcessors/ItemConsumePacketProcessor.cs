@@ -9,6 +9,7 @@ using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Extensions;
 using DigitalWorldOnline.Commons.Interfaces;
+using DigitalWorldOnline.Commons.Models;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Config;
@@ -1562,64 +1563,50 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
-
-                if (ItemId == 70102) // TODO: Mudar 
+                if (ItemId == 70102)
                 {
-                    var buffData = new List<(int BuffId, int Value1, int Value2)>
-                    {
-                        (50121, 2700022, 2592000),
-                        (50122, 2700023, 2592000),
-                        (50123, 2700024, 2592000)
-                    };
+                    int time = 90 * 24 * 3600;      // 90 days membership
 
-                    foreach (var (BuffId, Value1, Value2) in buffData)
+                    client.IncreaseMembershipDuration(time);
+
+                    await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId, client.MembershipExpirationDate));
+
+                    var buff = _assets.BuffInfo.Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123).ToList();
+
+                    int duration = client.MembershipUtcSeconds;
+
+                    buff.ForEach(buffAsset =>
                     {
-                        var buff = _assets.BuffInfo.FirstOrDefault(x => x.SkillCode == Value1);
-                        if (buff != null)
+                        if (!client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buffAsset.BuffId))
                         {
-                            if (!client.Tamer.BuffList.Buffs.Any(x => x.BuffId == BuffId))
-                            {
-                                var duration = UtilitiesFunctions.RemainingTimeSeconds(Value2);
+                            var newCharacterBuff = CharacterBuffModel.Create(buffAsset.BuffId, buffAsset.SkillId, 2592000, duration);
+                            
+                            newCharacterBuff.SetBuffInfo(buffAsset);
 
-                                var newCharacterBuff = CharacterBuffModel.Create(BuffId, Value1, Value2);
-                                newCharacterBuff.SetBuffInfo(buff);
+                            client.Tamer.BuffList.Buffs.Add(newCharacterBuff);
 
-                                client.Tamer.BuffList.Add(newCharacterBuff);
-                                await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
-
-                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration)
-                                        .Serialize());
-                            }
-                            else
-                            {
-                                var BuffInfo = client.Tamer.BuffList.Buffs.FirstOrDefault(x => x.BuffId == BuffId);
-
-                                if (BuffInfo != null)
-                                {
-                                    BuffInfo.SetDuration(Value2);
-
-                                    var duration = UtilitiesFunctions.RemainingTimeSeconds(BuffInfo.Duration);
-
-                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new UpdateBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration)
-                                            .Serialize());
-
-
-                                    await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
-                                }
-                            }
+                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AddBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, duration).Serialize());
                         }
+                        else
+                        {
+                            var BuffInfo = client.Tamer.BuffList.Buffs.First(x => x.BuffId == buffAsset.BuffId);
 
-                        int time = 30 * 24 * 60 * 60;
-                        client.IncreaseMembershipDuration(time);
-                        client.Send(new MembershipPacket(client.MembershipExpirationDate!.Value,
-                            client.MembershipUtcSeconds));
-                        await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId,
-                            client.MembershipExpirationDate));
+                            if (BuffInfo != null)
+                            {
+                                BuffInfo.SetDuration(duration, true);
 
-                        client.Send(new UpdateStatusPacket(client.Tamer));
-                    }
+                                //var newDuration = UtilitiesFunctions.RemainingTimeSeconds(BuffInfo.Duration);
+
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, duration).Serialize());
+                            }
+
+                        }
+                    });
+
+                    client.Send(new MembershipPacket(client.MembershipExpirationDate!.Value, duration));
+                    client.Send(new UpdateStatusPacket(client.Tamer));
+
+                    await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
                 }
             }
         }

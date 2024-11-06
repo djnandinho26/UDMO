@@ -108,6 +108,7 @@ namespace DigitalWorldOnline.GameHost
 
                 stopwatch.Stop();
                 var totalTime = stopwatch.Elapsed.TotalMilliseconds;
+
                 if (totalTime >= 1000)
                     Console.WriteLine($"RunMap ({map.MapId}): {totalTime}.");
 

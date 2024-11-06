@@ -131,6 +131,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
                         x.SkillCode == buff.SkillId || x.DigimonSkillCode == buff.SkillId));
 
+                //await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+
                 _logger.Debug($"Getting available channels...");
 
                 var channels = await _sender.Send(new ChannelsByMapIdQuery(character.Location.MapId));

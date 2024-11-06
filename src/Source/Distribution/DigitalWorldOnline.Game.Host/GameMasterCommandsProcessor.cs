@@ -2218,37 +2218,38 @@ namespace DigitalWorldOnline.Game
                                 {
                                     var valueInHours = int.Parse(command[2]);
 
-                                    var value = valueInHours * 3600;
+                                    var value = valueInHours * 24 * 3600;
 
                                     client.IncreaseMembershipDuration(value);
 
-                                    await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId,
-                                        client.MembershipExpirationDate));
+                                    await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId, client.MembershipExpirationDate));
 
-                                    var buff = _assets.BuffInfo
-                                        .Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123).ToList();
+                                    var buff = _assets.BuffInfo.Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123).ToList();
 
                                     int duration = client.MembershipUtcSeconds;
-
-                                    //_logger.Information($"Duration Seconds: {client.MembershipUtcSeconds} | Duration Hours: {client.MembershipHours}");
 
                                     buff.ForEach(buffAsset =>
                                     {
                                         if (!client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buffAsset.BuffId))
                                         {
-                                            var newCharacterBuff = CharacterBuffModel.Create(buffAsset.BuffId,
-                                                buffAsset.SkillId, 2592000, duration);
+                                            var newCharacterBuff = CharacterBuffModel.Create(buffAsset.BuffId, buffAsset.SkillId, 2592000, duration);
+                                            
                                             newCharacterBuff.SetBuffInfo(buffAsset);
 
                                             client.Tamer.BuffList.Buffs.Add(newCharacterBuff);
 
-                                            client.Send(new AddBuffPacket(client.Tamer.GeneralHandler, buffAsset, (short)0,
-                                                duration).Serialize());
+                                            client.Send(new AddBuffPacket(client.Tamer.GeneralHandler, buffAsset, (short)0, duration).Serialize());
                                         }
                                         else
                                         {
                                             var buffData = client.Tamer.BuffList.Buffs.First(x => x.BuffId == buffAsset.BuffId);
-                                            buffData.SetDuration(duration, true);
+                                         
+                                            if (buffData != null)
+                                            {
+                                                buffData.SetDuration(duration, true);
+
+                                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, duration).Serialize());
+                                            }
                                         }
                                     });
 
@@ -2257,17 +2258,17 @@ namespace DigitalWorldOnline.Game
 
                                     await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
 
+                                    // -- RELOAD -------------------------
+
                                     client.Tamer.UpdateState(CharacterStateEnum.Loading);
-                                    await _sender.Send(new UpdateCharacterStateCommand(client.TamerId,
-                                        CharacterStateEnum.Loading));
+                                    await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
 
                                     _mapServer.RemoveClient(client);
 
                                     client.SetGameQuit(false);
                                     client.Tamer.UpdateSlots();
 
-                                    client.Send(new MapSwapPacket(_configuration[GamerServerPublic],
-                                        _configuration[GameServerPort],
+                                    client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
                                         client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y));
                                 }
                                 break;
