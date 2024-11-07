@@ -26,6 +26,7 @@ using MediatR;
 using Serilog;
 using System.IO;
 using System.Xml.Schema;
+using Newtonsoft.Json.Linq;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -112,10 +113,40 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 _logger.Debug($"Sending account membership duration packet for character {client.TamerId}...");
                 client.Send(new MembershipPacket(client.MembershipExpirationDate.Value, client.MembershipUtcSeconds));
+
+                var secondsUTC = (client.MembershipExpirationDate.Value - DateTime.UtcNow).TotalSeconds;
+
+                if (secondsUTC <= 0)
+                {
+                    //_logger.Information($"Verifying if tamer have buffs without membership");
+
+                    var buff = _assets.BuffInfo.Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123).ToList();
+
+                    buff.ForEach(buffAsset =>
+                    {
+                        if (client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buffAsset.BuffId))
+                        {
+                            var buffData = client.Tamer.BuffList.Buffs.First(x => x.BuffId == buffAsset.BuffId);
+
+                            if (buffData != null)
+                            {
+                                buffData.SetDuration(0, true);
+
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0).Serialize());
+                            }
+                        }
+                    });
+
+                    await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+                }
             }
             else
             {
-                _logger.Warning($"Tamer {client.TamerId} membership date is null !!");
+                client.RemoveMembership();
+
+                client.Send(new MembershipPacket());
+
+                await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId, client.MembershipExpirationDate));
             }
 
             _logger.Debug($"Sending account cash coins packet for character {client.TamerId}...");

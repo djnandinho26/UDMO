@@ -2201,7 +2201,7 @@ namespace DigitalWorldOnline.Game
 
                 case "membership":
                     {
-                        var regex = @"(membership\sadd\s\d{1,9}$){1}";
+                        var regex = @"membership\s(add|remove)(\s\d{1,9})?$";
                         var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
 
                         if (!match.Success)
@@ -2222,11 +2222,13 @@ namespace DigitalWorldOnline.Game
 
                                     client.IncreaseMembershipDuration(value);
 
-                                    await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId, client.MembershipExpirationDate));
-
                                     var buff = _assets.BuffInfo.Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123).ToList();
 
-                                    int duration = client.MembershipUtcSeconds;
+                                    int duration = client.MembershipUtcSecondsBuff;
+
+                                    client.Send(new MembershipPacket(client.MembershipExpirationDate!.Value, duration));
+
+                                    await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId, client.MembershipExpirationDate));
 
                                     buff.ForEach(buffAsset =>
                                     {
@@ -2238,7 +2240,7 @@ namespace DigitalWorldOnline.Game
 
                                             client.Tamer.BuffList.Buffs.Add(newCharacterBuff);
 
-                                            client.Send(new AddBuffPacket(client.Tamer.GeneralHandler, buffAsset, (short)0, duration).Serialize());
+                                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AddBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, duration).Serialize());
                                         }
                                         else
                                         {
@@ -2253,10 +2255,63 @@ namespace DigitalWorldOnline.Game
                                         }
                                     });
 
-                                    client.Send(new MembershipPacket(client.MembershipExpirationDate!.Value, duration));
+                                    await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+
+                                    //client.Send(new MembershipPacket(client.MembershipExpirationDate!.Value, duration));
                                     client.Send(new UpdateStatusPacket(client.Tamer));
 
-                                    await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+                                    // -- RELOAD -------------------------
+
+                                    client.Tamer.UpdateState(CharacterStateEnum.Loading);
+                                    await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
+
+                                    _mapServer.RemoveClient(client);
+
+                                    client.SetGameQuit(false);
+                                    client.Tamer.UpdateSlots();
+
+                                    client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
+                                        client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y));
+                                }
+                                break;
+
+                            case "remove":
+                                {
+                                    client.RemoveMembership();
+
+                                    int duration = client.MembershipUtcSecondsBuff;
+
+                                    client.Send(new MembershipPacket());
+
+                                    await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId, client.MembershipExpirationDate));
+
+                                    var secondsUTC = (client.MembershipExpirationDate.Value - DateTime.UtcNow).TotalSeconds;
+
+                                    if (secondsUTC <= 0)
+                                    {
+                                        //_logger.Information($"Verifying if tamer have buffs without membership");
+
+                                        var buff = _assets.BuffInfo.Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123).ToList();
+
+                                        buff.ForEach(buffAsset =>
+                                        {
+                                            if (client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buffAsset.BuffId))
+                                            {
+                                                var buffData = client.Tamer.BuffList.Buffs.First(x => x.BuffId == buffAsset.BuffId);
+
+                                                if (buffData != null)
+                                                {
+                                                    buffData.SetDuration(0, true);
+
+                                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0).Serialize());
+                                                }
+                                            }
+                                        });
+
+                                        await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+                                    }
+
+                                    client.Send(new UpdateStatusPacket(client.Tamer));
 
                                     // -- RELOAD -------------------------
 

@@ -276,16 +276,15 @@ namespace DigitalWorldOnline.Commons.Utils
             if (dateTime == null)
                 return 0;
             else
-                //return (int)DateTimeOffset.UtcNow.AddSeconds(dateTime.Value.Subtract(DateTime.Now).TotalSeconds).ToUnixTimeSeconds();
-                return (int)(dateTime.Value - DateTime.UtcNow).TotalSeconds;
+                return (int)DateTimeOffset.UtcNow.AddSeconds(dateTime.Value.Subtract(DateTime.Now).TotalSeconds).ToUnixTimeSeconds();
         }
 
-        public static int GetHours(this DateTime? dateTime)
+        public static int GetUtcSecondsBuff(this DateTime? dateTime)
         {
             if (dateTime == null)
                 return 0;
             else
-                return (int)(dateTime.Value - DateTime.UtcNow).TotalHours;
+                return (int)(dateTime.Value - DateTime.UtcNow).TotalSeconds;
         }
 
         // ---------------------------------------------------------------------------

@@ -335,7 +335,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             }
 
                             client.Tamer.ConsumeXg(68);
+
                             client.Tamer.ActiveEvolution.SetXg(2);
+                            client.Tamer.ActiveEvolution.SetDs(0);
                         }
                         break;
 
@@ -350,7 +352,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             }
 
                             client.Tamer.ConsumeXg(92);
+
                             client.Tamer.ActiveEvolution.SetXg(4);
+                            client.Tamer.ActiveEvolution.SetDs(0);
                         }
                         break;
 
@@ -365,7 +369,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             }
 
                             client.Tamer.ConsumeXg(130);
+
                             client.Tamer.ActiveEvolution.SetXg(6);
+                            client.Tamer.ActiveEvolution.SetDs(0);
                         }
                         break;
 
@@ -380,7 +386,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             }
 
                             client.Tamer.ConsumeXg(174);
+
                             client.Tamer.ActiveEvolution.SetXg(8);
+                            client.Tamer.ActiveEvolution.SetDs(0);
                         }
                         break;
 
@@ -395,7 +403,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             }
 
                             client.Tamer.ConsumeXg(280);
+
                             client.Tamer.ActiveEvolution.SetXg(10);
+                            client.Tamer.ActiveEvolution.SetDs(0);
                         }
                         break;
 
@@ -410,7 +420,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             }
 
                             client.Tamer.ConsumeXg(320);
+
                             client.Tamer.ActiveEvolution.SetXg(12);
+                            client.Tamer.ActiveEvolution.SetDs(0);
                         }
                         break;
 

@@ -1573,7 +1573,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     var buff = _assets.BuffInfo.Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123).ToList();
 
-                    int duration = client.MembershipUtcSeconds;
+                    int duration = client.MembershipUtcSecondsBuff;
 
                     buff.ForEach(buffAsset =>
                     {
@@ -1595,8 +1595,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             {
                                 BuffInfo.SetDuration(duration, true);
 
-                                //var newDuration = UtilitiesFunctions.RemainingTimeSeconds(BuffInfo.Duration);
-
                                 _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, duration).Serialize());
                             }
 
@@ -1607,6 +1605,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     client.Send(new UpdateStatusPacket(client.Tamer));
 
                     await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+
+                    // -- RELOAD -------------------------
+
+                    client.Tamer.UpdateState(CharacterStateEnum.Loading);
+                    await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
+
+                    _mapServer.RemoveClient(client);
+
+                    client.SetGameQuit(false);
+                    client.Tamer.UpdateSlots();
+
+                    client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
+                        client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y));
                 }
             }
         }

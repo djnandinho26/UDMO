@@ -90,9 +90,9 @@ namespace DigitalWorldOnline.Commons.Entities
             SentOnceDataSent = false;
         }
 
-        public int MembershipUtcSeconds => MembershipExpirationDate.GetUtcSeconds();    //  Membership by Seconds
-        public int MembershipHours => MembershipExpirationDate.GetHours();    //  Membership by Hours
-
+        public int MembershipUtcSeconds => MembershipExpirationDate.GetUtcSeconds();            //  Membership 
+        public int MembershipUtcSecondsBuff => MembershipExpirationDate.GetUtcSecondsBuff();    //  Membership for buffs
+        
         public int PartnerDeleteValidation(string validation)
         {
             if (!string.IsNullOrEmpty(AccountSecondaryPassword))
@@ -160,6 +160,8 @@ namespace DigitalWorldOnline.Commons.Entities
             ReceiveWelcome = account.ReceiveWelcome;
         }
 
+        // ----------------------------------------------------------------------------------
+
         public void IncreaseMembershipDuration(int seconds)
         {
             if (MembershipExpirationDate == null)
@@ -176,6 +178,13 @@ namespace DigitalWorldOnline.Commons.Entities
                     MembershipExpirationDate = MembershipExpirationDate.Value.AddSeconds(seconds);
             }
         }
+
+        public void RemoveMembership()
+        {
+            MembershipExpirationDate = DateTime.UtcNow;
+        }
+
+        // ----------------------------------------------------------------------------------
 
         public void SetCharacter(CharacterModel character)
         {

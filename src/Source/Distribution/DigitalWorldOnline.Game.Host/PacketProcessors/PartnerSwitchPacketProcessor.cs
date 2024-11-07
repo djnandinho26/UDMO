@@ -158,16 +158,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
             }
 
-            //_logger.Information($"Tamer ActiveEvolution Gauge consume: {client.Tamer.ActiveEvolution.XgPerSecond}");
-
+            client.Tamer.ActiveEvolution.SetDs(0);
             client.Tamer.ActiveEvolution.SetXg(0);
 
             await _sender.Send(new UpdatePartnerCurrentTypeCommand(client.Partner));
             await _sender.Send(new UpdateCharacterDigimonsOrderCommand(client.Tamer));
             await _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
             await _sender.Send(new UpdateCharacterActiveEvolutionCommand(client.Tamer.ActiveEvolution));
-
-            //_logger.Information($"Tamer ActiveEvolution Gauge consume: {client.Tamer.ActiveEvolution.XgPerSecond}");
 
             _logger.Debug($"Tamer {client.Tamer.Name} switched partner {previousType} with {client.Partner.BaseType}.");
         }
