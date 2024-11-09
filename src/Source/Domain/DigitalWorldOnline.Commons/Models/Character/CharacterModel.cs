@@ -214,6 +214,11 @@ namespace DigitalWorldOnline.Commons.Models.Character
         public CharacterDigimonArchiveModel DigimonArchive { get; private set; }
 
         /// <summary>
+        /// Character's digimon academy.
+        /// </summary>
+        public CharacterDigimonAcademyModel DigimonAcademy { get; private set; }
+
+        /// <summary>
         /// Belonging guild.
         /// </summary>
         public GuildModel? Guild { get; private set; }

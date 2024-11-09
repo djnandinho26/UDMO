@@ -1,12 +1,15 @@
 ﻿using DigitalWorldOnline.Application.Separar.Commands.Delete;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
+using DigitalWorldOnline.Commons.Models.Mechanics;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.GameHost;
 using MediatR;
 using Serilog;
+using AutoMapper;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -18,33 +21,45 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly DungeonsServer _dungeonServer;
         private readonly ILogger _logger;
         private readonly ISender _sender;
+        private readonly IMapper _mapper;
 
-        public GuildDeletePacketProcessor(
-            MapServer mapServer,
-            ILogger logger,
-            ISender sender,
-            DungeonsServer dungeonServer)
+        public GuildDeletePacketProcessor(MapServer mapServer, DungeonsServer dungeonServer, ILogger logger, ISender sender, IMapper mapper)
         {
             _mapServer = mapServer;
+            _dungeonServer = dungeonServer;
             _logger = logger;
             _sender = sender;
-            _dungeonServer = dungeonServer;
+            _mapper = mapper;
         }
 
         public async Task Process(GameClient client, byte[] packetData)
         {
+            _logger.Information($"GuildDelete Packet 2102");
+
             if (client.Tamer.Guild != null)
             {
-                //TODO: send to members if the client let you delete with members
-                _logger.Debug($"Sending guild delete packet for character {client.TamerId}...");
-                client.Send(new GuildDeletePacket(client.Tamer.Guild.Name));
+                var guild = client.Tamer.Guild;
 
-                _logger.Debug($"Deleting guild for guild {client.Tamer.Guild.Id}...");
-                await _sender.Send(new DeleteGuildCommand(client.Tamer.Guild.Id));
+                //_logger.Information($"Removing Tamer {client.TamerId}:{client.Tamer.Name}");
+                //guild.RemoveMember(client.TamerId);
+                //guild.AddHistoricEntry(GuildHistoricTypeEnum.GuildDelete, guild.Master, guild.Master);
 
-                _logger.Verbose($"Character {client.TamerId} deleted guild {client.Tamer.Guild.Id} {client.Tamer.Guild.Name}.");
+                _logger.Information($"Deleting guild {guild.Id} : {guild.Name}");
 
-                client.Tamer.SetGuild();
+                client.Send(new GuildDeletePacket(guild.Name));
+
+                try
+                {
+                    await _sender.Send(new DeleteGuildCommand(guild.Id));
+
+                    client.Tamer.SetGuild();
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"ErrorGuild:\n{ex.Message}");
+                }
+
+                
 
                 if (client.DungeonMap)
                 {
@@ -58,6 +73,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     _mapServer.BroadcastForTargetTamers(client.TamerId, new LoadTamerPacket(client.Tamer).Serialize());
                     _mapServer.BroadcastForTargetTamers(client.TamerId, new LoadBuffsPacket(client.Tamer).Serialize());
                 }
+
+                _logger.Information($"Tamer {client.Tamer.Name} deleted guild {guild.Id} : {guild.Name}.");
+            }
+            else
+            {
+                _logger.Information($"Tamer {client.Tamer.Name} Nao esta mais na guild.");
             }
         }
     }

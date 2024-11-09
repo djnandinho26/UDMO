@@ -429,12 +429,20 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// <summary>
         /// Loads the digimon archive/storage.
         /// </summary>
-        DigimonArchiveAcademy = 3226,
+        ArchiveAcademyList = 3226,
 
         /// <summary>
         /// Loads the digimon archive/storage.
         /// </summary>
         ArchiveAcademyInsert = 3227,
+
+        ArchiveAcademyError = 3228,
+
+        ArchiveAcademyExtraction = 3229,
+
+        ArchiveAcademySaveExp = 3230,
+
+        ArchiveAcademySlotChange = 3231,
 
         /// <summary>
         /// Loads the digimon archive/storage.

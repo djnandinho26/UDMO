@@ -25,11 +25,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
 
-        public GuildCreatePacketProcessor(
-            MapServer mapServer,
-            ISender sender,
-            ILogger logger,
-            IMapper mapper)
+        public GuildCreatePacketProcessor(MapServer mapServer, ISender sender, ILogger logger, IMapper mapper)
         {
             _mapServer = mapServer;
             _sender = sender;
@@ -42,8 +38,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var packet = new GamePacketReader(packetData);
 
             var guildName = packet.ReadString();
+            
             packet.Skip(1);
-            var itemSlot = packet.ReadByte();
+            
+            var itemSlot = packet.ReadShort();
+            var npcId = packet.ReadInt();
+
+            //_logger.Information($"GuildName: {guildName} | itemSlot: {itemSlot} | Npc: {npcId}");
 
             var nameTaken = await _sender.Send(new GuildByGuildNameQuery(guildName)) != null;
             var guildPermit = client.Tamer.Inventory.FindItemBySlot(itemSlot);

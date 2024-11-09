@@ -318,10 +318,11 @@ namespace DigitalWorldOnline.Commons.Utils
             };
         }
 
+        // ---------------------------------------------------------------------------
+
         public static int GetUtcSeconds(this DateTime dateTime)
         {
-            return (int)DateTimeOffset.UtcNow.AddSeconds(dateTime.Subtract(DateTime.Now).TotalSeconds)
-                .ToUnixTimeSeconds();
+            return (int)DateTimeOffset.UtcNow.AddSeconds(dateTime.Subtract(DateTime.Now).TotalSeconds).ToUnixTimeSeconds();
         }
 
         public static bool HasAttributeAdvantage(this DigimonAttributeEnum hitter, DigimonAttributeEnum target)

@@ -48,6 +48,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _logger.Debug($"Searching character by name {targetName}...");
             var targetCharacter = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterByNameQuery(targetName)));
+
             if (targetCharacter == null)
             {
                 _logger.Warning($"Character {targetName} not found.");
@@ -57,6 +58,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _logger.Debug($"Searching guild by character id {targetCharacter.Id}...");
             var targetGuild = _mapper.Map<GuildModel>(await _sender.Send(new GuildByCharacterIdQuery(targetCharacter.Id)));
+
             if (targetGuild == null)
             {
                 _logger.Warning($"Character {targetName} does not belong to a guild.");

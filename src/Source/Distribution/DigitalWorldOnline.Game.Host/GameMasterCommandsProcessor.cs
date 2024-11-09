@@ -2731,15 +2731,19 @@ namespace DigitalWorldOnline.Game
                                 // Verify if is Tamer Skill
                                 if (buff.SkillCode > 0)
                                 {
-                                    var newCharacterBuff =
-                                        CharacterBuffModel.Create(buff.BuffId, buff.SkillId, 0, (int)duration);
+                                    if (client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buff.BuffId))
+                                    {
+                                        client.Send(new SystemMessagePacket($"You already have this buff !!"));
+                                        break;
+                                    }
+                                        
+                                    var newCharacterBuff = CharacterBuffModel.Create(buff.BuffId, buff.SkillId, 0, (int)duration);
                                     newCharacterBuff.SetBuffInfo(buff);
 
                                     client.Tamer.BuffList.Buffs.Add(newCharacterBuff);
 
                                     client.Send(new UpdateStatusPacket(client.Tamer));
-                                    client.Send(new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration)
-                                        .Serialize());
+                                    client.Send(new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration).Serialize());
 
                                     await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
                                 }
@@ -2747,15 +2751,19 @@ namespace DigitalWorldOnline.Game
                                 // Verify if is Digimon Skill
                                 if (buff.DigimonSkillCode > 0)
                                 {
-                                    var newDigimonBuff =
-                                        DigimonBuffModel.Create(buff.BuffId, buff.SkillId, 0, (int)duration);
+                                    if (client.Partner.BuffList.Buffs.Any(x => x.BuffId == buff.BuffId))
+                                    {
+                                        client.Send(new SystemMessagePacket($"Your Digimon already have this buff !!"));
+                                        break;
+                                    }
+
+                                    var newDigimonBuff = DigimonBuffModel.Create(buff.BuffId, buff.SkillId, 0, (int)duration);
                                     newDigimonBuff.SetBuffInfo(buff);
 
                                     client.Partner.BuffList.Buffs.Add(newDigimonBuff);
 
                                     client.Send(new UpdateStatusPacket(client.Tamer));
-                                    client.Send(new AddBuffPacket(client.Partner.GeneralHandler, buff, (short)0, duration)
-                                        .Serialize());
+                                    client.Send(new AddBuffPacket(client.Partner.GeneralHandler, buff, (short)0, duration).Serialize());
 
                                     await _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
                                 }
@@ -2767,13 +2775,12 @@ namespace DigitalWorldOnline.Game
                                 // Verify if is Tamer Skill
                                 if (buff.SkillCode > 0)
                                 {
-                                    var characterBuff =
-                                        client.Tamer.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == buff.BuffId);
+                                    var characterBuff = client.Tamer.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == buff.BuffId);
 
                                     if (characterBuff == null)
                                     {
                                         client.Send(new SystemMessagePacket($"CharacterBuff not found"));
-                                        return;
+                                        break;
                                     }
 
                                     client.Tamer.BuffList.Buffs.Remove(characterBuff);
@@ -2787,20 +2794,18 @@ namespace DigitalWorldOnline.Game
                                 // Verify if is Digimon Skill
                                 if (buff.DigimonSkillCode > 0)
                                 {
-                                    var digimonBuff =
-                                        client.Partner.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == buff.BuffId);
+                                    var digimonBuff = client.Partner.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == buff.BuffId);
 
                                     if (digimonBuff == null)
                                     {
                                         client.Send(new SystemMessagePacket($"DigimonBuff not found"));
-                                        return;
+                                        break;
                                     }
 
                                     client.Partner.BuffList.Buffs.Remove(digimonBuff);
 
                                     client.Send(new UpdateStatusPacket(client.Tamer));
-                                    client.Send(
-                                        new RemoveBuffPacket(client.Partner.GeneralHandler, buff.BuffId).Serialize());
+                                    client.Send(new RemoveBuffPacket(client.Partner.GeneralHandler, buff.BuffId).Serialize());
 
                                     await _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
                                 }
@@ -2809,7 +2814,7 @@ namespace DigitalWorldOnline.Game
                             }
                             else
                             {
-                                client.Send(new SystemMessagePacket($"Unknown command.\nType !buff (add/remove)"));
+                                client.Send(new SystemMessagePacket($"Unknown command.\nType !buff (add/remove) (buffId)"));
                                 break;
                             }
                         }

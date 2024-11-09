@@ -85,9 +85,11 @@ namespace DigitalWorldOnline.Account
                     if (account == null)
                     {
                         _logger.Debug("Saving {Username} login try for incorrect username...", username);
-                        await _sender.Send(new CreateLoginTryCommand(username, client.ClientAddress,
-                            LoginTryResultEnum.IncorrectUsername));
+
+                        await _sender.Send(new CreateLoginTryCommand(username, client.ClientAddress, LoginTryResultEnum.IncorrectUsername));
+
                         client.Send(new LoginRequestAnswerPacket(LoginFailReasonEnum.UserNotFound));
+
                         break;
                     }
 
@@ -136,9 +138,10 @@ namespace DigitalWorldOnline.Account
 
                     if (_authenticationServerConfiguration.UseHash)
                     {
-                        _logger.Debug("Getting resources hash.");
+                        _logger.Debug("Getting resources hash from database !!");
                         var hashString = await _sender.Send(new ResourcesHashQuery());
 
+                        _logger.Debug("Sending Hash to client");
                         client.Send(new ResourcesHashPacket(hashString));
                     }
 
@@ -293,6 +296,15 @@ namespace DigitalWorldOnline.Account
 
                 case AuthenticationServerPacketEnum.Unknown:
                 case AuthenticationServerPacketEnum.ResourcesHash:
+                    {
+                        _logger.Information($"Verifying Hash -> Packet 10003");
+
+                        int hashLength = BitConverter.ToInt16(data, 0);
+                        string clientHash = BitConverter.ToString(data, 2, hashLength).Replace("-", "");
+
+                        _logger.Information($"Hash received:\n{clientHash}");
+                    }
+                    break;
 
                 default:
                 {

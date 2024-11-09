@@ -12,6 +12,7 @@ using DigitalWorldOnline.Commons.DTOs.Events;
 using AutoMapper.Execution;
 using DigitalWorldOnline.Commons.DTOs.Character;
 using System;
+using Microsoft.Data.SqlClient;
 
 namespace DigitalWorldOnline.Infrastructure.Repositories.Server
 {
@@ -127,13 +128,13 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Server
 
         public async Task DeleteGuildAsync(long guildId)
         {
-            var dto = await _context.Guild
-                .AsNoTracking()
-                .SingleOrDefaultAsync(x => x.Id == guildId);
-
+            var dto = await _context.Guild.AsNoTracking().SingleOrDefaultAsync(x => x.Id == guildId);
+            
             if (dto != null)
             {
-                _context.Remove(dto);
+                await _context.Database.ExecuteSqlRawAsync("DELETE FROM [Guild].[Guild] WHERE Id = @guildId", new SqlParameter("@guildId", dto.Id));
+
+                //_context.Remove(dto);
                 _context.SaveChanges();
             }
         }
