@@ -34,17 +34,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         public async Task Process(GameClient client, byte[] packetData)
         {
-            _logger.Information($"GuildDelete Packet 2102");
+            _logger.Debug($"GuildDelete Packet 2102");
 
             if (client.Tamer.Guild != null)
             {
                 var guild = client.Tamer.Guild;
 
-                //_logger.Information($"Removing Tamer {client.TamerId}:{client.Tamer.Name}");
-                //guild.RemoveMember(client.TamerId);
-                //guild.AddHistoricEntry(GuildHistoricTypeEnum.GuildDelete, guild.Master, guild.Master);
-
-                _logger.Information($"Deleting guild {guild.Id} : {guild.Name}");
+                _logger.Debug($"Deleting guild {guild.Id} : {guild.Name}");
 
                 client.Send(new GuildDeletePacket(guild.Name));
 
@@ -59,8 +55,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     _logger.Error($"ErrorGuild:\n{ex.Message}");
                 }
 
-                
-
                 if (client.DungeonMap)
                 {
                     _dungeonServer.BroadcastForTargetTamers(client.TamerId, new UnloadTamerPacket(client.Tamer).Serialize());
@@ -74,11 +68,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     _mapServer.BroadcastForTargetTamers(client.TamerId, new LoadBuffsPacket(client.Tamer).Serialize());
                 }
 
-                _logger.Information($"Tamer {client.Tamer.Name} deleted guild {guild.Id} : {guild.Name}.");
+                _logger.Debug($"Tamer {client.Tamer.Name} deleted guild {guild.Id} : {guild.Name}.");
             }
             else
             {
-                _logger.Information($"Tamer {client.Tamer.Name} Nao esta mais na guild.");
+                _logger.Debug($"Tamer {client.Tamer.Name} not in guild.");
             }
         }
     }

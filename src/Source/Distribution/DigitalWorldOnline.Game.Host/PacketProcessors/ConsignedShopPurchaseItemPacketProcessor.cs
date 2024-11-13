@@ -28,11 +28,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly IMapper _mapper;
         private readonly ISender _sender;
 
-        public ConsignedShopPurchaseItemPacketProcessor(
-            AssetsLoader assets,
-            ILogger logger,
-            IMapper mapper,
-            ISender sender)
+        public ConsignedShopPurchaseItemPacketProcessor(AssetsLoader assets, ILogger logger, IMapper mapper, ISender sender)
         {
             _assets = assets;
             _logger = logger;
@@ -44,7 +40,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Verbose($"ConsigmentShop Buy Packet 1518");
+            _logger.Information($"ConsigmentShop Buy Packet 1518");
 
             var shopHandler = packet.ReadInt();
             var shopSlot = packet.ReadInt();
@@ -53,24 +49,26 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             packet.Skip(60);
             var boughtUnitPrice = packet.ReadInt64();
 
-            _logger.Debug($"{shopHandler} {shopSlot} {boughtItemId} {boughtAmount} {boughtUnitPrice}");
+            _logger.Information($"boughtItemId: {boughtItemId} | boughtUnitPrice: {boughtUnitPrice} | boughtAmount: {boughtAmount}");
 
             _logger.Debug($"Searching consigned shop {shopHandler}...");
             var shop = _mapper.Map<ConsignedShop>(await _sender.Send(new ConsignedShopByHandlerQuery(shopHandler)));
+
             if (shop == null)
             {
-                _logger.Debug($"Consigned shop {shopHandler} not found...");
+                _logger.Error($"Consigned shop {shopHandler} not found...");
                 client.Send(new UnloadConsignedShopPacket(shopHandler));
                 return;
             }
 
             var seller = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterAndItemsByIdQuery(shop.CharacterId)));
+
             if (seller == null)
             {
-                _logger.Debug($"Deleting consigned shop {shopHandler}...");
+                _logger.Error($"Deleting consigned shop {shopHandler}...");
                 await _sender.Send(new DeleteConsignedShopCommand(shopHandler));
 
-                _logger.Debug($"Consigned shop owner {shop.CharacterId} not found...");
+                _logger.Error($"Consigned shop owner {shop.CharacterId} not found...");
                 client.Send(new UnloadConsignedShopPacket(shopHandler));
                 return;
             }
@@ -82,22 +80,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var totalValue = boughtUnitPrice * boughtAmount;
 
-            _logger.Debug($"Removing {totalValue} bits...");
+            _logger.Information($"Removing {totalValue} bits from {client.Tamer.Name}");
             client.Tamer.Inventory.RemoveBits(totalValue);
 
-            _logger.Debug($"Updating inventory bits...");
             await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory));
 
             var newItem = new ItemModel(boughtItemId, boughtAmount);
             newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == boughtItemId));
 
-            _logger.Debug($"Adding bought item...");
+            _logger.Information($"Adding items to {client.Tamer.Name}");
             client.Tamer.Inventory.AddItems(((ItemModel)newItem.Clone()).GetList());
 
-            _logger.Debug($"Updating item list...");
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
+            // ----------------------------------------------------------------------
+
             var sellerClient = client.Server.FindByTamerId(shop.CharacterId);
+
             if (sellerClient != null && sellerClient.IsConnected)
             {
                 _logger.Debug($"Sending system message packet {sellerClient.TamerId}...");
@@ -118,19 +117,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             else
             {
-
-                _logger.Debug($"Adding {totalValue} bits to {seller.Name} consigned warehouse...");
+                _logger.Information($"Adding {totalValue} bits to {seller.Name} consigned warehouse...");
                 seller.ConsignedWarehouse.AddBits(totalValue);
 
                 _logger.Debug($"Removing consigned shop bought item...");
                 seller.ConsignedShopItems.RemoveOrReduceItems(((ItemModel)newItem.Clone()).GetList());
 
-                _logger.Debug($"Updating {seller.Name} consigned warehouse...");
                 await _sender.Send(new UpdateItemListBitsCommand(seller.ConsignedWarehouse));
 
-                _logger.Debug($"Updating {seller.Id} consigned shop items...");
                 await _sender.Send(new UpdateItemsCommand(seller.ConsignedShopItems));
-
             }
 
             if (seller.ConsignedShopItems.Count == 0)

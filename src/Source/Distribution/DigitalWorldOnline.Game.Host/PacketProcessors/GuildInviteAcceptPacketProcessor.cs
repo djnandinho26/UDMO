@@ -5,13 +5,10 @@ using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
-using DigitalWorldOnline.Commons.Models.Character;
-using DigitalWorldOnline.Commons.Models.Mechanics;
 using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.GameHost;
-
 using MediatR;
 using Serilog;
 
@@ -26,11 +23,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ISender _sender;
         private readonly IMapper _mapper;
 
-        public GuildInviteAcceptPacketProcessor(
-            MapServer mapServer,
-            ILogger logger,
-            ISender sender,
-            IMapper mapper)
+        public GuildInviteAcceptPacketProcessor(MapServer mapServer, ILogger logger, ISender sender, IMapper mapper)
         {
             _mapServer = mapServer;
             _logger = logger;
@@ -45,8 +38,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var guildId = packet.ReadInt();
             var inviterName = packet.ReadString();
 
-            _logger.Debug($"Searching character by name {inviterName}...");
             var inviterCharacter = _mapServer.FindClientByTamerName(inviterName);
+
             if (inviterCharacter == null)
             {
                 _logger.Warning($"Character not found with name {inviterName}.");
@@ -55,6 +48,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
 
             var targetGuild = inviterCharacter.Tamer.Guild;
+
             if (targetGuild == null)
             {
                 _logger.Warning($"Guild not found with id {guildId}.");
@@ -69,6 +63,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             senderMember?.SetCharacterInfo(inviterCharacter.Tamer);
 
             var newEntry = targetGuild.AddHistoricEntry(GuildHistoricTypeEnum.MemberJoin, senderMember, newMember);
+
             client.Tamer.SetGuild(targetGuild);
 
             foreach (var guildMember in targetGuild.Members)

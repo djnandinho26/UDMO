@@ -52,14 +52,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             try
             {
+                //_logger.Information($"Skill Request Packet 1327");
+
                 var packet = new GamePacketReader(packetData);
+
                 int SkillId = packet.ReadInt();
+
+                //_logger.Information($"SkillId: {SkillId}");
 
                 var targetSkill = _assets.TamerSkills.FirstOrDefault(x => x.SkillId == SkillId);
 
                 if (targetSkill != null)
                 {
-
                     var targetBuffInfo = _assets.BuffInfo.FirstOrDefault(x => x.DigimonSkillCode == targetSkill.SkillCode && x.Class != 450);
 
                     if (targetBuffInfo != null)
@@ -70,6 +74,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         {
                             var TargetType = (SkillTargetTypeEnum)TargetSkillInfo.Target;
 
+                            //_logger.Information($"Skill TargetType: {TargetType}");
 
                             switch (TargetType)
                             {
@@ -91,7 +96,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                     break;
                             }
                         }
+                        else
+                        {
+                            _logger.Error($"TargetSkillInfo = null");
+                        }
                     }
+                    else
+                    {
+                        _logger.Error($"targetBuffInfo = null");
+                    }
+                }
+                else
+                {
+                    _logger.Error($"targetSkill = null");
                 }
 
             }
@@ -114,7 +131,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var newDigimonSkillBuff = DigimonBuffModel.Create(targetBuffInfo.BuffId, targetSkill.SkillCode, 0, targetSkill.Duration, (int)(TargetSkillInfo.Cooldown / 1000.0));
             newDigimonSkillBuff.SetBuffInfo(targetBuffInfo);
 
-
             var activeSkill = client.Tamer.ActiveSkill.FirstOrDefault(x => x.SkillId == SkillId);
 
             if (activeSkill != null)
@@ -126,6 +142,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 activeSkill = client.Tamer.ActiveSkill.FirstOrDefault(x => x.SkillId == 0);
                 activeSkill.SetTamerSkill(SkillId, (int)(TargetSkillInfo.Cooldown / 1000.0), TamerSkillTypeEnum.Normal);
             }
+
             if (!targetBuffInfo.Pray && !targetBuffInfo.Cheer)
             {
                 var buffToRemove = client.Tamer.Partner.BuffList.ActiveBuffs.FirstOrDefault(x => x.SkillId == newDigimonSkillBuff.SkillId);

@@ -4,6 +4,7 @@ using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
+using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
@@ -61,7 +62,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             guild.AddMember(client.Tamer, GuildAuthorityTypeEnum.Master);
             guild.AddHistoricEntry(GuildHistoricTypeEnum.GuildCreate, guild.Master, guild.Master);
 
-            client.Tamer.SetGuild(_mapper.Map<GuildModel>(await _sender.Send(new CreateGuildCommand(guild))));
+            client.Tamer.SetGuild(guild);
+            
+            await _sender.Send(new CreateGuildCommand(guild));
 
             _logger.Debug($"Sending guild create success packet for character {client.TamerId}...");
             client.Send(new GuildCreateSuccessPacket(client.Tamer.Name, itemSlot, guildName));

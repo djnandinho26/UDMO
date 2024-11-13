@@ -499,9 +499,7 @@ namespace DigitalWorldOnline.GameHost
                 {
                     foreach (var targetMob in sourceMobKillSpawn.TargetMobs)
                     {
-                        // TODO: para todos os canais (apenas do mapa)
-                        map.BroadcastForMap(
-                            new KillSpawnChatNotifyPacket(map.MapId, map.Channel, targetMob.TargetMobType).Serialize());
+                        map.BroadcastForMap(new KillSpawnChatNotifyPacket(map.MapId, map.Channel, targetMob.TargetMobType).Serialize());
 
                         map.Mobs.Where(x => x.Type == targetMob.TargetMobType)?.ToList()
                             .ForEach(mobConfigModel =>

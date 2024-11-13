@@ -44,6 +44,7 @@ namespace DigitalWorldOnline.GameHost
             foreach (var map in mapsToRemove)
             {
                 _logger.Debug($"Removing inactive instance for {map.Type} map {map.Id} CH {map.Channel} - {map.Name}...");
+                _logger.Information($"Removing inactive instance for {map.Type} map {map.Id} CH {map.Channel} - {map.Name}...");
                 Maps.Remove(map);
             }
 
@@ -331,7 +332,8 @@ namespace DigitalWorldOnline.GameHost
         /// <param name="client">The gameclient to be removed.</param>
         public void RemoveClient(GameClient client)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId));
+            //var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId));
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId) && x.Channel == client.Tamer.Channel);
 
             map?.BroadcastForTargetTamers(client.TamerId,
                 new LocalMapSwapPacket(

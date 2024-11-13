@@ -1,23 +1,18 @@
 ﻿using AutoMapper;
 using DigitalWorldOnline.Application;
-using DigitalWorldOnline.Application.Separar.Commands.Delete;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
-using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Extensions;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Base;
-using DigitalWorldOnline.Commons.Models.Character;
-using DigitalWorldOnline.Commons.Models.TamerShop;
 using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Packets.PersonalShop;
 using DigitalWorldOnline.GameHost;
 using MediatR;
-using Newtonsoft.Json.Linq;
 using Serilog;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
@@ -33,12 +28,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ISender _sender;
         private bool hasItem = false;
 
-        public PersonalShopPurchaseItemPacketProcessor(
-            MapServer mapServer,
-            AssetsLoader assets,
-            ILogger logger,
-            IMapper mapper,
-            ISender sender)
+        public PersonalShopPurchaseItemPacketProcessor(MapServer mapServer, AssetsLoader assets, ILogger logger, IMapper mapper, ISender sender)
         {
             _mapServer = mapServer;
             _assets = assets;
@@ -51,24 +41,28 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Debug($"PersonalShopBuy");
+            _logger.Information($"PersonalShopBuy");
 
             var shopHandler = packet.ReadInt();
             var shopSlot = packet.ReadInt();
             var boughtItemId = packet.ReadInt();
             var boughtAmount = packet.ReadInt();
+
             packet.Skip(60);
+
             var boughtUnitPrice = packet.ReadInt64();
 
-            _logger.Debug($"Searching Personal Shop {shopHandler}...");
+            _logger.Information($"Searching Personal Shop {shopHandler}...");
             var PersonalShop = _mapServer.FindClientByTamerHandle(shopHandler);
 
             if (PersonalShop != null)
             {
+                _logger.Information($"boughtItemId: {boughtItemId} | boughtUnitPrice: {boughtUnitPrice} | boughtAmount: {boughtAmount}");
+
                 hasItem = false;
                 var totalValue = boughtUnitPrice * boughtAmount;
 
-                _logger.Debug($"You spend {totalValue} bits");
+                _logger.Information($"You spend {totalValue} bits");
                 client.Tamer.Inventory.RemoveBits(totalValue);
 
                 client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
@@ -77,13 +71,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 /*var Slot = PersonalShop.Tamer.TamerShop.Items.FirstOrDefault(x => x.ItemId == boughtItemId);
                 PersonalShop.Tamer.TamerShop.Items[Slot.Slot].Amount -= boughtAmount;*/
 
+                // ------------------------------------------------------------------------------------
+
                 var totalValuewithDescount = (totalValue / 100) * 98;
 
-                _logger.Debug($"Seller win {totalValuewithDescount} bits");
+                _logger.Information($"Seller win {totalValuewithDescount} bits");
                 PersonalShop.Tamer.Inventory.AddBits(totalValuewithDescount);
 
                 PersonalShop.Send(new LoadInventoryPacket(PersonalShop.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
                 await _sender.Send(new UpdateItemListBitsCommand(PersonalShop.Tamer.Inventory.Id, PersonalShop.Tamer.Inventory.Bits));
+
+                // ------------------------------------------------------------------------------------
 
                 _logger.Debug($"Tentando comprar Item em {PersonalShop.Tamer.ShopName} {shopHandler} » {shopHandler} {shopSlot} {boughtItemId} {boughtAmount} {boughtUnitPrice}.");
                 var newItem = new ItemModel(boughtItemId, boughtAmount);

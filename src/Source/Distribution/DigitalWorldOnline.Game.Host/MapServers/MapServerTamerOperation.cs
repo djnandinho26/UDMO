@@ -355,8 +355,7 @@ namespace DigitalWorldOnline.GameHost
                     map.BroadcastForTargetTamers(tamer.Id,
                         new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate).Serialize());
                     map.BroadcastForTamerViewsAndSelf(tamer.Id,
-                        new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName)
-                            .Serialize());
+                        new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName).Serialize());
 
                     var party = _partyManager.FindParty(tamer.Id);
 
@@ -367,6 +366,7 @@ namespace DigitalWorldOnline.GameHost
                         map.BroadcastForTargetTamers(party.GetMembersIdList(),
                             new PartyMemberInfoPacket(party[tamer.Id]).Serialize());
                     }
+
                 }
 
                 if (tamer.SaveResourcesTime)

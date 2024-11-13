@@ -310,6 +310,177 @@ namespace DigitalWorldOnline.Game
                     }
                     break;
 
+                case "done":
+                    {
+                        var regex = @"^done";
+                        var match = Regex.IsMatch(message, regex, RegexOptions.IgnoreCase);
+
+                        if (!match)
+                        {
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !done (slot)"));
+                            break;
+                        }
+
+                        if (command.Length < 2)
+                        {
+                            client.Send(new SystemMessagePacket("Invalid command.\nType !delete (slot)"));
+                            break;
+                        }
+
+                        if (!byte.TryParse(command[1], out byte digiSlot))
+                        {
+                            client.Send(new SystemMessagePacket("Invalid Slot.\nType a valid Slot (1 to 4)"));
+                            break;
+                        }
+
+                        if (digiSlot == 0 || digiSlot > 4)
+                        {
+                            client.Send(new SystemMessagePacket($"Invalid Slot !!"));
+                            break;
+                        }
+
+                        var digimon = client.Tamer.Digimons.FirstOrDefault(x => x.Slot == digiSlot);
+
+                        if (digimon == null)
+                        {
+                            client.Send(new SystemMessagePacket($"Digimon not found on slot {digiSlot}"));
+                            break;
+                        }
+                        else
+                        {
+                            var digimonId = digimon.Id;
+
+                            if (digimon.BaseType == 31066 && digimon.Level >= 99)
+                            {
+                                var itemId = 66935; // 66935 impmon item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 31023 && digimon.Level >= 99) // Sleipmon Type
+                            {
+                                var itemId = 66936; // 66936 slepymon item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 31022 && digimon.Level >= 99) // Dynasmon Type
+                            {
+                                var itemId = 66937; // 66937 dynasmon item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else
+                            {
+                                client.Send(new SystemMessagePacket("Wrong digimon type or level less than 99!!"));
+                                break;
+                            }
+
+                        }
+
+                    }
+                    break;
+
                 case "tamer":
                     {
                         if (command.Length == 1)
