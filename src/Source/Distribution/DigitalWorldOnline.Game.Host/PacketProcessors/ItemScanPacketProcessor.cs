@@ -66,6 +66,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 client.Send(new SystemMessagePacket($"Invalid item at slot {slotToScan}."));
                 _logger.Warning($"Invalid item on slot {slotToScan} for tamer {client.TamerId} on scanning.");
+                
+                client.Send(new DisconnectUserPacket($"YOU HAVE BEEN PERMANENTLY BANNED").Serialize());
 
                 return;
             }
