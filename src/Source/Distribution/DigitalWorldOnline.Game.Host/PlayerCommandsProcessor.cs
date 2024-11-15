@@ -11,6 +11,9 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System.Text.RegularExpressions;
+using DigitalWorldOnline.Application.Separar.Commands.Delete;
+using DigitalWorldOnline.Commons.Models.Base;
+using DigitalWorldOnline.Commons.Packets.GameServer;
 
 namespace DigitalWorldOnline.Game
 {
@@ -139,6 +142,208 @@ namespace DigitalWorldOnline.Game
                         client.Send(new SystemMessagePacket($"Server Time is: {DateTime.UtcNow}"));
                     }
                     break;
+                
+                 //---- !done command ----------------------
+                case "done":
+                    {
+                        var regex = @"^done";
+                        var match = Regex.IsMatch(message, regex, RegexOptions.IgnoreCase);
+
+                        if (!match)
+                        {
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !done (slot)"));
+                            break;
+                        }
+
+                        if (command.Length < 2)
+                        {
+                            client.Send(new SystemMessagePacket("Invalid command.\nType !delete (slot)"));
+                            break;
+                        }
+
+                        if (!byte.TryParse(command[1], out byte digiSlot))
+                        {
+                            client.Send(new SystemMessagePacket("Invalid Slot.\nType a valid Slot (1 to 4)"));
+                            break;
+                        }
+
+                        if (digiSlot == 0 || digiSlot > 4)
+                        {
+                            client.Send(new SystemMessagePacket($"Invalid Slot !!"));
+                            break;
+                        }
+
+                        var digimon = client.Tamer.Digimons.FirstOrDefault(x => x.Slot == digiSlot);
+
+                        if (digimon == null)
+                        {
+                            client.Send(new SystemMessagePacket($"Digimon not found on slot {digiSlot}"));
+                            break;
+                        }
+                        else
+                        {
+                            var digimonId = digimon.Id;
+
+                            if (digimon.BaseType == 31066 && digimon.Level >= 99)
+                            {
+                                var itemId = 66935; // 66935 impmon item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 31023 && digimon.Level >= 99) // Sleipmon Type
+                            {
+                                var itemId = 66936; // 66936 slepymon item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 31022 && digimon.Level >= 99) // Dynasmon Type
+                            {
+                                var itemId = 66937; // 66937 dynasmon item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else
+                            {
+                                client.Send(new SystemMessagePacket("Wrong digimon type or level less than 99!!"));
+                                break;
+                            }
+
+                        }
+
+                    }
+                    break;
+
+                // --- DECK -------------------------------
+
+                case "deckload":
+                {
+                    var regex = @"^deckload\s*$";
+                    var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+
+                    if (!match.Success)
+                    {
+                        client.Send(new SystemMessagePacket($"Unknown command.\nType !deckload"));
+                        break;
+                    }
+
+                    var evolution = client.Partner.Evolutions[0];
+
+                    _logger.Information($"Evolution ID: {evolution.Id} | Evolution Type: {evolution.Type} | Evolution Unlocked: {evolution.Unlocked}");
+
+                    var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == evolution.Type);
+
+                    _logger.Information($"EvoInfo ID: {evoInfo.Id}");
+                    _logger.Information($"EvoInfo EvolutionId: {evoInfo.EvolutionId}");
+                }
+                    break;
+
+                // --- DEFAULT ----------------------------
+
+                default:
+                    client.Send(new SystemMessagePacket($"Invalid Command !!\nType !help"));
+                    break;
 
                 // --- HELP -------------------------------
 
@@ -164,13 +369,18 @@ namespace DigitalWorldOnline.Game
                         {
                             client.Send(new SystemMessagePacket("!time: Show the server time"));
                         }
+                        else if (command[1] == "Done")
+                        {
+                            client.Send(new SystemMessagePacket("!Done: is used to sacrifise the digimon you want to get ruin item"));
+                        }
                         else
                         {
                             client.Send(new SystemMessagePacket("Commands:\n1. !clear\n2. !stats\n3. !time\nType !help {command} for more details."));
                         }
                     }
                     break;
-
+                
+               
                 // --- PVP --------------------------------
 
                 #region Pvp
@@ -221,35 +431,7 @@ namespace DigitalWorldOnline.Game
 
                 #endregion
 
-                // --- DECK -------------------------------
-
-                case "deckload":
-                    {
-                        var regex = @"^deckload\s*$";
-                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
-
-                        if (!match.Success)
-                        {
-                            client.Send(new SystemMessagePacket($"Unknown command.\nType !deckload"));
-                            break;
-                        }
-
-                        var evolution = client.Partner.Evolutions[0];
-
-                        _logger.Information($"Evolution ID: {evolution.Id} | Evolution Type: {evolution.Type} | Evolution Unlocked: {evolution.Unlocked}");
-
-                        var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == evolution.Type);
-
-                        _logger.Information($"EvoInfo ID: {evoInfo.Id}");
-                        _logger.Information($"EvoInfo EvolutionId: {evoInfo.EvolutionId}");
-                    }
-                    break;
-
-                // --- DEFAULT ----------------------------
-
-                default:
-                    client.Send(new SystemMessagePacket($"Invalid Command !!\nType !help"));
-                    break;
+                
             }
         }
 
