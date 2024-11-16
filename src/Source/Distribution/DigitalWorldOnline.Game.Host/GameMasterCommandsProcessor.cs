@@ -10,6 +10,7 @@ using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
+using DigitalWorldOnline.Commons.Models;
 using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Asset;
 using DigitalWorldOnline.Commons.Models.Base;
@@ -122,17 +123,28 @@ namespace DigitalWorldOnline.Game
                             break;
                         }*/
 
-                        var newDigi = _assets.DigimonBaseInfo.First(x => x.Type == digiId);
+                        var digiBase = _assets.DigimonBaseInfo.First(x => x.Type == digiId);
 
-                        if (newDigi == null)
+                        if (digiBase == null)
                         {
-                            client.Send(new SystemMessagePacket($"Digimon Type {digiId} not found!!"));
-                            _logger.Error($"Digimon Type {digiId} not found!! [ Hatch Command ]");
+                            client.Send(new SystemMessagePacket($"Digimon Type {digiId} not found !!"));
+                            _logger.Error($"Digimon Type {digiId} not found on DigimonBaseInfo !! [ Hatch Command ]");
                             break;
                         }
-                        else if (newDigi?.EvolutionType != 3 && newDigi?.EvolutionType != 10)
+
+                        try
                         {
-                            client.Send(new SystemMessagePacket($"Digimon Type {digiId} is not a Rookie or Spirit Digimon !!"));
+                            var digiEvo = _assets.EvolutionInfo.First(x => x.Type == digiId);
+
+                            if (digiEvo == null)
+                            {
+                                client.Send(new SystemMessagePacket($"Digimon Type {digiId} not available,\nneed to be Rookie/Spirit !!"));
+                                break;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            client.Send(new SystemMessagePacket($"Digimon Type {digiId} not available,\nneed to be Rookie/Spirit !!"));
                             break;
                         }
 
@@ -145,14 +157,7 @@ namespace DigitalWorldOnline.Game
                             i++;
                         }
 
-                        var newDigimon = DigimonModel.Create(
-                            digiName,
-                            digiId,
-                            digiId,
-                            DigimonHatchGradeEnum.Perfect,
-                            12500,
-                            i
-                        );
+                        var newDigimon = DigimonModel.Create(digiName, digiId, digiId, DigimonHatchGradeEnum.Perfect, 12500, i);
 
                         newDigimon.NewLocation(client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y);
 
@@ -1847,7 +1852,7 @@ namespace DigitalWorldOnline.Game
                         List<EvolutionLineAssetModel> evolutionLines = digimonEvolutionInfo.Lines.OrderBy(x => x.Id).ToList();
 
                         var encyclopedia = CharacterEncyclopediaModel.Create(client.TamerId, digimonEvolutionInfo.Id, 120, 14000, 15, 15, 15, 15, 15, false, false);
-                        
+
                         evolutionLines?.ForEach(x =>
                         {
                             encyclopedia.Evolutions.Add(
@@ -2406,7 +2411,7 @@ namespace DigitalWorldOnline.Game
                                         if (!client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buffAsset.BuffId))
                                         {
                                             var newCharacterBuff = CharacterBuffModel.Create(buffAsset.BuffId, buffAsset.SkillId, 2592000, duration);
-                                            
+
                                             newCharacterBuff.SetBuffInfo(buffAsset);
 
                                             client.Tamer.BuffList.Buffs.Add(newCharacterBuff);
@@ -2416,7 +2421,7 @@ namespace DigitalWorldOnline.Game
                                         else
                                         {
                                             var buffData = client.Tamer.BuffList.Buffs.First(x => x.BuffId == buffAsset.BuffId);
-                                         
+
                                             if (buffData != null)
                                             {
                                                 buffData.SetDuration(duration, true);
@@ -2462,22 +2467,37 @@ namespace DigitalWorldOnline.Game
                                     {
                                         //_logger.Information($"Verifying if tamer have buffs without membership");
 
-                                        var buff = _assets.BuffInfo.Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123).ToList();
+                                        var buff1 = _assets.BuffInfo.FirstOrDefault(x => x.BuffId == 50121);
+                                        var buff2 = _assets.BuffInfo.FirstOrDefault(x => x.BuffId == 50122);
+                                        var buff3 = _assets.BuffInfo.FirstOrDefault(x => x.BuffId == 50123);
 
-                                        buff.ForEach(buffAsset =>
+                                        var characterBuff1 = client.Tamer.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == buff1.BuffId);
+                                        var characterBuff2 = client.Tamer.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == buff2.BuffId);
+                                        var characterBuff3 = client.Tamer.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == buff3.BuffId);
+
+                                        if (characterBuff1 != null)
                                         {
-                                            if (client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buffAsset.BuffId))
-                                            {
-                                                var buffData = client.Tamer.BuffList.Buffs.First(x => x.BuffId == buffAsset.BuffId);
+                                            client.Tamer.BuffList.Buffs.Remove(characterBuff1);
 
-                                                if (buffData != null)
-                                                {
-                                                    buffData.SetDuration(0, true);
+                                            client.Send(new UpdateStatusPacket(client.Tamer));
+                                            client.Send(new RemoveBuffPacket(client.Tamer.GeneralHandler, buff1.BuffId).Serialize());
+                                        }
 
-                                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0).Serialize());
-                                                }
-                                            }
-                                        });
+                                        if (characterBuff2 != null)
+                                        {
+                                            client.Tamer.BuffList.Buffs.Remove(characterBuff2);
+
+                                            client.Send(new UpdateStatusPacket(client.Tamer));
+                                            client.Send(new RemoveBuffPacket(client.Tamer.GeneralHandler, buff2.BuffId).Serialize());
+                                        }
+
+                                        if (characterBuff3 != null)
+                                        {
+                                            client.Tamer.BuffList.Buffs.Remove(characterBuff3);
+
+                                            client.Send(new UpdateStatusPacket(client.Tamer));
+                                            client.Send(new RemoveBuffPacket(client.Tamer.GeneralHandler, buff3.BuffId).Serialize());
+                                        }
 
                                         await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
                                     }
@@ -2500,9 +2520,7 @@ namespace DigitalWorldOnline.Game
                                 break;
 
                             default:
-                                client.Send(
-                                    new SystemMessagePacket(
-                                        $"Unknown command. Check the available commands on the Admin Portal."));
+                                client.Send(new SystemMessagePacket($"Unknown command. Check the available commands on the Admin Portal."));
                                 break;
                         }
                     }
@@ -2907,7 +2925,7 @@ namespace DigitalWorldOnline.Game
                                         client.Send(new SystemMessagePacket($"You already have this buff !!"));
                                         break;
                                     }
-                                        
+
                                     var newCharacterBuff = CharacterBuffModel.Create(buff.BuffId, buff.SkillId, 0, (int)duration);
                                     newCharacterBuff.SetBuffInfo(buff);
 

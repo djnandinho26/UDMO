@@ -290,6 +290,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
 
                 foreach (var apply in buff.BuffInfo.SkillInfo.Apply)
                 {
+                    //Console.WriteLine($"apply.Type: {apply.Type} | apply.Attribute: {apply.Attribute}");
+
                     if (attributes.Any(x => x == apply.Attribute))
                     {
                         switch (apply.Type)
@@ -304,16 +306,16 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                                 {
                                     SomaValue += apply.Value + (buff.TypeN) * apply.IncreaseValue;
 
-                                    if (apply.Attribute == SkillCodeApplyAttributeEnum.SCD)
+                                    if (apply.Attribute == SkillCodeApplyAttributeEnum.SCD || apply.Attribute == SkillCodeApplyAttributeEnum.CAT)
                                     {
                                         totalValue = SomaValue * 100;
                                         break;
                                     }
-                                    else if (apply.Attribute == SkillCodeApplyAttributeEnum.CAT)
-                                    {
-                                        totalValue = SomaValue;
-                                        break;
-                                    }
+                                    //else if (apply.Attribute == SkillCodeApplyAttributeEnum.CAT)
+                                    //{
+                                        //totalValue = SomaValue;
+                                        //break;
+                                    //}
 
                                     //totalValue += (int)Math.Ceiling((double)(SomaValue) / 100 * baseValue);   // Arredonda os valores
                                     totalValue += (SomaValue / 100.0) * baseValue;

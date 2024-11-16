@@ -280,7 +280,27 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _logger.Debug($"Updating account welcome flag for account {client.AccountId}...");
             await _sender.Send(new UpdateAccountWelcomeFlagCommand(client.AccountId, false));
-            
+
+            // -------------------------------------------------
+            /*
+            if (!client.DungeonMap)
+            {
+                var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+                var channels = new Dictionary<byte, byte>();
+                for (byte i = 0; i < mapConfig.Channels; i++) channels.Add(i, 0);
+                _logger.Debug($"Sending available channels packet...");
+                client.Send(new AvailableChannelsPacket(channels));
+            }
+            else
+            {
+                var channels = new Dictionary<byte, byte>
+                {
+                    { 0, 30 }
+                };
+            }
+            */
+            // -------------------------------------------------
+
             if (!client.DungeonMap)
             {
                 var map = _mapServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);

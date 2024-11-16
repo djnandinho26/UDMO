@@ -4,7 +4,6 @@ using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
-using DigitalWorldOnline.Commons.Model.Character;
 using DigitalWorldOnline.Commons.Models.Asset;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Digimon;
@@ -29,12 +28,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly DungeonsServer _dungeonServer;
         private readonly SemaphoreSlim _threadSemaphore = new SemaphoreSlim(1, 1);
 
-        public TamerSkillRequestPacketProcessor(
-            ILogger logger,
-            ISender sender,
-            AssetsLoader assets,
-            PartyManager partyManager,
-            MapServer mapserver, DungeonsServer dungeonServer)
+        public TamerSkillRequestPacketProcessor(ILogger logger, ISender sender, AssetsLoader assets, PartyManager partyManager, MapServer mapserver, DungeonsServer dungeonServer)
         {
             _logger = logger;
             _sender = sender;
@@ -46,79 +40,64 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         public async Task Process(GameClient client, byte[] packetData)
         {
-            if (!_threadSemaphore.Wait(0))
+            //_logger.Information($"Skill Request Packet 1327");
+
+            var packet = new GamePacketReader(packetData);
+
+            int SkillId = packet.ReadInt();
+
+            //_logger.Information($"SkillId: {SkillId}");
+
+            var tamerSkill = _assets.TamerSkills.FirstOrDefault(x => x.SkillId == SkillId);
+
+            if (tamerSkill == null)
             {
+                _logger.Error($"SkillId: {SkillId} not found in TamerSkill !!");
                 return;
             }
-            try
+            else
             {
-                //_logger.Information($"Skill Request Packet 1327");
+                var buffinfo = _assets.BuffInfo.FirstOrDefault(x => x.BuffId == tamerSkill?.BuffId);
 
-                var packet = new GamePacketReader(packetData);
-
-                int SkillId = packet.ReadInt();
-
-                //_logger.Information($"SkillId: {SkillId}");
-
-                var targetSkill = _assets.TamerSkills.FirstOrDefault(x => x.SkillId == SkillId);
-
-                if (targetSkill != null)
+                if (buffinfo == null)
                 {
-                    var targetBuffInfo = _assets.BuffInfo.FirstOrDefault(x => x.DigimonSkillCode == targetSkill.SkillCode && x.Class != 450);
-
-                    if (targetBuffInfo != null)
-                    {
-                        var TargetSkillInfo = _assets.SkillInfo.FirstOrDefault(x => x.SkillId == targetSkill.SkillCode);
-
-                        if (TargetSkillInfo != null)
-                        {
-                            var TargetType = (SkillTargetTypeEnum)TargetSkillInfo.Target;
-
-                            //_logger.Information($"Skill TargetType: {TargetType}");
-
-                            switch (TargetType)
-                            {
-                                case SkillTargetTypeEnum.Tamer:
-                                    break;
-                                case SkillTargetTypeEnum.Digimon:
-                                    {
-                                        await TamerSkillUniqueTarget(client, SkillId, targetSkill, targetBuffInfo, TargetSkillInfo);
-                                    }
-                                    break;
-                                case SkillTargetTypeEnum.Both:
-                                    break;
-                                case SkillTargetTypeEnum.Party:
-                                    {
-                                        await PartySkillSwitch(client, SkillId, targetSkill, targetBuffInfo, TargetSkillInfo);
-                                    }
-                                    break;
-                                default:
-                                    break;
-                            }
-                        }
-                        else
-                        {
-                            _logger.Error($"TargetSkillInfo = null");
-                        }
-                    }
-                    else
-                    {
-                        _logger.Error($"targetBuffInfo = null");
-                    }
+                    _logger.Error($"buffinfo: {tamerSkill?.BuffId} not found in Asset.Buff !!");
+                    return;
                 }
                 else
                 {
-                    _logger.Error($"targetSkill = null");
-                }
+                    var skillInfo = _assets.SkillInfo.FirstOrDefault(x => x.SkillId == tamerSkill.SkillCode);
 
-            }
-            catch
-            {
-                _threadSemaphore.Release();
-            }
-            finally
-            {
-                _threadSemaphore.Release();
+                    if (skillInfo == null)
+                    {
+                        _logger.Error($"skillInfo: {SkillId} not found in Asset.SkillInfo !!");
+                        return;
+                    }
+                    else
+                    {
+                        var TargetType = (SkillTargetTypeEnum)skillInfo.Target;
+
+                        switch (TargetType)
+                        {
+                            case SkillTargetTypeEnum.Tamer:
+                                break;
+                            case SkillTargetTypeEnum.Digimon:
+                                {
+                                    await TamerSkillUniqueTarget(client, SkillId, tamerSkill, buffinfo, skillInfo);
+                                }
+                                break;
+                            case SkillTargetTypeEnum.Both:
+                                break;
+                            case SkillTargetTypeEnum.Party:
+                                {
+                                    await PartySkillSwitch(client, SkillId, tamerSkill, buffinfo, skillInfo);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
             }
         }
 

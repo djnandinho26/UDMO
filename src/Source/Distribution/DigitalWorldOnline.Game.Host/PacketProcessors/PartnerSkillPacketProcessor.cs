@@ -5,21 +5,15 @@ using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Asset;
-using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Config;
 using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Models.Summon;
-using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer.Combat;
 using DigitalWorldOnline.Commons.Utils;
-using DigitalWorldOnline.Game.Models.Configuration;
 using DigitalWorldOnline.GameHost;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using System.Text.Json.Nodes;
-using DigitalWorldOnline.Commons.Enums.ClientEnums;
-using DigitalWorldOnline.Commons.Packets.GameServer;
 using static DigitalWorldOnline.Commons.Packets.GameServer.AddBuffPacket;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
@@ -35,19 +29,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ISender _sender;
         private readonly IConfiguration _configuration;
 
-        public PartnerSkillPacketProcessor(
-
-            AssetsLoader assets,
-            MapServer mapServer,
-            ILogger logger, ISender sender,
-            DungeonsServer dungeonServer,
-            IConfiguration configuration)
+        public PartnerSkillPacketProcessor(AssetsLoader assets, MapServer mapServer, DungeonsServer dungeonServer, ILogger logger, ISender sender, IConfiguration configuration)
         {
             _assets = assets;
             _mapServer = mapServer;
+            _dungeonServer = dungeonServer;
             _logger = logger;
             _sender = sender;
-            _dungeonServer = dungeonServer;
             _configuration = configuration;
         }
 
@@ -65,10 +53,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var skill = _assets.DigimonSkillInfo.FirstOrDefault(x => x.Type == client.Partner.CurrentType && x.Slot == skillSlot);
 
             if (skill == null || skill.SkillInfo == null)
+            {
+                _logger.Error($"Skill not found !!");
                 return Task.CompletedTask;
-
+            }
+                
             var targetSummonMobs = new List<SummonMobModel>();
             SkillTypeEnum skillType;
+
             var targetPartner = _mapServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
             if (targetPartner != null)
@@ -728,7 +720,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else
                 {
-                    _logger.Verbose($"Using skill on Mob (Map Server)");
+                    _logger.Debug($"Using skill on Mob (Map Server)");
 
                     var targetMobs = new List<MobConfigModel>();
 
@@ -782,6 +774,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         client.Partner.UseDs(skill.SkillInfo.DSUsage);
 
                         var castingTime = (int)Math.Round(skill.SkillInfo.CastingTime);
+
                         if (castingTime <= 0) castingTime = 2000;
 
                         client.Partner.SetEndCasting(castingTime);
@@ -971,16 +964,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                                 targetMob?.Die();
                             }
-
                         }
                        
                         if (!_mapServer.MobsAttacking(client.Tamer.Location.MapId, client.TamerId))
                         {
                             client.Tamer.StopBattle();
-
                             SendBattleOffTask(client, attackerHandler);
                         }
-                        
+
                         var evolution = client.Tamer.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Tamer.Partner.CurrentType);
 
                         // Save cooldown in database if the cooldown is more than 20 seconds
@@ -990,6 +981,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             _sender.Send(new UpdateEvolutionCommand(evolution));
                         }
                     }
+
                 }
             }
             return Task.CompletedTask;
@@ -1003,10 +995,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 Thread.Sleep(4000);
 
-                _mapServer.BroadcastForTamerViewsAndSelf(
-                        client.TamerId,
-                        new SetCombatOffPacket(attackerHandler).Serialize()
-                    );
+                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOffPacket(attackerHandler).Serialize());
             });
         }
 

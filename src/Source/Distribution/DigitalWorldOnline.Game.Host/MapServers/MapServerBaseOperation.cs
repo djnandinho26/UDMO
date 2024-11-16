@@ -272,6 +272,7 @@ namespace DigitalWorldOnline.GameHost
             }
             else
             {
+                //var map = Maps.FirstOrDefault(x => x.Initialized && x.MapId == client.Tamer.Location.MapId);
                 var map = Maps.FirstOrDefault(x => x.Initialized && x.MapId == client.Tamer.Location.MapId && x.Channel == client.Tamer.Channel);
 
                 client.SetLoading();
@@ -332,8 +333,7 @@ namespace DigitalWorldOnline.GameHost
         /// <param name="client">The gameclient to be removed.</param>
         public void RemoveClient(GameClient client)
         {
-            //var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId));
-            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId) && x.Channel == client.Tamer.Channel);
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId));
 
             map?.BroadcastForTargetTamers(client.TamerId,
                 new LocalMapSwapPacket(
