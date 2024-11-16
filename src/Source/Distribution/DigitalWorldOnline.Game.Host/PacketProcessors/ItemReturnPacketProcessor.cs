@@ -36,6 +36,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var inventoryItem = client.Tamer.Inventory.FindItemBySlot(itemSlot);
             if (inventoryItem == null || inventoryItem.ItemId == 0 || inventoryItem.ItemInfo == null)
             {
+
                 client.Send(new SystemMessagePacket($"Invalid item at slot {itemSlot}."));
                 _logger.Warning($"Invalid item on slot {itemSlot} for tamer {client.TamerId} on returning.");
                 return;

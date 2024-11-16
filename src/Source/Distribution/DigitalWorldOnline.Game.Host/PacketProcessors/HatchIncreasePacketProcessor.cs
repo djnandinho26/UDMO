@@ -1,6 +1,7 @@
 ﻿using DigitalWorldOnline.Application;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
@@ -9,6 +10,7 @@ using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.GameHost;
 using MediatR;
+using Microsoft.Identity.Client;
 using Serilog;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
@@ -50,7 +52,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var dataTier = packet.ReadByte();
 
             var targetItem = client.Tamer.Incubator.EggId;
+
             var hatchInfo = _assets.Hatchs.FirstOrDefault(x => x.ItemId == targetItem);
+
+
             if (hatchInfo == null)
             {
                 _logger.Warning($"Unknown hatch info for egg {targetItem}.");
@@ -77,11 +82,31 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (dataTier == 0)
             {
                 var success = client.Tamer.Inventory.RemoveOrReduceItemsBySection(hatchInfo.LowClassDataSection, hatchInfo.LowClassDataAmount);
+
+                Console.WriteLine($"LowClassDataSection:{hatchInfo.LowClassDataSection} | LowClassDataAmount:{hatchInfo.LowClassDataAmount}");
+
+                if (targetItem == 0)
+                {
+                     Console.WriteLine($"VOCE JA USOU TODAS AS DATAS");
+                    return;
+                }
+
                 if (!success)
                 {
                     client.Send(new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled));
                     _logger.Error($"Invalid low class data amount for egg {targetItem} and section {hatchInfo.LowClassDataSection}.");
                     client.Send(new SystemMessagePacket($"Invalid low class data amount for egg {targetItem} and section {hatchInfo.LowClassDataSection}."));
+
+                    //sistema de banimento permanente
+                    //sistema de banimento permanente
+                    var banProcessor = new BanForCheating();
+                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
+
+                    var chatPacket = new NoticeMessagePacket(banMessage);
+                    client.Send(chatPacket); // Envia a mensagem no chat
+
+                    client.Send(new DisconnectUserPacket($"YOU HAVE BEEN PERMANENTLY BANNED").Serialize());
+
                     return;
                 }
             }

@@ -3,6 +3,7 @@ using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Commons.DTOs.Base;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
+using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
@@ -53,16 +54,27 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var amountToScan = packet.ReadShort();
 
             var scannedItem = client.Tamer.Inventory.FindItemBySlot(slotToScan);
-            if (scannedItem == null || scannedItem.ItemId == 0 || scannedItem.ItemInfo == null)
+
+            if (scannedItem == null || scannedItem.ItemId == 0 || scannedItem.ItemInfo == null) //fazer aqui
             {
+                //sistema de banimento permanente
+                var banProcessor = new BanForCheating();
+                var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
+
+                var chatPacket = new NoticeMessagePacket(banMessage);
+                client.Send(chatPacket); // Envia a mensagem no chat
+
                 client.Send(new SystemMessagePacket($"Invalid item at slot {slotToScan}."));
                 _logger.Warning($"Invalid item on slot {slotToScan} for tamer {client.TamerId} on scanning.");
+                
+                client.Send(new DisconnectUserPacket($"YOU HAVE BEEN PERMANENTLY BANNED").Serialize());
+
                 return;
             }
 
             if (client.Tamer.Inventory.CountItensById(scannedItem.ItemId) < amountToScan)
-            {
-                _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING in SCANN {amountToScan}x {scannedItem.ItemInfo.Name}, but he has {scannedItem.Amount}x!");
+            {          
+                Console.WriteLine($"[DISCONNECTED] {client.Tamer.Name} try DUPPING in SCANN {amountToScan}x {scannedItem.ItemInfo.Name}, but he has {scannedItem.Amount}x!");
                 client.Disconnect();
                 return;
             }
@@ -212,7 +224,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory));
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
         }
-        private ItemModel ApplyValuesChipset(ItemModel newItem)
+        private ItemModel? ApplyValuesChipset(ItemModel newItem)
         {
 
             var ChipsetInfo = _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == newItem.ItemInfo.SkillCode).Apply.FirstOrDefault(x => x.Type > 0);

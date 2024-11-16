@@ -2,6 +2,7 @@
 using DigitalWorldOnline.Application.Separar.Commands.Create;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Extensions;
@@ -10,7 +11,6 @@ using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.TamerShop;
 using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
-using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Packets.PersonalShop;
 using DigitalWorldOnline.GameHost;
 using MediatR;
@@ -43,20 +43,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var packet = new GamePacketReader(packetData);
 
-            _logger.Debug($"--- ConsignedShop Open Packet 1516 ---");
+            _logger.Verbose($"--- ConsigmentShop Open Packet 1516 ---");
 
             var posX = packet.ReadInt();
             var posY = packet.ReadInt();
-
             packet.Skip(4);
             var shopName = packet.ReadString();
-
             packet.Skip(9);
             var sellQuantity = packet.ReadInt();
 
-            //_logger.Information($"Shop Location: Map {client.Tamer.Location.MapId} ({posX}, {posY}), ShopName: {shopName}, Items Amount: {sellQuantity}\n");
+            _logger.Verbose($"Shop Location: Map {client.Tamer.Location.MapId} ({posX}, {posY}), ShopName: {shopName}, Items Amount: {sellQuantity}\n");
 
             List<ItemModel> sellList = new(sellQuantity);
+
 
             //_logger.Information($"-------------------------------------\n");
 
@@ -65,75 +64,55 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 var itemId = packet.ReadInt();
                 var itemAmount = packet.ReadInt();
 
-                //_logger.Information($"Item Index: {i} | ItemId: {itemId} | ItemAmount: {itemAmount}");
+                Console.WriteLine($"Item Index: {i} | ItemId: {itemId} | ItemAmount: {itemAmount}");
 
-                var sellItem = new ItemModel(itemId, itemAmount);
+                    // Adiciona um novo item à lista
+                    var sellItem = new ItemModel(itemId, itemAmount);
 
-                packet.Skip(64);
+                    packet.Skip(64);
 
-                var price = packet.ReadInt64();
-                sellItem.SetSellPrice(price);
+                    var price = packet.ReadInt64();
+                    sellItem.SetSellPrice(price);
 
-                packet.Skip(8);
-                sellList.Add(sellItem);
+                    packet.Skip(8);
+                    sellList.Add(sellItem);
 
-                //_logger.Information($"Item Index: {i} | Price: {price}\n");
+                    Console.WriteLine($"Item Index: {i} | Price: {price}\n");
+              
             }
+
+
+            _logger.Information($"sell items count: {sellList.Count}");
 
             //_logger.Information($"-------------------------------------");
 
             foreach (var item in sellList)
             {
-                // Verification for selling the same item with different price
+                _logger.Information($"item: {item.ItemId} and amount: {item.Amount}");
                 item.SetItemInfo(_assets.ItemInfo.First(x => x.ItemId == item.ItemId));
 
                 var itemsCount = sellList.Count(x => x.ItemId == item.ItemId && x.TamerShopSellPrice != item.TamerShopSellPrice);
 
-                if (itemsCount > 0)
+                if(itemsCount > 0)
                 {
-                    //client.Send(new DisconnectUserPacket($"You cant add 2 items of same id with different price!").Serialize());
-                    _logger.Warning($"Tamer {client.Tamer.Name} tryed to sell 2 items of same id with different price !! [ ConsignedShop ]");
-                    client.Send(new SystemMessagePacket($"You cant add 2 items of same id\n with different price!\n ShopClosed !!"));
-
-                    client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
-
-                    client.Tamer.Inventory.AddItems(client.Tamer.ConsignedShopItems.Items);
-                    client.Tamer.ConsignedShopItems.Clear();
-
-                    client.Send(new PersonalShopPacket());
-
-                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                    await _sender.Send(new UpdateItemsCommand(client.Tamer.ConsignedShopItems));
-
-                    client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
-
-                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
-
+                    _logger.Error($"Tamer {client.Tamer.Name} tryed to add 2 items of same id with different price!");
+                    client.Send(new DisconnectUserPacket("You cant add 2 items of same id with different price!").Serialize());
                     return;
                 }
 
-                // Verification of items amount more than he have in bag
                 var HasQuanty = client.Tamer.Inventory.CountItensById(item.ItemId);
 
                 if (item.Amount > HasQuanty)
                 {
-                    //client.Send(new DisconnectUserPacket($"You not have {item.Amount}x {item.ItemInfo.Name}!").Serialize());
-                    _logger.Warning($"Tamer {client.Tamer.Name} tryed to sell more itens than he have !! [ ConsignedShop ]");
-                    client.Send(new SystemMessagePacket($"You don't have {item.Amount}x of {item.ItemInfo.Name}!\n ShopClosed !!"));
 
-                    client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
+                    //sistema de banimento permanente
+                    var banProcessor = new BanForCheating();
+                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
 
-                    client.Tamer.Inventory.AddItems(client.Tamer.ConsignedShopItems.Items);
-                    client.Tamer.ConsignedShopItems.Clear();
+                    var chatPacket = new NoticeMessagePacket(banMessage);
+                    client.Send(chatPacket); // Envia a mensagem no chat
 
-                    client.Send(new PersonalShopPacket());
-
-                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                    await _sender.Send(new UpdateItemsCommand(client.Tamer.ConsignedShopItems));
-
-                    client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
-
-                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
+                    client.Send(new DisconnectUserPacket($"YOU HAVE BEEN PERMANENTLY BANNED").Serialize());
 
                     return;
                 }
