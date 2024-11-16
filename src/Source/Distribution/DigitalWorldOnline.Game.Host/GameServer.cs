@@ -402,6 +402,7 @@ namespace DigitalWorldOnline.Game
             Task.Run(() => _mapServer.StartAsync(cancellationToken));
             //_logger.Information($"_mapServer.StartAsync OK");
             Task.Run(() => _mapServer.LoadAllMaps(cancellationToken));
+            Task.Run(() => _mapServer.CallDiscordWarnings("Server Online", "13ff00", "1280953788211007591", "1280948869739450438"));
             //_logger.Information($"_mapServer.LoadAllMaps OK");
             Task.Run(() => _pvpServer.StartAsync(cancellationToken));
             //_logger.Information($"_pvpServer.StartAsync OK");

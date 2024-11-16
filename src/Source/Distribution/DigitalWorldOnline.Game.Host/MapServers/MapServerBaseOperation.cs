@@ -50,7 +50,7 @@ namespace DigitalWorldOnline.GameHost
 
             return Task.CompletedTask;
         }
-        
+
         public Task CleanMap(int ChannelId)
         {
             var mapToClose = Maps.FirstOrDefault(x => x.Channel == ChannelId);
@@ -324,7 +324,7 @@ namespace DigitalWorldOnline.GameHost
                     });
                 }
             }
-            
+
         }
 
         /// <summary>
@@ -361,14 +361,14 @@ namespace DigitalWorldOnline.GameHost
 
             maps?.ForEach(map => { map.BroadcastForMap(packet); });
         }
-        
+
         public void BroadcastForSelectedMaps(byte[] packet, List<int> mapIds)
         {
             var maps = Maps.Where(map => map.Clients.Any() && mapIds.Contains(map.MapId)).ToList();
 
             maps?.ForEach(map => { map.BroadcastForMap(packet); });
         }
-        
+
         public void BroadcastForMap(short mapId, byte[] packet)
         {
             var map = Maps.FirstOrDefault(x => x.MapId == mapId);
@@ -384,7 +384,7 @@ namespace DigitalWorldOnline.GameHost
             {
                 client.Send(packet);
             });
-           
+
         }
 
         public void BroadcastForUniqueTamer(long tamerId, byte[] packet)
@@ -403,12 +403,12 @@ namespace DigitalWorldOnline.GameHost
         {
             return Maps.SelectMany(map => map.Clients).FirstOrDefault(client => client.Tamer.Name == tamerName);
         }
-        
+
         public GameClient? FindClientByTamerHandle(int handle)
         {
             return Maps.SelectMany(map => map.Clients).FirstOrDefault(client => client.Tamer?.GeneralHandler == handle);
         }
-        
+
         public GameClient? FindClientByTamerHandleAndChannel(int handle, long TamerId)
         {
             return Maps.Where(x => x.Clients.Exists(gameClient => gameClient.TamerId == TamerId))
@@ -440,7 +440,7 @@ namespace DigitalWorldOnline.GameHost
         public void BroadcastForTamerViewsAndSelf(GameClient client, byte[] packet)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId && gameClient.Tamer.Channel == client.Tamer.Channel));
-            
+
             map?.BroadcastForTamerViewsAndSelf(client.TamerId, packet);
         }
 
@@ -472,14 +472,14 @@ namespace DigitalWorldOnline.GameHost
 
             return map?.MobsAttacking(tamerId) ?? false;
         }
-        
+
         public bool MobsAttacking(short mapId, long tamerId, bool Summon)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
 
             return map?.MobsAttacking(tamerId) ?? false;
         }
-        
+
         public List<CharacterModel> GetNearbyTamers(short mapId, long tamerId)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
@@ -495,7 +495,7 @@ namespace DigitalWorldOnline.GameHost
 
             map?.AddMob(summon);
         }
-        
+
         public void AddMobs(short mapId, MobConfigModel mob, long tamerId)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
@@ -514,7 +514,7 @@ namespace DigitalWorldOnline.GameHost
 
             return map.Mobs.FirstOrDefault(x => x.GeneralHandler == handler);
         }
-        
+
         public SummonMobModel? GetMobByHandler(short mapId, int handler, bool summon, long tamerId)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
@@ -693,14 +693,87 @@ namespace DigitalWorldOnline.GameHost
                 .FirstOrDefault(x => x.GeneralHandler == handler);
         }
 
-        public async Task CallDiscord(string message, GameClient tamer, string coloured, string local)
+        public async Task CallDiscord(string message, GameClient tamer, string coloured, string local, string Channel = "1307444107836264608", bool custom = false)
         {
-           
+            var myChannel = Channel;
+            var myToken = "MTI4MTkwODExODMyNjA4NzY5MA.GeMDxn.tgxtNg8htbIEPcSJ0Hx3zIa0OvhY5LPFWSDYXw";
+
+            var payload = new
+            {
+                tts = false,
+                embeds = new[]
+                {
+            new
+            {
+                type = "rich",
+                color = Convert.ToInt32(coloured, 16),
+                footer = new
+                {
+                    text = custom
+                    ? $"{message}"
+                    : $"[{local}][CH{tamer.Tamer.Channel}] {tamer.Tamer.Name}: {message}"
+                },
+            }
+        }
+            };
+
+            var json_data = JsonConvert.SerializeObject(payload);
+
+            using (var client = new HttpClient())
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri($"https://discordapp.com/api/v6/channels/{myChannel}/messages"),
+                    Content = new StringContent(json_data, Encoding.UTF8, "application/json")
+                };
+                request.Headers.Add("Authorization", $"Bot {myToken}");
+
+                var response = await client.SendAsync(request);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+            }
         }
 
-        public async Task CallDiscordWarnings(string message, string coloured, string dischannel = "1279317585652879391")
+        public async Task CallDiscordWarnings(string message, string coloured, string dischannel, string role)
         {
-           
+            var myChannel = dischannel;
+            var myToken = "MTI4MTkwODExODMyNjA4NzY5MA.GeMDxn.tgxtNg8htbIEPcSJ0Hx3zIa0OvhY5LPFWSDYXw";
+
+            var payload = new
+            {
+                content = $"<@&{role}>",
+                tts = false,
+                embeds = new[]
+                {
+            new
+            {
+                type = "rich",
+                color = Convert.ToInt32(coloured, 16),
+                footer = new
+                {
+                    text = $"{message}"
+                },
+            }
+        }
+            };
+
+            var json_data = JsonConvert.SerializeObject(payload);
+
+            using (var client = new HttpClient())
+            {
+                var request = new HttpRequestMessage
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = new Uri($"https://discordapp.com/api/v6/channels/{myChannel}/messages"),
+                    Content = new StringContent(json_data, Encoding.UTF8, "application/json")
+                };
+                request.Headers.Add("Authorization", $"Bot {myToken}");
+
+                var response = await client.SendAsync(request);
+                var responseString = await response.Content.ReadAsStringAsync();
+
+            }
         }
     }
 }
