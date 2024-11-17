@@ -7,6 +7,11 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         /// <summary>
         /// Open the tamer shop.
         /// </summary>
+        CashShopReloadBalance = 3404,
+        
+        /// <summary>
+        /// Open the tamer shop.
+        /// </summary>
         CashShopOpen = 3412,
 
         /// <summary>

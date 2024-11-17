@@ -178,7 +178,7 @@ namespace DigitalWorldOnline.GameHost
                     mob.Reset();
                     mob.ResetLocation();
                     if (mob.RespawnInterval > 3599)
-                        CallDiscordWarnings($"[SPAWN] {mob.Name} nasceu em {map.Name} CH{map.Channel}.", "81ffcf");
+                        CallDiscordWarnings($"[SPAWN] {mob.Name} was spawned {map.Name} CH{map.Channel}.", "81ffcf");
                 }
                     break;
 
@@ -445,6 +445,11 @@ namespace DigitalWorldOnline.GameHost
                 }
                     break;
             }
+        }
+
+        private void CallDiscordWarnings(string v1, string v2)
+        {
+            throw new NotImplementedException();
         }
 
         private static void CheckDebuff(GameMap map, MobConfigModel mob, List<MobDebuffModel> debuffs)
