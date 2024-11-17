@@ -142,8 +142,8 @@ namespace DigitalWorldOnline.Game
                         client.Send(new SystemMessagePacket($"Server Time is: {DateTime.UtcNow}"));
                     }
                     break;
-                
-                 //---- !done command ----------------------
+
+                //---- !done command ----------------------
                 case "done":
                     {
                         var regex = @"^done";
@@ -318,25 +318,25 @@ namespace DigitalWorldOnline.Game
                 // --- DECK -------------------------------
 
                 case "deckload":
-                {
-                    var regex = @"^deckload\s*$";
-                    var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
-
-                    if (!match.Success)
                     {
-                        client.Send(new SystemMessagePacket($"Unknown command.\nType !deckload"));
-                        break;
+                        var regex = @"^deckload\s*$";
+                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+
+                        if (!match.Success)
+                        {
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !deckload"));
+                            break;
+                        }
+
+                        var evolution = client.Partner.Evolutions[0];
+
+                        _logger.Information($"Evolution ID: {evolution.Id} | Evolution Type: {evolution.Type} | Evolution Unlocked: {evolution.Unlocked}");
+
+                        var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == evolution.Type);
+
+                        _logger.Information($"EvoInfo ID: {evoInfo.Id}");
+                        _logger.Information($"EvoInfo EvolutionId: {evoInfo.EvolutionId}");
                     }
-
-                    var evolution = client.Partner.Evolutions[0];
-
-                    _logger.Information($"Evolution ID: {evolution.Id} | Evolution Type: {evolution.Type} | Evolution Unlocked: {evolution.Unlocked}");
-
-                    var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == evolution.Type);
-
-                    _logger.Information($"EvoInfo ID: {evoInfo.Id}");
-                    _logger.Information($"EvoInfo EvolutionId: {evoInfo.EvolutionId}");
-                }
                     break;
 
                 // --- DEFAULT ----------------------------
@@ -379,59 +379,59 @@ namespace DigitalWorldOnline.Game
                         }
                     }
                     break;
-                
-               
-                // --- PVP --------------------------------
 
-                #region Pvp
 
-                /*case "pvp":
-                    {
-                        var regex = @"(pvp\son){1}|(pvp\soff){1}";
-                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+                    // --- PVP --------------------------------
 
-                        if (!match.Success)
+                    #region Pvp
+
+                    /*case "pvp":
                         {
-                            client.Send(new SystemMessagePacket($"Unknown command.\nType !pvp (on/off)"));
-                            break;
-                        }
+                            var regex = @"(pvp\son){1}|(pvp\soff){1}";
+                            var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
 
-                        if (client.Tamer.InBattle)
-                        {
-                            client.Send(new SystemMessagePacket($"You can't turn off pvp on battle !"));
-                            break;
-                        }
-
-                        switch (command[1])
-                        {
-                            case "on":
-                                {
-                                    if (client.Tamer.PvpMap == false)
-                                    {
-                                        client.Tamer.PvpMap = true;
-                                        client.Send(new NoticeMessagePacket($"PVP turned on !!"));
-                                    }
-                                    else client.Send(new NoticeMessagePacket($"PVP is already on ..."));
-                                }
+                            if (!match.Success)
+                            {
+                                client.Send(new SystemMessagePacket($"Unknown command.\nType !pvp (on/off)"));
                                 break;
+                            }
 
-                            case "off":
-                                {
-                                    if (client.Tamer.PvpMap == true)
-                                    {
-                                        client.Tamer.PvpMap = false;
-                                        client.Send(new NoticeMessagePacket($"PVP turned off !!"));
-                                    }
-                                    else client.Send(new NoticeMessagePacket($"PVP is already off ..."));
-                                }
+                            if (client.Tamer.InBattle)
+                            {
+                                client.Send(new SystemMessagePacket($"You can't turn off pvp on battle !"));
                                 break;
+                            }
+
+                            switch (command[1])
+                            {
+                                case "on":
+                                    {
+                                        if (client.Tamer.PvpMap == false)
+                                        {
+                                            client.Tamer.PvpMap = true;
+                                            client.Send(new NoticeMessagePacket($"PVP turned on !!"));
+                                        }
+                                        else client.Send(new NoticeMessagePacket($"PVP is already on ..."));
+                                    }
+                                    break;
+
+                                case "off":
+                                    {
+                                        if (client.Tamer.PvpMap == true)
+                                        {
+                                            client.Tamer.PvpMap = false;
+                                            client.Send(new NoticeMessagePacket($"PVP turned off !!"));
+                                        }
+                                        else client.Send(new NoticeMessagePacket($"PVP is already off ..."));
+                                    }
+                                    break;
+                            }
                         }
-                    }
-                    break;*/
+                        break;*/
 
-                #endregion
+                    #endregion
 
-                
+
             }
         }
 

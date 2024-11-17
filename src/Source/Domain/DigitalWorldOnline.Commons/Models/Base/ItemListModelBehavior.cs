@@ -451,8 +451,6 @@ namespace DigitalWorldOnline.Commons.Models.Base
 
         public bool SplitItem(ItemModel itemToAdd, int targetSlot)
         {
-            //TODO: Backup?
-
             if (itemToAdd == null || itemToAdd.Amount == 0 || itemToAdd.ItemId == 0)
                 return false;
 
@@ -543,6 +541,7 @@ namespace DigitalWorldOnline.Commons.Models.Base
                 }
 
                 targetItem.SetItemId(itemToAdd.ItemId);
+                targetItem.SetItemInfo(itemToAdd.ItemInfo);
                 targetItem.SetRemainingTime((uint)itemToAdd.ItemInfo.UsageTimeMinutes);
             }
         }

@@ -55,7 +55,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var hatchInfo = _assets.Hatchs.FirstOrDefault(x => x.ItemId == targetItem);
 
-
             if (hatchInfo == null)
             {
                 _logger.Warning($"Unknown hatch info for egg {targetItem}.");
@@ -64,6 +63,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
 
             var hatchConfig = _configs.Hatchs.FirstOrDefault(x => x.Type.GetHashCode() == client.Tamer.Incubator.HatchLevel + 1);
+
             if (hatchConfig == null)
             {
                 client.Send(new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled));
@@ -83,11 +83,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 var success = client.Tamer.Inventory.RemoveOrReduceItemsBySection(hatchInfo.LowClassDataSection, hatchInfo.LowClassDataAmount);
 
-                Console.WriteLine($"LowClassDataSection:{hatchInfo.LowClassDataSection} | LowClassDataAmount:{hatchInfo.LowClassDataAmount}");
+                _logger.Debug($"LowClassDataSection:{hatchInfo.LowClassDataSection} | LowClassDataAmount:{hatchInfo.LowClassDataAmount}");
 
                 if (targetItem == 0)
                 {
-                     Console.WriteLine($"VOCE JA USOU TODAS AS DATAS");
+                    //Console.WriteLine($"VOCE JA USOU TODAS AS DATAS");
                     return;
                 }
 
@@ -97,7 +97,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     _logger.Error($"Invalid low class data amount for egg {targetItem} and section {hatchInfo.LowClassDataSection}.");
                     client.Send(new SystemMessagePacket($"Invalid low class data amount for egg {targetItem} and section {hatchInfo.LowClassDataSection}."));
 
-                    //sistema de banimento permanente
                     //sistema de banimento permanente
                     var banProcessor = new BanForCheating();
                     var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");

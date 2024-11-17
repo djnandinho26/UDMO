@@ -6,6 +6,7 @@ using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Base;
+using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Utils;
 using MediatR;
@@ -21,10 +22,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ISender _sender;
         private readonly ILogger _logger;
 
-        public ItemSplitPacketProcessor(
-            AssetsLoader assets,
-            ISender sender,
-            ILogger logger)
+        public ItemSplitPacketProcessor(AssetsLoader assets, ISender sender, ILogger logger)
         {
             _assets = assets;
             _sender = sender;
@@ -41,24 +39,25 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var itemListMovimentation = UtilitiesFunctions.SwitchItemList(originSlot, destinationSlot);
 
-            _logger.Verbose($"Character {client.TamerId} splited {itemListMovimentation} from slot {originSlot} to {destinationSlot} x{amountToSplit}.");
+            _logger.Debug($"Character {client.TamerId} splited {itemListMovimentation} from slot {originSlot} to {destinationSlot} x{amountToSplit}.");
 
-
-            var sourceItemCheck = client.Tamer.Inventory.FindItemBySlot(originSlot);
-            if (sourceItemCheck.Amount < amountToSplit)
-            {
-                _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {sourceItemCheck.ItemInfo.Name}, but he has {sourceItemCheck.Amount}x on slot {originSlot} to {destinationSlot}!");
-                client.Disconnect();
-                return;
-            }
             switch (itemListMovimentation)
             {
                 case ItemListMovimentationEnum.InventoryToInventory:
                     {
                         var sourceItem = client.Tamer.Inventory.FindItemBySlot(originSlot);
+
+                        if (sourceItem.Amount < amountToSplit)
+                        {
+                            _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {sourceItem.ItemInfo.Name}, but he has {sourceItem.Amount}x on slot {originSlot} to {destinationSlot}!");
+                            client.Disconnect();
+                            return;
+                        }
+
                         var temp = (ItemModel)sourceItem.Clone();
+
                         temp.SetAmount(amountToSplit);
-                     
+                        
                         if (client.Tamer.Inventory.SplitItem(temp, destinationSlot))
                         {
                             sourceItem.ReduceAmount(amountToSplit);
@@ -78,6 +77,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         var sourceItem = client.Tamer.Inventory.FindItemBySlot(srcSlot);
                         var destItem = client.Tamer.Warehouse.FindItemBySlot(dstSlot);
+
+                        if (destItem.Amount < amountToSplit)
+                        {
+                            _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {destItem.ItemInfo.Name}, but he has {destItem.Amount}x on slot {originSlot} to {destinationSlot}!");
+                            client.Disconnect();
+                            return;
+                        }
 
                         if (destItem.ItemId > 0)
                         {
@@ -137,9 +143,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         var dstSlot = destinationSlot - GeneralSizeEnum.WarehouseMinSlot.GetHashCode();
 
                         var sourceItem = client.Tamer.Warehouse.FindItemBySlot(srcSlot);
+
+                        if (sourceItem.Amount < amountToSplit)
+                        {
+                            _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {sourceItem.ItemInfo.Name}, but he has {sourceItem.Amount}x on slot {originSlot} to {destinationSlot}!");
+                            client.Disconnect();
+                            return;
+                        }
+
                         var temp = (ItemModel)sourceItem.Clone();
+
                         temp.SetAmount(amountToSplit);
-                        temp.SetItemInfo(sourceItem.ItemInfo);
 
                         if (client.Tamer.Warehouse.SplitItem(temp, dstSlot))
                         {
@@ -219,10 +233,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         var dstSlot = destinationSlot - GeneralSizeEnum.AccountWarehouseMinSlot.GetHashCode();
 
                         var sourceItem = client.Tamer.AccountWarehouse.FindItemBySlot(srcSlot);
-                        sourceItem.ItemInfo = _assets.ItemInfo.FirstOrDefault(x => x.ItemId == sourceItem.ItemId);
+
+                        if (sourceItem.Amount < amountToSplit)
+                        {
+                            _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {sourceItem.ItemInfo.Name}, but he has {sourceItem.Amount}x on slot {originSlot} to {destinationSlot}!");
+                            client.Disconnect();
+                            return;
+                        }
+
                         var temp = (ItemModel)sourceItem.Clone();
+
                         temp.SetAmount(amountToSplit);
-                        temp.SetItemInfo(sourceItem.ItemInfo);
 
                         if (client.Tamer.AccountWarehouse.SplitItem(temp, dstSlot))
                         {
@@ -298,10 +319,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
 
             client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory));
-
-            //_logger.Debug($"Concatting tamer {client.TamerId} items information...");
-            //foreach (var item in client.Tamer.ItemList.SelectMany(x => x.Items).Where(x => x.ItemId > 0))
-            //    item.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == item?.ItemId));
         }
     }
 }

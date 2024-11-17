@@ -42,6 +42,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var attackerHandler = packet.ReadInt();
             var targetHandler = packet.ReadInt();
 
+            // ---------------------------------------
+
             var targetPartner = _mapServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
             if (targetPartner != null)
@@ -54,6 +56,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     //client.Send(new SystemMessagePacket($"Tamer {targetPartner.Name} is not with PVP on"));
                 }
             }
+
+            // ---------------------------------------
 
             if (client.Tamer.PvpMap && targetPartner.Character.PvpMap && targetPartner != null)
             {
@@ -773,9 +777,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     {
                         client.Tamer.StopBattle();
 
-                        _mapServer.BroadcastForTamerViewsAndSelf(
-                            client.TamerId,
-                            new SetCombatOffPacket(attackerHandler).Serialize());
+                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOffPacket(attackerHandler).Serialize());
                     }
                 }
             }
@@ -859,7 +861,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             critBonusMultiplier = 0.00;
             double critChance = client.Tamer.Partner.CC / 100;
 
-            if (critChance >= UtilitiesFunctions.RandomDouble())
+            double randomValue = UtilitiesFunctions.RandomDouble();
+
+            //Console.WriteLine($"CritChance: {critChance} | RandomValue: {randomValue}");
+
+            if (critChance >= randomValue)
             {
                 blocked = false;
 
@@ -927,9 +933,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             int finalDamage =  (int)Math.Max(1, Math.Floor(baseDamage + critBonusMultiplier + levelBonus +
                 (baseDamage * attributeMultiplier) + (baseDamage * elementMultiplier)));
 
-            //Console.WriteLine($"BaseDamage: {baseDamage} | critBonusMultiplier: {critBonusMultiplier} | LevelBonus: {levelBonus}");
-            //Console.WriteLine($"Attribute: {baseDamage * attributeMultiplier} | Element: {baseDamage * elementMultiplier}");
-            //Console.WriteLine($"FinalDamage: {finalDamage}");
+            Console.WriteLine($"BaseDamage: {baseDamage} | critBonusMultiplier: {critBonusMultiplier} | LevelBonus: {levelBonus}");
+            Console.WriteLine($"Attribute: {baseDamage * attributeMultiplier} | Element: {baseDamage * elementMultiplier}");
+            Console.WriteLine($"FinalDamage: {finalDamage}");
 
             return finalDamage;
         }

@@ -75,7 +75,7 @@ namespace DigitalWorldOnline.Commons.Models.Base
 
         public uint RemainingMinutes()
         {
-            if (!ItemInfo.TemporaryItem)
+            if (!ItemInfo!.TemporaryItem)
                 return 0;
 
             if ((EndDate - DateTime.Now).TotalMinutes <= 0)
@@ -233,7 +233,6 @@ namespace DigitalWorldOnline.Commons.Models.Base
                             m.Write(BitConverter.GetBytes(socketStatus.AttributeId), 0, 2);
                         }
 
-
                         foreach (var socketStatus in SocketStatus.OrderBy(x => x.Slot))
                         {
                             m.Write(BitConverter.GetBytes(socketStatus.Value), 0, 1);
@@ -253,9 +252,10 @@ namespace DigitalWorldOnline.Commons.Models.Base
 
                         m.Write(BitConverter.GetBytes(0), 0, 2);
 
-                        if (RemainingMinutes() == 0xFFFFFFFF)
+                        if (RemainingMinutes() == 0) //if (RemainingMinutes() == 0xFFFFFFFF)
                         {
-                            m.Write(BitConverter.GetBytes(0xFFFFFFFF), 0, 4);
+                            //m.Write(BitConverter.GetBytes(0xFFFFFFFF), 0, 4);
+                            m.Write(BitConverter.GetBytes(0), 0, 4);
                         }
                         else
                         {

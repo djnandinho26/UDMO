@@ -3,8 +3,6 @@ using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Models.Asset;
 using DigitalWorldOnline.Commons.Models.Character;
-using DigitalWorldOnline.Commons.Utils;
-using System.Diagnostics;
 
 namespace DigitalWorldOnline.Commons.Models.Digimon
 {
@@ -28,11 +26,11 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         private int _baseDs => BaseStatus.DSValue;
         private int _baseAt => BaseStatus.ATValue;
         private short _baseBl => (short)BaseStatus.BLValue;
-        private short _baseCc => (short)BaseStatus.CTValue;
-        private short _baseCd => 10000; // 100% Critical Damage
+        private int _baseCc => BaseStatus.CTValue;
+        private int _baseCd => 10000; // 100% Critical Damage
         private short _baseAtt => 0;
         private short _baseDe => (short)BaseStatus.DEValue;
-        private short _baseEv => (short)BaseStatus.EVValue;
+        private int _baseEv => BaseStatus.EVValue;
         private short _baseHt => (short)BaseStatus.HTValue;
 
         /// <summary>
@@ -159,7 +157,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.BL, 0) ?? 0) +
             BuffAttribute(_baseBl, SkillCodeApplyAttributeEnum.BL));
 
-        public short CC => (short)
+        public int CC =>
             (_baseCc +
             (_baseCc * Digiclone.CTValue / 100) +
             GetSealStatus(StatusTypeEnum.CT) +
@@ -215,7 +213,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
             BuffAttribute(_baseDs, SkillCodeApplyAttributeEnum.MaxDS, SkillCodeApplyAttributeEnum.DS) +
             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.DS, _baseDs) ?? 0);
 
-        public short EV => (short)
+        public int EV =>
             (_baseEv +
             (_baseEv * Digiclone.EVValue / 100) +
             GetSealStatus(StatusTypeEnum.EV) +
