@@ -11,8 +11,10 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using System.Text.RegularExpressions;
+using DigitalWorldOnline.Application.Separar.Commands.Create;
 using DigitalWorldOnline.Application.Separar.Commands.Delete;
 using DigitalWorldOnline.Commons.Models.Base;
+using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 
 namespace DigitalWorldOnline.Game
@@ -314,7 +316,857 @@ namespace DigitalWorldOnline.Game
 
                     }
                     break;
+                //---- Sacrifice Spirit for sun / darkeness
+                case "spirit":
+                    {
+                        var regex = @"^spirit";
+                        var match = Regex.IsMatch(message, regex, RegexOptions.IgnoreCase);
 
+                        if (!match)
+                        {
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !spirit (slot)"));
+                            break;
+                        }
+
+                        if (command.Length < 2)
+                        {
+                            client.Send(new SystemMessagePacket("Invalid command.\nType !spirit (slot)"));
+                            break;
+                        }
+
+                        if (!byte.TryParse(command[1], out byte digiSlot))
+                        {
+                            client.Send(new SystemMessagePacket("Invalid Slot.\nType a valid Slot (1 to 4)"));
+                            break;
+                        }
+
+                        if (digiSlot == 0 || digiSlot > 4)
+                        {
+                            client.Send(new SystemMessagePacket($"Invalid Slot !!"));
+                            break;
+                        }
+
+                        var digimon = client.Tamer.Digimons.FirstOrDefault(x => x.Slot == digiSlot);
+
+                        if (digimon == null)
+                        {
+                            client.Send(new SystemMessagePacket($"Spirit not found on slot {digiSlot}"));
+                            break;
+                        }
+                        else
+                        {
+                            var digimonId = digimon.Id;
+                            //Sun Susanoo
+                            if (digimon.BaseType == 75020 && digimon.Level >= 120) // Agnimon Type
+                            {
+                                var itemId = 66941; // 66941 Sun fire H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75021 && digimon.Level >= 120) // Vritramon Type
+                            {
+                                var itemId = 66942; // 66941 Fire B item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75022 && digimon.Level >= 120) // Fairimon Type
+                            {
+                                var itemId = 66943; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75023 && digimon.Level >= 120) // Shutsmon Type
+                            {
+                                var itemId = 66944; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75024 && digimon.Level >= 120) // Fairimon Type
+                            {
+                                var itemId = 66945; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75025 && digimon.Level >= 120) // Shutsmon Type
+                            {
+                                var itemId = 66946; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75026 && digimon.Level >= 120) // Fairimon Type
+                            {
+                                var itemId = 66947; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75027 && digimon.Level >= 120) // Shutsmon Type
+                            {
+                                var itemId = 66948; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75028 && digimon.Level >= 120) // Fairimon Type
+                            {
+                                var itemId = 66949; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75029 && digimon.Level >= 120) // Shutsmon Type
+                            {
+                                var itemId = 66950; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            //Darkness Susanoo
+                            else if (digimon.BaseType == 75030 && digimon.Level >= 120) // Agnimon Type
+                            {
+                                var itemId = 66951; // 66941 Sun fire H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75031 && digimon.Level >= 120) // Vritramon Type
+                            {
+                                var itemId = 66952; // 66941 Fire B item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75032 && digimon.Level >= 120) // Fairimon Type
+                            {
+                                var itemId = 66953; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75033 && digimon.Level >= 120) // Shutsmon Type
+                            {
+                                var itemId = 66954; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75034 && digimon.Level >= 120) // Fairimon Type
+                            {
+                                var itemId = 66955; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75035 && digimon.Level >= 120) // Shutsmon Type
+                            {
+                                var itemId = 66956; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75036 && digimon.Level >= 120) // Fairimon Type
+                            {
+                                var itemId = 66957; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75037 && digimon.Level >= 120) // Shutsmon Type
+                            {
+                                var itemId = 66958; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75038 && digimon.Level >= 120) // Fairimon Type
+                            {
+                                var itemId = 66959; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            else if (digimon.BaseType == 75039 && digimon.Level >= 120) // Shutsmon Type
+                            {
+                                var itemId = 66960; // 66941 Wind H item
+
+                                var newItem = new ItemModel();
+                                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == itemId));
+
+                                if (newItem.ItemInfo == null)
+                                {
+                                    _logger.Warning($"No item info found with ID {itemId} for tamer {client.TamerId}.");
+                                    client.Send(new SystemMessagePacket($"No item info found with ID {itemId}."));
+                                    break;
+                                }
+
+                                newItem.ItemId = itemId;
+                                newItem.Amount = 1;
+
+                                if (newItem.IsTemporary)
+                                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                                var itemClone = (ItemModel)newItem.Clone();
+
+                                if (client.Tamer.Inventory.AddItem(newItem))
+                                {
+                                    client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                                    await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                                }
+                                else
+                                {
+                                    client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
+                                    client.Send(new SystemMessagePacket($"Inventory full !!"));
+                                    break;
+                                }
+
+                                client.Tamer.RemoveDigimon(digiSlot);
+
+                                client.Send(new PartnerDeletePacket(digiSlot));
+
+                                await _sender.Send(new DeleteDigimonCommand(digimonId));
+                            }
+                            {
+                                client.Send(new SystemMessagePacket("Wrong Spirit type or level less than 99!!"));
+                                break;
+                            }
+
+                        }
+
+                    }
+                    break;
                 // --- DECK -------------------------------
 
                 case "deckload":
@@ -330,14 +1182,97 @@ namespace DigitalWorldOnline.Game
 
                         var evolution = client.Partner.Evolutions[0];
 
-                        _logger.Information($"Evolution ID: {evolution.Id} | Evolution Type: {evolution.Type} | Evolution Unlocked: {evolution.Unlocked}");
+                        _logger.Information(
+                            $"Evolution ID: {evolution.Id} | Evolution Type: {evolution.Type} | Evolution Unlocked: {evolution.Unlocked}");
 
-                        var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == evolution.Type);
+                        var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines
+                            .FirstOrDefault(x => x.Type == evolution.Type);
 
                         _logger.Information($"EvoInfo ID: {evoInfo.Id}");
                         _logger.Information($"EvoInfo EvolutionId: {evoInfo.EvolutionId}");
+
+                        // --- CREATE DB ----------------------------------------------------------------------------------------
+
+                        var digimonEvolutionInfo = _assets.EvolutionInfo.First(x => x.Type == client.Partner.BaseType);
+
+                        var digimonEvolutions = client.Partner.Evolutions;
+
+                        var encyclopediaExists =
+                            client.Tamer.Encyclopedia.Exists(x => x.DigimonEvolutionId == digimonEvolutionInfo.Id);
+
+                        if (!encyclopediaExists)
+                        {
+                            if (digimonEvolutionInfo != null)
+                            {
+                                var newEncyclopedia = CharacterEncyclopediaModel.Create(client.TamerId,
+                                    digimonEvolutionInfo.Id, client.Partner.Level, client.Partner.Size, 0, 0, 0, 0, 0,
+                                    false, false);
+
+                                digimonEvolutions?.ForEach(x =>
+                                {
+                                    var evolutionLine = digimonEvolutionInfo.Lines.FirstOrDefault(y => y.Type == x.Type);
+
+                                    byte slotLevel = 0;
+
+                                    if (evolutionLine != null)
+                                        slotLevel = evolutionLine.SlotLevel;
+
+                                    newEncyclopedia.Evolutions.Add(
+                                        CharacterEncyclopediaEvolutionsModel.Create(newEncyclopedia.Id, x.Type, slotLevel,
+                                            Convert.ToBoolean(x.Unlocked)));
+                                });
+
+                                var encyclopediaAdded =
+                                    await _sender.Send(new CreateCharacterEncyclopediaCommand(newEncyclopedia));
+
+                                client.Tamer.Encyclopedia.Add(encyclopediaAdded);
+
+                                _logger.Information($"Digimon Type {client.Partner.BaseType} encyclopedia created !!");
+                            }
+                        }
+                        else
+                        {
+                            _logger.Information($"Encyclopedia already exist !!");
+                        }
+
+                        // --- UNLOCK -------------------------------------------------------------------------------------------
+
+                        var encyclopedia =
+                            client.Tamer.Encyclopedia.First(x => x.DigimonEvolutionId == evoInfo.EvolutionId);
+
+                        _logger.Information($"Encyclopedia is: {encyclopedia.Id}, evolution id: {evoInfo.EvolutionId}");
+
+                        if (encyclopedia != null)
+                        {
+                            var encyclopediaEvolution =
+                                encyclopedia.Evolutions.First(x => x.DigimonBaseType == evolution.Type);
+
+                            if (!encyclopediaEvolution.IsUnlocked)
+                            {
+                                encyclopediaEvolution.Unlock();
+
+                                await _sender.Send(new UpdateCharacterEncyclopediaEvolutionsCommand(encyclopediaEvolution));
+
+                                int LockedEncyclopediaCount = encyclopedia.Evolutions.Count(x => x.IsUnlocked == false);
+
+                                if (LockedEncyclopediaCount <= 0)
+                                {
+                                    encyclopedia.SetRewardAllowed();
+                                    await _sender.Send(new UpdateCharacterEncyclopediaCommand(encyclopedia));
+                                }
+                            }
+                            else
+                            {
+                                _logger.Information($"Evolution already unlocked on encyclopedia !!");
+                            }
+                        }
+
+                        // ------------------------------------------------------------------------------------------------------
+
+                        client.Send(new SystemMessagePacket($"Encyclopedia verifyed and updated !!"));
                     }
                     break;
+
 
                 // --- DEFAULT ----------------------------
 
