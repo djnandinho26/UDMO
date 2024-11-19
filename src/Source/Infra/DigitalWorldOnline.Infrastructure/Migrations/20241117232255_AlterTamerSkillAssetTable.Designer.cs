@@ -4,6 +4,7 @@ using DigitalWorldOnline.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DigitalWorldOnline.Infrastructure.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20241117232255_AlterTamerSkillAssetTable")]
+    partial class AlterTamerSkillAssetTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -616,816 +619,6 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                     b.HasIndex("ContainerAssetId");
 
                     b.ToTable("ContainerReward", "Asset");
-                });
-
-            modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.DeckBookInfoAssetDTO", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
-
-                    b.Property<string>("Explain")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("varchar");
-
-                    b.Property<int>("OptionId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Type")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.HasKey("Id");
-
-                    b.ToTable("DeckBookInfo", "Asset");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1L,
-                            Explain = "None.",
-                            Name = "None",
-                            OptionId = 0,
-                            Type = 0
-                        },
-                        new
-                        {
-                            Id = 2L,
-                            Explain = "Additional damage to normal attack is applied.",
-                            Name = "Additional damage to attack",
-                            OptionId = 1,
-                            Type = 1
-                        },
-                        new
-                        {
-                            Id = 3L,
-                            Explain = "Additional damage to skill attack is applied.",
-                            Name = "Additional damage to skill",
-                            OptionId = 2,
-                            Type = 2
-                        },
-                        new
-                        {
-                            Id = 4L,
-                            Explain = "Increase critical hit damage.",
-                            Name = "Increase critical hit damage",
-                            OptionId = 3,
-                            Type = 3
-                        },
-                        new
-                        {
-                            Id = 5L,
-                            Explain = "Reset skills' cooldown time when activated.",
-                            Name = "Reset skill cooldown time",
-                            OptionId = 4,
-                            Type = 4
-                        },
-                        new
-                        {
-                            Id = 6L,
-                            Explain = "Increase digimon's Max HP.",
-                            Name = "Increase Max HP",
-                            OptionId = 5,
-                            Type = 5
-                        },
-                        new
-                        {
-                            Id = 7L,
-                            Explain = "Increase normal attacking speed.",
-                            Name = "Increase attack speed",
-                            OptionId = 6,
-                            Type = 6
-                        });
-                });
-
-            modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.DeckBuffAssetDTO", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Explain")
-                        .IsRequired()
-                        .HasColumnType("varchar(max)");
-
-                    b.Property<int>("GroupIdX")
-                        .HasColumnType("int");
-
-                    b.Property<string>("GroupName")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("varchar");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GroupIdX")
-                        .IsUnique();
-
-                    b.ToTable("DeckBuff", "Asset");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Explain = "The Four Holy Beasts are four Ultimate digimons that reign over the north, south, east, and west of the digital world. Qinglongmon(Lightning), Xuanwumon(Water), Zhuqiaomon(Fire), and Baihumon(Iron), the Four Holy Beasts have, unlike other normal digimons, twelve cores and four eyes respectively.",
-                            GroupIdX = 1001,
-                            GroupName = "Four Holy Beasts"
-                        },
-                        new
-                        {
-                            Id = 2,
-                            Explain = "Two or more Jogress digimons can be combined to evolve into an entirely different digimon. A digimon successfully jogressed has great power and an essential role in the digital world.",
-                            GroupIdX = 1002,
-                            GroupName = "Fusion to evolve into the higher"
-                        },
-                        new
-                        {
-                            Id = 3,
-                            Explain = "They are the three great archangels who are the leaders of all the angelic digimons in the digital world. They are Seraphimon who executes god's law, Cherubimon who protects wisdom and god's area, Ophanimon who delivers god's love. Also, they lead angelic army consists of man-type, animal-type, and woman-type angelic digimons. Seraphimon is the highest of the three, and thus of all the angelic digimons.",
-                            GroupIdX = 1004,
-                            GroupName = "Three Archangels"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Explain = "Digimon adventure's 8 main characters' partner digimons. Tai's partner Agumon, Matthew's partner Gabumon, Izzy's partner Tentomon, Kido Jou's partner Gomamon, T.K.'s partner Patamon, Mimi's Palmon, Sora's partner Biyomon, Kari's partner Gatomon are the members.",
-                            GroupIdX = 1008,
-                            GroupName = "Main characters of the adventure"
-                        },
-                        new
-                        {
-                            Id = 5,
-                            Explain = "This is the group of the digimons with wings who have become Burst Mode digimons overcoming the power of Mega digimons.\nTheir wings influence all their actions from battle to moving.\nThe wings can be the shield of the Digital World full of good will,\nbut sometimes they can also be the blade raising the wind of darkness.",
-                            GroupIdX = 1009,
-                            GroupName = ">Burst Ultimate Wing"
-                        },
-                        new
-                        {
-                            Id = 6,
-                            Explain = "The digimon looks like the food one can easily see in daily life.\nMushroom, clam, fish, squid,\nand pumpkin can make really great seafood stew if mixed harmoniously.\n※Jogress Food※\nEvolve into the best seafood stew!",
-                            GroupIdX = 1010,
-                            GroupName = "Seafood Stew"
-                        },
-                        new
-                        {
-                            Id = 7,
-                            Explain = "This is the group of the digimons using big and nice blades to lead the battle.\nThey are usually masters of swords so that it's very beautiful to watch they play with their\nswords.\nAs the digimons walk only on the sword's way,\nthey commonly hold fast to their justice just like sharp blades.",
-                            GroupIdX = 1011,
-                            GroupName = "Sharp Blue Sword Wave"
-                        },
-                        new
-                        {
-                            Id = 8,
-                            Explain = "This is the group of the digimons using firearms like guns and cannons to win battles.\nSome of them unleash stylish attacks with pistols,\nthe others deal heavy damage with huge cannon installed on their body.\nGun using digimons are usually cheerful, whereas\nCannon using digimons are taciturn.",
-                            GroupIdX = 1012,
-                            GroupName = "Instant Red Gun Fire"
-                        },
-                        new
-                        {
-                            Id = 9,
-                            Explain = "This is the group of the digimons that you want to be with.\nWhen you come back home,  if one of the digimons from the deck welcomes you,\nit will be your happy day.\nWhen you are uncomfortable, you can be calmed if you touch their shaggy hair.",
-                            GroupIdX = 1013,
-                            GroupName = "So cute♥"
-                        },
-                        new
-                        {
-                            Id = 10,
-                            Explain = "Appearing at the latter part of the digimon adventure, they are powerful dark forces who can compress all the areas into one place. Four dark masters have Ultimate digimons as servants.",
-                            GroupIdX = 1016,
-                            GroupName = "Four Dark Masters"
-                        },
-                        new
-                        {
-                            Id = 11,
-                            Explain = "It is the final boss of Digimon Adventure\nand came from beyond the Wall of Fire to have the final fight with the Digidestined.\nIt wanted to help the world but it is a collective agent of the resentment of the Digimons that\ndied out and are left behind by evolution.\nThe egos of resentment disappeared in the darkness\nand decided to attack the Digital World to give the Digidestined and the other Digimons in the\nworld of light the same pain it suffered.",
-                            GroupIdX = 1017,
-                            GroupName = "Ego of the Darkness"
-                        },
-                        new
-                        {
-                            Id = 12,
-                            Explain = "The Final Sprit Evolusion\nHyper Spirit Evolusion Digimon",
-                            GroupIdX = 1019,
-                            GroupName = "Hyper Spirit Evolution"
-                        },
-                        new
-                        {
-                            Id = 13,
-                            Explain = "Digimon Group that Told of Oriental legends, strongest destructive god and the god which governs over regeneration, Susanoomon and Hyper Spirit Evolution Digimons.",
-                            GroupIdX = 1020,
-                            GroupName = "Ancient Spirit Evolution"
-                        },
-                        new
-                        {
-                            Id = 14,
-                            Explain = "A group of legendary vaccine knights that declared to be natural enemy of evil virus Digimons.",
-                            GroupIdX = 1021,
-                            GroupName = "Legendary Knights of Vaccine"
-                        },
-                        new
-                        {
-                            Id = 15,
-                            Explain = "Community of 3 different Holy Knights that are alike.",
-                            GroupIdX = 1022,
-                            GroupName = "OMEGA"
-                        },
-                        new
-                        {
-                            Id = 16,
-                            Explain = "Community of 3 different Holy Knights that are alike and Digimon after transcendence.",
-                            GroupIdX = 1023,
-                            GroupName = "MEGA-OMEGA"
-                        });
-                });
-
-            modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.DeckBuffOptionAssetDTO", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AtType")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<int>("Condition")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("DeckBuffId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("GroupIdX")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Option")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<int>("Prob")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<int>("Time")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.Property<int>("Value")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeckBuffId");
-
-                    b.ToTable("DeckBuffOption", "Asset");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1001,
-                            Option = 3,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 30
-                        },
-                        new
-                        {
-                            Id = 2,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1001,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 3,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1001,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 4,
-                            AtType = 1,
-                            Condition = 2,
-                            GroupIdX = 1002,
-                            Option = 4,
-                            Prob = 700,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 5,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1002,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 6,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1002,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 7,
-                            AtType = 1,
-                            Condition = 3,
-                            GroupIdX = 1004,
-                            Option = 1,
-                            Prob = 300,
-                            Time = 5,
-                            Value = 15
-                        },
-                        new
-                        {
-                            Id = 8,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1004,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 9,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1004,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 10,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1008,
-                            Option = 6,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 8
-                        },
-                        new
-                        {
-                            Id = 11,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1008,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 12,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1008,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 13,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1009,
-                            Option = 6,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 15
-                        },
-                        new
-                        {
-                            Id = 14,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1009,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 15,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1009,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 16,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1010,
-                            Option = 5,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 10
-                        },
-                        new
-                        {
-                            Id = 17,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1010,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 18,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1010,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 19,
-                            AtType = 1,
-                            Condition = 3,
-                            GroupIdX = 1011,
-                            Option = 1,
-                            Prob = 600,
-                            Time = 10,
-                            Value = 10
-                        },
-                        new
-                        {
-                            Id = 20,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1011,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 21,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1011,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 22,
-                            AtType = 2,
-                            Condition = 3,
-                            GroupIdX = 1012,
-                            Option = 2,
-                            Prob = 700,
-                            Time = 12,
-                            Value = 8
-                        },
-                        new
-                        {
-                            Id = 23,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1012,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 24,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1012,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 25,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1013,
-                            Option = 30,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 15
-                        },
-                        new
-                        {
-                            Id = 26,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1013,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 27,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1013,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 28,
-                            AtType = 2,
-                            Condition = 3,
-                            GroupIdX = 1016,
-                            Option = 2,
-                            Prob = 500,
-                            Time = 10,
-                            Value = 12
-                        },
-                        new
-                        {
-                            Id = 29,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1016,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 30,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1016,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 31,
-                            AtType = 1,
-                            Condition = 3,
-                            GroupIdX = 1017,
-                            Option = 1,
-                            Prob = 7000,
-                            Time = 5,
-                            Value = 12
-                        },
-                        new
-                        {
-                            Id = 32,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1017,
-                            Option = 5,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 15
-                        },
-                        new
-                        {
-                            Id = 33,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1017,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 34,
-                            AtType = 1,
-                            Condition = 3,
-                            GroupIdX = 1019,
-                            Option = 1,
-                            Prob = 5000,
-                            Time = 5,
-                            Value = 15
-                        },
-                        new
-                        {
-                            Id = 35,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1019,
-                            Option = 5,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 10
-                        },
-                        new
-                        {
-                            Id = 36,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1019,
-                            Option = 3,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 2
-                        },
-                        new
-                        {
-                            Id = 37,
-                            AtType = 1,
-                            Condition = 3,
-                            GroupIdX = 1020,
-                            Option = 1,
-                            Prob = 4000,
-                            Time = 5,
-                            Value = 25
-                        },
-                        new
-                        {
-                            Id = 38,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1020,
-                            Option = 5,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 15
-                        },
-                        new
-                        {
-                            Id = 39,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1020,
-                            Option = 3,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 5
-                        },
-                        new
-                        {
-                            Id = 40,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1021,
-                            Option = 6,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 15
-                        },
-                        new
-                        {
-                            Id = 41,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1021,
-                            Option = 5,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 15
-                        },
-                        new
-                        {
-                            Id = 42,
-                            AtType = 1,
-                            Condition = 3,
-                            GroupIdX = 1021,
-                            Option = 1,
-                            Prob = 3000,
-                            Time = 7,
-                            Value = 20
-                        },
-                        new
-                        {
-                            Id = 43,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1022,
-                            Option = 2,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 12
-                        },
-                        new
-                        {
-                            Id = 44,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1022,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 45,
-                            AtType = 0,
-                            Condition = 0,
-                            GroupIdX = 1022,
-                            Option = 0,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 0
-                        },
-                        new
-                        {
-                            Id = 46,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1023,
-                            Option = 2,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 15
-                        },
-                        new
-                        {
-                            Id = 47,
-                            AtType = 1,
-                            Condition = 3,
-                            GroupIdX = 1023,
-                            Option = 3,
-                            Prob = 300,
-                            Time = 10,
-                            Value = 100
-                        },
-                        new
-                        {
-                            Id = 48,
-                            AtType = 0,
-                            Condition = 1,
-                            GroupIdX = 1023,
-                            Option = 6,
-                            Prob = 0,
-                            Time = 0,
-                            Value = 15
-                        });
                 });
 
             modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.DigimonBaseInfoAssetDTO", b =>
@@ -4430,7 +3623,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2024, 11, 19, 9, 4, 39, 597, DateTimeKind.Local).AddTicks(1490),
+                            CreatedAt = new DateTime(2024, 11, 18, 1, 22, 55, 446, DateTimeKind.Local).AddTicks(5048),
                             Hash = "pMgM+NOH0Z+RwR9F1iFVOOwKrW1iDaifx4jWDnH1Dbo="
                         });
                 });
@@ -5302,8 +4495,104 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         new
                         {
                             Id = 1L,
+                            Enabled = false,
+                            Message = "1 1 1 1 1 1 0 0 1 1 1"
+                        },
+                        new
+                        {
+                            Id = 2L,
                             Enabled = true,
-                            Message = "Welcome to UDMO - Ultra Digital Masters online"
+                            Message = "Please, drink some water! :)"
+                        },
+                        new
+                        {
+                            Id = 3L,
+                            Enabled = true,
+                            Message = "Did you hear that?"
+                        },
+                        new
+                        {
+                            Id = 4L,
+                            Enabled = true,
+                            Message = "Remember to feed your pet."
+                        },
+                        new
+                        {
+                            Id = 5L,
+                            Enabled = true,
+                            Message = "Not a Pokémon game."
+                        },
+                        new
+                        {
+                            Id = 6L,
+                            Enabled = true,
+                            Message = "Warning: Chat may be toxic."
+                        },
+                        new
+                        {
+                            Id = 7L,
+                            Enabled = true,
+                            Message = "Be yourself!"
+                        },
+                        new
+                        {
+                            Id = 8L,
+                            Enabled = true,
+                            Message = "Welcome to DSO!"
+                        },
+                        new
+                        {
+                            Id = 9L,
+                            Enabled = true,
+                            Message = "Do you like chocolate?"
+                        },
+                        new
+                        {
+                            Id = 10L,
+                            Enabled = true,
+                            Message = "Here we go again!"
+                        },
+                        new
+                        {
+                            Id = 11L,
+                            Enabled = true,
+                            Message = "Join our Discord! discord.gg/dsooficial"
+                        },
+                        new
+                        {
+                            Id = 12L,
+                            Enabled = true,
+                            Message = "Can you see that mountain over there?"
+                        },
+                        new
+                        {
+                            Id = 13L,
+                            Enabled = true,
+                            Message = "\"Look into the source\""
+                        },
+                        new
+                        {
+                            Id = 14L,
+                            Enabled = true,
+                            Message = "The staff will NEVER ask your password!"
+                        },
+                        new
+                        {
+                            Id = 15L,
+                            Enabled = true,
+                            Message = "Y0ur br4in 1s am4z1ng!"
+                        },
+                        new
+                        {
+                            Id = 16L,
+                            Enabled = true,
+                            Message = "This is the rythm of the night! (8)"
+                        },
+                        new
+                        {
+                            Id = 17L,
+                            Enabled = false,
+                            Message = "Happy new eyer !!!"
                         });
                 });
 
@@ -6111,10 +5400,10 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         {
                             Id = 1L,
                             Active = true,
-                            CreatedAt = new DateTime(2024, 11, 19, 9, 4, 39, 618, DateTimeKind.Local).AddTicks(9161),
+                            CreatedAt = new DateTime(2024, 11, 18, 1, 22, 55, 452, DateTimeKind.Local).AddTicks(6496),
                             Interval = 1,
                             Name = "Daily Quests",
-                            NextRunTime = new DateTime(2024, 11, 20, 0, 0, 0, 0, DateTimeKind.Local),
+                            NextRunTime = new DateTime(2024, 11, 19, 0, 0, 0, 0, DateTimeKind.Local),
                             Type = 1
                         });
                 });
@@ -6390,15 +5679,6 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ContainerAsset");
-                });
-
-            modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.DeckBuffOptionAssetDTO", b =>
-                {
-                    b.HasOne("DigitalWorldOnline.Commons.DTOs.Assets.DeckBuffAssetDTO", "DeckBuff")
-                        .WithMany("Options")
-                        .HasForeignKey("DeckBuffId");
-
-                    b.Navigation("DeckBuff");
                 });
 
             modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.EvolutionLineAssetDTO", b =>
@@ -7359,11 +6639,6 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
             modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.ContainerAssetDTO", b =>
                 {
                     b.Navigation("Rewards");
-                });
-
-            modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.DeckBuffAssetDTO", b =>
-                {
-                    b.Navigation("Options");
                 });
 
             modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.EvolutionAssetDTO", b =>

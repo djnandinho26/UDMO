@@ -54,7 +54,7 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
                 .ReverseMap();
 
             CreateMap<MonsterSkillAssetModel, MonsterSkillAssetDTO>()
-              .ReverseMap();
+                .ReverseMap();
 
             CreateMap<MonsterSkillInfoAssetModel, MonsterSkillInfoAssetDTO>()
                 .ReverseMap();
@@ -141,16 +141,16 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
                 .ReverseMap();
 
             CreateMap<MonthlyEventAssetModel, MonthlyEventAssetDTO>()
-             .ReverseMap();
+                .ReverseMap();
 
             CreateMap<AchievementAssetModel, AchievementAssetDTO>()
-            .ReverseMap();
+                .ReverseMap();
 
             CreateMap<CashShopAssetModel, CashShopAssetDTO>()
-            .ReverseMap();
+                .ReverseMap();
 
             CreateMap<TimeRewardAssetModel, TimeRewardAssetDTO>()
-            .ReverseMap();
+                .ReverseMap();
 
             CreateMap<NpcAssetModel, NpcAssetDTO>()
                 .ReverseMap();
@@ -159,46 +159,46 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
                 .ReverseMap();
 
             CreateMap<NpcPortalAssetModel, NpcPortalAssetDTO>()
-             .ReverseMap();
+                .ReverseMap();
 
             CreateMap<NpcPortalsAmountAssetModel, NpcPortalsAmountAssetDTO>()
-             .ReverseMap();
+                .ReverseMap();
 
             CreateMap<NpcPortalsAssetModel, NpcPortalsAssetDTO>()
-         .ReverseMap();
+                .ReverseMap();
 
             CreateMap<NpcColiseumAssetModel, NpcColiseumAssetDTO>()
-               .ReverseMap();
+                .ReverseMap();
 
             CreateMap<NpcMobInfoAssetModel, NpcMobInfoAssetDTO>()
-               .ReverseMap();
+                .ReverseMap();
 
             CreateMap<ArenaRankingDailyItemRewardsModel, ArenaRankingDailyItemRewardsDTO>()
-           .ReverseMap();
+                .ReverseMap();
 
             CreateMap<ArenaRankingDailyItemRewardModel, ArenaRankingDailyItemRewardDTO>()
-           .ReverseMap();
+                .ReverseMap();
 
             CreateMap<EvolutionArmorAssetModel, EvolutionArmorAssetDTO>()
-          .ReverseMap();
+                .ReverseMap();
 
             CreateMap<ExtraEvolutionNpcAssetModel, ExtraEvolutionNpcAssetDTO>()
-          .ReverseMap();
+                .ReverseMap();
 
             CreateMap<ExtraEvolutionInformationAssetModel, ExtraEvolutionInformationAssetDTO>()
-         .ReverseMap();
+                .ReverseMap();
 
             CreateMap<ExtraEvolutionAssetModel, ExtraEvolutionAssetDTO>()
-          .ReverseMap();
+                .ReverseMap();
 
             CreateMap<ExtraEvolutionMaterialAssetModel, ExtraEvolutionMaterialAssetDTO>()
-         .ReverseMap();
+                .ReverseMap();
 
             CreateMap<ExtraEvolutionRequiredAssetModel, ExtraEvolutionRequiredAssetDTO>()
-         .ReverseMap();
+                .ReverseMap();
 
             CreateMap<XaiAssetModel, XaiAssetDTO>()
-          .ReverseMap();
+                .ReverseMap();
 
             CreateMap<GotchaAssetModel, GotchaAssetDTO>()
                 .ReverseMap();
@@ -207,6 +207,12 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
             CreateMap<GotchaRareItemsAssetModel, GotchaRareItemsAssetDTO>()
                 .ReverseMap();
 
+            CreateMap<DeckBookInfoModel, DeckBookInfoAssetDTO>()
+                .ReverseMap();
+            CreateMap<DeckBuffModel, DeckBuffAssetDTO>()
+                .ReverseMap();
+            CreateMap<DeckBuffOptionModel, DeckBuffOptionAssetDTO>()
+                .ReverseMap();
         }
     }
 }

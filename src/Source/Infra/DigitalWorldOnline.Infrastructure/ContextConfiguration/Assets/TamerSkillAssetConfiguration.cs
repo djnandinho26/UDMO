@@ -27,7 +27,15 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Assets
                 .HasColumnType("int")
                 .IsRequired();
 
-      
+            builder
+                .Property(x => x.Type)
+                .HasColumnType("int")
+                .HasDefaultValue(0);
+
+            builder
+                .Property(x => x.BuffId)
+                .HasColumnType("int")
+                .HasDefaultValue(0);
         }
     }
 }

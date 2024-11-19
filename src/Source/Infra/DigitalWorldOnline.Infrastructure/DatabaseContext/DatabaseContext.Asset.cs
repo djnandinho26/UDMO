@@ -22,7 +22,7 @@ namespace DigitalWorldOnline.Infrastructure
         public DbSet<MonsterSkillAssetDTO> MonsterSkillAsset { get; set; }
         public DbSet<MonsterSkillInfoAssetDTO> MonsterSkillInfoAsset { get; set; }
         public DbSet<SkillInfoAssetDTO> SkillInfoAsset { get; set; }
-        public DbSet<MonthlyEventAssetDTO> MonthlyEvent{ get; set; }
+        public DbSet<MonthlyEventAssetDTO> MonthlyEvent { get; set; }
         public DbSet<AchievementAssetDTO> AchievementAsset { get; set; }
         public DbSet<CashShopAssetDTO> CashShopAsset { get; set; }
         public DbSet<TimeRewardAssetDTO> TimeRewardAsset { get; set; }
@@ -47,6 +47,9 @@ namespace DigitalWorldOnline.Infrastructure
         public DbSet<EvolutionArmorAssetDTO> EvolutionsArmor { get; set; }
         public DbSet<ExtraEvolutionNpcAssetDTO> ExtraEvolutionNpc { get; set; }
         public DbSet<GotchaAssetDTO> GotchaAsset { get; set; }
+        public DbSet<DeckBookInfoAssetDTO> DeckBookInfo { get; set; }
+        public DbSet<DeckBuffAssetDTO> DeckBuff { get; set; }
+        public DbSet<DeckBuffOptionAssetDTO> DeckBuffOption { get; set; }
 
         internal static void AssetsEntityConfiguration(ModelBuilder builder)
         {
@@ -115,6 +118,9 @@ namespace DigitalWorldOnline.Infrastructure
             builder.ApplyConfiguration(new GotchaAssetConfiguration());
             builder.ApplyConfiguration(new GotchaItemsAssetConfiguration());
             builder.ApplyConfiguration(new GotchaRareItemsAssetConfiguration());
+            builder.ApplyConfiguration(new DeckBookInfoConfiguration());
+            builder.ApplyConfiguration(new DeckBuffConfiguration());
+            builder.ApplyConfiguration(new DeckBuffOptionConfiguration());
         }
     }
 }
