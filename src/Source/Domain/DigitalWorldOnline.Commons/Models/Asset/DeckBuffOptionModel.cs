@@ -30,7 +30,7 @@ namespace DigitalWorldOnline.Commons.Models.Asset
         /// <summary>
         /// Defines the specific option associated with the deck buff.
         /// </summary>
-        public required int Option { get; set; }
+        public required int OptionId { get; set; }
 
         /// <summary>
         /// Represents the value associated with the deck buff option.

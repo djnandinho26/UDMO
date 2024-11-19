@@ -1,10 +1,12 @@
-﻿using DigitalWorldOnline.Commons.Enums;
+﻿using DigitalWorldOnline.Commons.DTOs.Assets;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.DTOs.Digimon;
 using DigitalWorldOnline.Commons.DTOs.Events;
 using DigitalWorldOnline.Commons.DTOs.Mechanics;
 using DigitalWorldOnline.Commons.DTOs.Shop;
 using DigitalWorldOnline.Commons.DTOs.Base;
+using DigitalWorldOnline.Commons.Models.Asset;
 
 namespace DigitalWorldOnline.Commons.DTOs.Character
 {
@@ -55,5 +57,7 @@ namespace DigitalWorldOnline.Commons.DTOs.Character
         public List<CharacterTamerSkillDTO> ActiveSkill { get; set; }
         public GuildDTO? Guild { get; set; }
         public List<CharacterEncyclopediaDTO> Encyclopedia { get; set; }
+        
+        public DeckBuffAssetDTO? DeckBuff { get; set; }
     }
 }

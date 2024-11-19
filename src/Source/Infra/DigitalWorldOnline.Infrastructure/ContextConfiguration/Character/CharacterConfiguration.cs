@@ -248,6 +248,12 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
                 .HasMany(x => x.ActiveSkill)
                 .WithOne(x => x.Character)
                 .HasForeignKey(x => x.CharacterId);
+
+            builder
+                .HasOne(x => x.DeckBuff)
+                .WithMany(x => x.Characters)
+                .HasForeignKey(x => x.DeckBuffId)
+                .HasPrincipalKey(x => x.GroupIdX);
         }
     }
 }

@@ -270,6 +270,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
         public List<ItemModel> RepurchaseList { get; private set; }
         public bool TempShowFullMap { get; set; }
         public List<CharacterEncyclopediaModel> Encyclopedia { get; private set; }
+        
+        public DeckBuffModel? DeckBuff { get; private set; }
 
         public CharacterModel()
         {
@@ -328,6 +330,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             Encyclopedia = new List<CharacterEncyclopediaModel>();
 
+            DeckBuff = new DeckBuffModel();
             StartTimers();
         }
 

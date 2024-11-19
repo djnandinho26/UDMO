@@ -27,7 +27,7 @@ namespace DigitalWorldOnline.Commons.DTOs.Assets
         /// <summary>
         /// Defines the specific option associated with the deck buff.
         /// </summary>
-        public required int Option { get; set; }
+        public int OptionId { get; set; }
 
         /// <summary>
         /// Represents the value associated with the deck buff option.
@@ -49,9 +49,9 @@ namespace DigitalWorldOnline.Commons.DTOs.Assets
         /// </summary>
         public DeckBuffAssetDTO? DeckBuff { get; set; }
 
-        /*/// <summary>
+        /// <summary>
         /// Contains information about the book associated with the deck.
         /// </summary>
-        public DeckBookInfoAssetDTO? DeckBookInfo { get; set; }*/
+        public DeckBookInfoAssetDTO? DeckBookInfo { get; set; }
     }
 }

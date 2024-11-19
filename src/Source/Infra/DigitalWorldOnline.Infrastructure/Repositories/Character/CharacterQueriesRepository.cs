@@ -48,14 +48,14 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             var dto = await _context.Character
                 .AsNoTracking()
                 .Include(x => x.ItemList)
-                    .ThenInclude(y => y.Items)
-                        .ThenInclude(z => z.SocketStatus)
+                .ThenInclude(y => y.Items)
+                .ThenInclude(z => z.SocketStatus)
                 .Include(x => x.ItemList)
-                         .ThenInclude(y => y.Items)
-                         .ThenInclude(z => z.AccessoryStatus) // Incluindo AccessoryStatus dentro de Items
-               .Include(x => x.ItemList)
-                         .ThenInclude(y => y.Items)
-                         .ThenInclude(z => z.SocketStatus) // Incluindo SocketStatus dentro de Items
+                .ThenInclude(y => y.Items)
+                .ThenInclude(z => z.AccessoryStatus) // Incluindo AccessoryStatus dentro de Items
+                .Include(x => x.ItemList)
+                .ThenInclude(y => y.Items)
+                .ThenInclude(z => z.SocketStatus) // Incluindo SocketStatus dentro de Items
                 .FirstOrDefaultAsync(x => x.Id == characterId);
 
             dto?.ItemList.ForEach(itemList => itemList.Items = itemList.Items.OrderBy(x => x.Slot).ToList());
@@ -70,7 +70,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .Include(x => x.Location)
                 .Include(x => x.Digimons)
                 .FirstOrDefaultAsync(x => x.AccountId == accountId &&
-                                            x.Position == position);
+                                          x.Position == position);
         }
 
         public async Task<CharacterDTO?> GetCharacterByIdAsync(long characterId)
@@ -89,40 +89,43 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .Include(x => x.Friends)
                 .Include(x => x.Foes)
                 .Include(x => x.Encyclopedia)
-                    .ThenInclude(y => y.Evolutions)
+                .ThenInclude(y => y.Evolutions)
                 .Include(x => x.Encyclopedia)
-                    .ThenInclude(y => y.EvolutionAsset)
+                .ThenInclude(y => y.EvolutionAsset)
                 .Include(x => x.ConsignedShop)
                 .ThenInclude(y => y.Location)
                 .Include(x => x.Progress)
-                    .ThenInclude(x => x.InProgressQuestData)
+                .ThenInclude(x => x.InProgressQuestData)
                 .Include(y => y.MapRegions)
                 .Include(x => x.Points)
                 .Include(x => x.BuffList)
-                    .ThenInclude(y => y.Buffs)
+                .ThenInclude(y => y.Buffs)
                 .Include(x => x.SealList)
-                    .ThenInclude(y => y.Seals)
+                .ThenInclude(y => y.Seals)
                 .Include(x => x.DigimonArchive)
-                    .ThenInclude(y => y.DigimonArchives)
+                .ThenInclude(y => y.DigimonArchives)
                 .Include(x => x.ItemList)
-                    .ThenInclude(y => y.Items)
-                        .ThenInclude(z => z.SocketStatus)
+                .ThenInclude(y => y.Items)
+                .ThenInclude(z => z.SocketStatus)
                 .Include(x => x.ItemList)
-                    .ThenInclude(y => y.Items)
-                        .ThenInclude(z => z.AccessoryStatus)
+                .ThenInclude(y => y.Items)
+                .ThenInclude(z => z.AccessoryStatus)
                 .Include(x => x.Digimons)
-                    .ThenInclude(y => y.Digiclone)
-                        .ThenInclude(z => z.History)
+                .ThenInclude(y => y.Digiclone)
+                .ThenInclude(z => z.History)
                 .Include(x => x.Digimons)
-                    .ThenInclude(y => y.AttributeExperience)
+                .ThenInclude(y => y.AttributeExperience)
                 .Include(x => x.Digimons)
-                    .ThenInclude(y => y.Location)
+                .ThenInclude(y => y.Location)
                 .Include(x => x.Digimons)
-                    .ThenInclude(y => y.BuffList)
-                        .ThenInclude(z => z.Buffs)
+                .ThenInclude(y => y.BuffList)
+                .ThenInclude(z => z.Buffs)
                 .Include(x => x.Digimons)
-                    .ThenInclude(y => y.Evolutions)
-                        .ThenInclude(z => z.Skills)
+                .ThenInclude(y => y.Evolutions)
+                .ThenInclude(z => z.Skills)
+                .Include(x => x.DeckBuff)
+                .ThenInclude(y => y.Options)
+                .ThenInclude(z => z.DeckBookInfo)
                 .SingleOrDefaultAsync(x => x.Id == characterId);
 
             if (character != null)
@@ -147,9 +150,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .Include(x => x.Digiclone)
                 .Include(x => x.AttributeExperience)
                 .Include(x => x.Evolutions)
-                    .ThenInclude(y => y.Skills)
+                .ThenInclude(y => y.Skills)
                 .Include(x => x.BuffList)
-                    .ThenInclude(x => x.Buffs)
+                .ThenInclude(x => x.Buffs)
                 .SingleOrDefaultAsync(x => x.Id == digimonId);
         }
 
@@ -162,9 +165,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .Include(x => x.Location)
                 .Include(x => x.Xai)
                 .Include(x => x.SealList)
-                    .ThenInclude(y => y.Seals)
+                .ThenInclude(y => y.Seals)
                 .Include(x => x.ItemList)
-                    .ThenInclude(y => y.Items)
+                .ThenInclude(y => y.Items)
                 .Include(x => x.Digimons)
                 .Where(x => x.AccountId == accountId)
                 .ToListAsync();
@@ -173,7 +176,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             {
                 if (character != null)
                 {
-                    character.ItemList.ForEach(itemList => itemList.Items = itemList.Items.OrderBy(x => x.Slot).ToList());
+                    character.ItemList.ForEach(
+                        itemList => itemList.Items = itemList.Items.OrderBy(x => x.Slot).ToList());
                     character.Digimons = character.Digimons.Where(x => x.Slot <= 5).OrderBy(x => x.Slot).ToList();
                 }
             });
@@ -184,12 +188,12 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
         public async Task<(string TamerName, string GuildName)> GetCharacterNameAndGuildByIdQAsync(long characterId)
         {
             var dto = await _context.Character
-                  .AsNoTracking()
-                  .FirstOrDefaultAsync(x => x.Id == characterId);
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == characterId);
 
             var dtoGuild = await _context.Guild
-                       .AsNoTracking()
-                       .FirstOrDefaultAsync(g => g.Members.Any(m => m.CharacterId == characterId));
+                .AsNoTracking()
+                .FirstOrDefaultAsync(g => g.Members.Any(m => m.CharacterId == characterId));
 
 
             if (dto != null && dtoGuild == null)
@@ -197,6 +201,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 // Supondo que seu objeto Character possui propriedades TamerName e GuildName.
                 return (dto.Name, string.Empty);
             }
+
             if (dto != null && dtoGuild != null)
             {
                 return (dto.Name, dtoGuild.Name);
@@ -218,6 +223,5 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
             return characters;
         }
-
     }
 }

@@ -13,7 +13,7 @@ namespace DigitalWorldOnline.Commons.DTOs.Assets
         /// <summary>
         /// OptionID
         /// </summary>
-        public required int OptionId { get; set; }
+        public int OptionId { get; set; }
 
         /// <summary>
         /// Reference to the option name
@@ -30,11 +30,11 @@ namespace DigitalWorldOnline.Commons.DTOs.Assets
         /// </summary>
         public required string Explain { get; set; }
 
-        /*public List<DeckBuffOptionAssetDTO> Options { get; set; }
+        public List<DeckBuffOptionAssetDTO> Options { get; set; }
         
         public DeckBookInfoAssetDTO()
         {
-            Options = new List<DeckBuffOptionAssetDTO>();
-        }*/
+            Options = new List<DeckBuffOptionAssetDTO>(3);
+        }
     }
 }

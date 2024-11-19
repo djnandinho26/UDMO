@@ -33,10 +33,17 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Assets
                 .HasIndex(e => e.GroupIdX)
                 .IsUnique();
             
-            /*builder
+            builder
                 .HasMany(x => x.Options)
                 .WithOne(x => x.DeckBuff)
-                .HasForeignKey(x => x.GroupIdX);*/
+                .HasForeignKey(x => x.GroupIdX)
+                .HasPrincipalKey(x => x.GroupIdX);
+            
+            builder
+                .HasMany(x => x.Characters)
+                .WithOne(x => x.DeckBuff)
+                .HasForeignKey(x => x.DeckBuffId)
+                .HasPrincipalKey(x => x.GroupIdX);
             
             builder
                 .HasData(

@@ -1,4 +1,6 @@
-﻿namespace DigitalWorldOnline.Commons.DTOs.Assets
+﻿using DigitalWorldOnline.Commons.DTOs.Character;
+
+namespace DigitalWorldOnline.Commons.DTOs.Assets
 {
     public class DeckBuffAssetDTO
     {
@@ -26,11 +28,16 @@
         public List<DeckBuffOptionAssetDTO> Options { get; set; }
 
         /// <summary>
+        /// Gets or sets the list of deck buff options associated with the deck buff asset.
+        /// </summary>
+        public List<CharacterDTO> Characters { get; set; }
+
+        /// <summary>
         /// DTO representing a Deck Buff Asset with various options.
         /// </summary>
         public DeckBuffAssetDTO()
         {
-            Options = new List<DeckBuffOptionAssetDTO>();
+            Options = new List<DeckBuffOptionAssetDTO>(3);
         }
     }
 }

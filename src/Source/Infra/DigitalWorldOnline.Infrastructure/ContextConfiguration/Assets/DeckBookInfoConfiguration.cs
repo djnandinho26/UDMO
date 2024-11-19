@@ -40,11 +40,11 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Assets
                 .HasColumnType("varchar")
                 .IsRequired();
 
-            /*builder
+            builder
                 .HasMany(x => x.Options)
                 .WithOne(x => x.DeckBookInfo)
-                .HasForeignKey(x => x.Option)
-                .HasPrincipalKey(x => x.OptionId);*/
+                .HasForeignKey(x => x.OptionId)
+                .HasPrincipalKey(x => x.OptionId);
 
             builder
                 .HasData(

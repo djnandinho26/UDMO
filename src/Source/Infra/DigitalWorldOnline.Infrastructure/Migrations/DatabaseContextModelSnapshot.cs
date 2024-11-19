@@ -865,16 +865,11 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                     b.Property<int>("Condition")
                         .HasColumnType("int");
 
-                    b.Property<int?>("DeckBuffId")
-                        .HasColumnType("int");
-
                     b.Property<int>("GroupIdX")
                         .HasColumnType("int");
 
-                    b.Property<int>("Option")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                    b.Property<int>("OptionId")
+                        .HasColumnType("int");
 
                     b.Property<int>("Prob")
                         .ValueGeneratedOnAdd()
@@ -893,7 +888,9 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeckBuffId");
+                    b.HasIndex("GroupIdX");
+
+                    b.HasIndex("OptionId");
 
                     b.ToTable("DeckBuffOption", "Asset");
 
@@ -904,7 +901,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1001,
-                            Option = 3,
+                            OptionId = 3,
                             Prob = 0,
                             Time = 0,
                             Value = 30
@@ -915,7 +912,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1001,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -926,7 +923,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1001,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -937,7 +934,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 1,
                             Condition = 2,
                             GroupIdX = 1002,
-                            Option = 4,
+                            OptionId = 4,
                             Prob = 700,
                             Time = 0,
                             Value = 0
@@ -948,7 +945,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1002,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -959,7 +956,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1002,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -970,7 +967,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 1,
                             Condition = 3,
                             GroupIdX = 1004,
-                            Option = 1,
+                            OptionId = 1,
                             Prob = 300,
                             Time = 5,
                             Value = 15
@@ -981,7 +978,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1004,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -992,7 +989,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1004,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1003,7 +1000,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1008,
-                            Option = 6,
+                            OptionId = 6,
                             Prob = 0,
                             Time = 0,
                             Value = 8
@@ -1014,7 +1011,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1008,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1025,7 +1022,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1008,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1036,7 +1033,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1009,
-                            Option = 6,
+                            OptionId = 6,
                             Prob = 0,
                             Time = 0,
                             Value = 15
@@ -1047,7 +1044,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1009,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1058,7 +1055,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1009,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1069,7 +1066,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1010,
-                            Option = 5,
+                            OptionId = 5,
                             Prob = 0,
                             Time = 0,
                             Value = 10
@@ -1080,7 +1077,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1010,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1091,7 +1088,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1010,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1102,7 +1099,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 1,
                             Condition = 3,
                             GroupIdX = 1011,
-                            Option = 1,
+                            OptionId = 1,
                             Prob = 600,
                             Time = 10,
                             Value = 10
@@ -1113,7 +1110,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1011,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1124,7 +1121,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1011,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1135,7 +1132,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 2,
                             Condition = 3,
                             GroupIdX = 1012,
-                            Option = 2,
+                            OptionId = 2,
                             Prob = 700,
                             Time = 12,
                             Value = 8
@@ -1146,7 +1143,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1012,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1157,7 +1154,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1012,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1168,7 +1165,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1013,
-                            Option = 30,
+                            OptionId = 3,
                             Prob = 0,
                             Time = 0,
                             Value = 15
@@ -1179,7 +1176,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1013,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1190,7 +1187,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1013,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1201,7 +1198,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 2,
                             Condition = 3,
                             GroupIdX = 1016,
-                            Option = 2,
+                            OptionId = 2,
                             Prob = 500,
                             Time = 10,
                             Value = 12
@@ -1212,7 +1209,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1016,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1223,7 +1220,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1016,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1234,7 +1231,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 1,
                             Condition = 3,
                             GroupIdX = 1017,
-                            Option = 1,
+                            OptionId = 1,
                             Prob = 7000,
                             Time = 5,
                             Value = 12
@@ -1245,7 +1242,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1017,
-                            Option = 5,
+                            OptionId = 5,
                             Prob = 0,
                             Time = 0,
                             Value = 15
@@ -1256,7 +1253,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1017,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1267,7 +1264,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 1,
                             Condition = 3,
                             GroupIdX = 1019,
-                            Option = 1,
+                            OptionId = 1,
                             Prob = 5000,
                             Time = 5,
                             Value = 15
@@ -1278,7 +1275,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1019,
-                            Option = 5,
+                            OptionId = 5,
                             Prob = 0,
                             Time = 0,
                             Value = 10
@@ -1289,7 +1286,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1019,
-                            Option = 3,
+                            OptionId = 3,
                             Prob = 0,
                             Time = 0,
                             Value = 2
@@ -1300,7 +1297,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 1,
                             Condition = 3,
                             GroupIdX = 1020,
-                            Option = 1,
+                            OptionId = 1,
                             Prob = 4000,
                             Time = 5,
                             Value = 25
@@ -1311,7 +1308,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1020,
-                            Option = 5,
+                            OptionId = 5,
                             Prob = 0,
                             Time = 0,
                             Value = 15
@@ -1322,7 +1319,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1020,
-                            Option = 3,
+                            OptionId = 3,
                             Prob = 0,
                             Time = 0,
                             Value = 5
@@ -1333,7 +1330,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1021,
-                            Option = 6,
+                            OptionId = 6,
                             Prob = 0,
                             Time = 0,
                             Value = 15
@@ -1344,7 +1341,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1021,
-                            Option = 5,
+                            OptionId = 5,
                             Prob = 0,
                             Time = 0,
                             Value = 15
@@ -1355,7 +1352,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 1,
                             Condition = 3,
                             GroupIdX = 1021,
-                            Option = 1,
+                            OptionId = 1,
                             Prob = 3000,
                             Time = 7,
                             Value = 20
@@ -1366,7 +1363,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1022,
-                            Option = 2,
+                            OptionId = 2,
                             Prob = 0,
                             Time = 0,
                             Value = 12
@@ -1377,7 +1374,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1022,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1388,7 +1385,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 0,
                             GroupIdX = 1022,
-                            Option = 0,
+                            OptionId = 0,
                             Prob = 0,
                             Time = 0,
                             Value = 0
@@ -1399,7 +1396,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1023,
-                            Option = 2,
+                            OptionId = 2,
                             Prob = 0,
                             Time = 0,
                             Value = 15
@@ -1410,7 +1407,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 1,
                             Condition = 3,
                             GroupIdX = 1023,
-                            Option = 3,
+                            OptionId = 3,
                             Prob = 300,
                             Time = 10,
                             Value = 100
@@ -1421,7 +1418,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                             AtType = 0,
                             Condition = 1,
                             GroupIdX = 1023,
-                            Option = 6,
+                            OptionId = 6,
                             Prob = 0,
                             Time = 0,
                             Value = 15
@@ -3739,6 +3736,8 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeckBuffId");
+
                     b.HasIndex("GuildId");
 
                     b.ToTable("Tamer", "Character");
@@ -4430,7 +4429,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2024, 11, 19, 9, 4, 39, 597, DateTimeKind.Local).AddTicks(1490),
+                            CreatedAt = new DateTime(2024, 11, 19, 10, 32, 1, 334, DateTimeKind.Local).AddTicks(6265),
                             Hash = "pMgM+NOH0Z+RwR9F1iFVOOwKrW1iDaifx4jWDnH1Dbo="
                         });
                 });
@@ -6111,7 +6110,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         {
                             Id = 1L,
                             Active = true,
-                            CreatedAt = new DateTime(2024, 11, 19, 9, 4, 39, 618, DateTimeKind.Local).AddTicks(9161),
+                            CreatedAt = new DateTime(2024, 11, 19, 10, 32, 1, 341, DateTimeKind.Local).AddTicks(1845),
                             Interval = 1,
                             Name = "Daily Quests",
                             NextRunTime = new DateTime(2024, 11, 20, 0, 0, 0, 0, DateTimeKind.Local),
@@ -6396,7 +6395,19 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                 {
                     b.HasOne("DigitalWorldOnline.Commons.DTOs.Assets.DeckBuffAssetDTO", "DeckBuff")
                         .WithMany("Options")
-                        .HasForeignKey("DeckBuffId");
+                        .HasForeignKey("GroupIdX")
+                        .HasPrincipalKey("GroupIdX")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("DigitalWorldOnline.Commons.DTOs.Assets.DeckBookInfoAssetDTO", "DeckBookInfo")
+                        .WithMany("Options")
+                        .HasForeignKey("OptionId")
+                        .HasPrincipalKey("OptionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DeckBookInfo");
 
                     b.Navigation("DeckBuff");
                 });
@@ -6746,9 +6757,16 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
 
             modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Character.CharacterDTO", b =>
                 {
+                    b.HasOne("DigitalWorldOnline.Commons.DTOs.Assets.DeckBuffAssetDTO", "DeckBuff")
+                        .WithMany("Characters")
+                        .HasForeignKey("DeckBuffId")
+                        .HasPrincipalKey("GroupIdX");
+
                     b.HasOne("DigitalWorldOnline.Commons.DTOs.Mechanics.GuildDTO", "Guild")
                         .WithMany()
                         .HasForeignKey("GuildId");
+
+                    b.Navigation("DeckBuff");
 
                     b.Navigation("Guild");
                 });
@@ -7361,8 +7379,15 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                     b.Navigation("Rewards");
                 });
 
+            modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.DeckBookInfoAssetDTO", b =>
+                {
+                    b.Navigation("Options");
+                });
+
             modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Assets.DeckBuffAssetDTO", b =>
                 {
+                    b.Navigation("Characters");
+
                     b.Navigation("Options");
                 });
 
