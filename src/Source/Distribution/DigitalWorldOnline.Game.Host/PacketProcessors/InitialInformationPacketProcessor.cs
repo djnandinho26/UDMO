@@ -4,24 +4,18 @@ using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.Character;
-using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
-using DigitalWorldOnline.Commons.Extensions;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.Character;
-using DigitalWorldOnline.Commons.Models.Map;
-using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
-using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
 using MediatR;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -196,8 +190,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (targetClient == null) targetClient = _dungeonsServer.FindClientByTamerId(target.Id);
 
                         if (targetClient == null) continue;
-                        
-                        KeyValuePair<byte, CharacterModel> partyMember = party.Members.FirstOrDefault(x => x.Value.Id == client.TamerId);
+
+                        KeyValuePair<byte, CharacterModel> partyMember =
+                            party.Members.FirstOrDefault(x => x.Value.Id == client.TamerId);
                         targetClient.Send(
                             UtilitiesFunctions.GroupPackets(
                                 new PartyMemberWarpGatePacket(partyMember, targetClient.Tamer).Serialize(),
@@ -224,9 +219,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 await ReceiveArenaPoints(client);
 
-                /*GameMap playerMap = _mapServer.Maps.FirstOrDefault(x =>
-                    x.Clients.Exists(x => x.TamerId == client.TamerId) && x.Channel == character.Channel);*/
-                client.Send(new InitialInfoPacket(character, party/*, playerMap*/));
+                client.Send(new InitialInfoPacket(character, party));
 
                 await _sender.Send(new ChangeTamerIdTPCommand(client.Tamer.Id, (int)0));
 
