@@ -230,7 +230,7 @@ namespace DigitalWorldOnline.Game
                                 {
                                     var targetDungeon = _dungeonsServer.FindClientByTamerId(memberId);
                                     if (targetDungeon != null)
-                                        targetDungeon.Send(new PartyMemberWarpGatePacket(party[dungeonClient.TamerId])
+                                        targetDungeon.Send(new PartyMemberWarpGatePacket(party[dungeonClient.TamerId], gameClientEvent.Client.Tamer)
                                             .Serialize());
                                 }
 

@@ -245,7 +245,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             ));
                         }*/
 
-                        if (target.Id != client.Tamer.Id) targetClient.Send(new PartyMemberWarpGatePacket(party[client.TamerId]).Serialize());
+                        if (target.Id != client.Tamer.Id) targetClient.Send(new PartyMemberWarpGatePacket(party[client.TamerId], targetClient.Tamer).Serialize());
                     }
 
                     client.Send(new PartyMemberListPacket(party, client.TamerId, (byte)(party.Members.Count - 1)).Serialize());

@@ -66,7 +66,7 @@ namespace DigitalWorldOnline.Commons.Entities
 
         public long TamerId => Tamer?.Id ?? 0;
 
-        public string TamerLocation => $"Map {Tamer?.Location.MapId} X{Tamer?.Location.X} Y{Tamer?.Location.Y}";
+        public string TamerLocation => $"Map {Tamer?.Location.MapId} X{Tamer?.Location.X} Y{Tamer?.Location.Y}, Channel {Tamer?.Channel}";
 
         public bool ReceiveWelcome { get; private set; }
 
