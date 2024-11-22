@@ -14,10 +14,10 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             _context = context;
         }
 
-        //TODO: migrar para o server repository
+        //TODO: migrate to the server repository
         public async Task<IDictionary<byte, byte>> GetChannelsByMapIdAsync(short mapId)
         {
-            //TODO: remover limite inicial de 5 canais
+            // TODO: remove initial limit of 5 channels
             var channels = new Dictionary<byte, byte>
             {
                 { 0, 0 },
@@ -52,10 +52,10 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .ThenInclude(z => z.SocketStatus)
                 .Include(x => x.ItemList)
                 .ThenInclude(y => y.Items)
-                .ThenInclude(z => z.AccessoryStatus) // Incluindo AccessoryStatus dentro de Items
+                .ThenInclude(z => z.AccessoryStatus) // Including AccessoryStatus within Items
                 .Include(x => x.ItemList)
                 .ThenInclude(y => y.Items)
-                .ThenInclude(z => z.SocketStatus) // Incluindo SocketStatus dentro de Items
+                .ThenInclude(z => z.SocketStatus) // Including SocketStatus within Items
                 .FirstOrDefaultAsync(x => x.Id == characterId);
 
             dto?.ItemList.ForEach(itemList => itemList.Items = itemList.Items.OrderBy(x => x.Slot).ToList());
@@ -158,7 +158,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
         public async Task<IList<CharacterDTO>> GetCharactersByAccountIdAsync(long accountId)
         {
-            //TODO: verificar necessidade de melhoria no tempo de resposta
+            // TODO: verify the need for improvement in response time
             var characters = await _context.Character
                 .AsSplitQuery()
                 .AsNoTracking()
@@ -198,7 +198,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
             if (dto != null && dtoGuild == null)
             {
-                // Supondo que seu objeto Character possui propriedades TamerName e GuildName.
+                // Assuming your Character object has properties TamerName and GuildName.
                 return (dto.Name, string.Empty);
             }
 
@@ -212,7 +212,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
         public async Task<IList<CharacterEncyclopediaDTO>> GetCharacterEncyclopediaByCharacterIdAsync(long characterId)
         {
-            //TODO: verificar necessidade de melhoria no tempo de resposta
+            // TODO: verify the need for improvement in response time
             var characters = await _context.CharacterEncyclopedia
                 .AsSplitQuery()
                 .AsNoTracking()

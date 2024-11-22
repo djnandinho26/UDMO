@@ -329,8 +329,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
             };
 
             Encyclopedia = new List<CharacterEncyclopediaModel>();
-
-            DeckBuff = new DeckBuffModel();
             StartTimers();
         }
 
