@@ -3,13 +3,11 @@ using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.Character;
-using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Asset;
 using DigitalWorldOnline.Commons.Models.Mechanics;
 using DigitalWorldOnline.Commons.Packets.Chat;
-using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
@@ -55,14 +53,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (client.DungeonMap)
             {
                 client.Tamer.Die();
-                
+
                 GameParty? party = _partyManager.FindParty(client.TamerId);
 
                 var map = UtilitiesFunctions.MapGroup(client.Tamer.Location.MapId);
                 bool shouldReviveInSameMap = false;
                 if (party != null && party.Members.Values.Count(x =>
                         x.Id != client.TamerId && x.Location.MapId == client.Tamer.Location.MapId &&
-                        x.Channel == client.Tamer.Channel && client.Tamer.Alive) > 0
+                        x.Channel == client.Tamer.Channel) > 0
                    )
                 {
                     map = client.Tamer.Location.MapId;
@@ -80,19 +78,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 var destination = waypoints.Regions.First();
 
-
-                // client.Tamer.Partner.CurrentEvoluti
-                if (shouldReviveInSameMap)
-                {
-                    client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
-                    client.Tamer.UpdateState(CharacterStateEnum.Ready);
-                    client.Tamer.Revive();
-                    client.Send(new UpdateStatusPacket(client.Tamer));
-                    client.Send(new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition));
-                    client.Send(new SyncConditionPacket(client.Partner.GeneralHandler,
-                        client.Partner.CurrentCondition));
-                }
-
                 await _sender.Send(new UpdateCharacterBasicInfoCommand(client.Tamer));
                 await _sender.Send(new UpdateCharacterActiveEvolutionCommand(client.Tamer.ActiveEvolution));
 
@@ -102,25 +87,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Tamer.Partner.NewLocation(map, destination.X, destination.Y);
                 await _sender.Send(new UpdateDigimonLocationCommand(client.Tamer.Partner.Location));
 
-
                 if (shouldReviveInSameMap)
                 {
-                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                        new LocalMapSwapPacket(client.Tamer.GeneralHandler, client.Tamer.Partner.GeneralHandler,
-                            client.Tamer.Location.X, client.Tamer.Location.Y, client.Tamer.Location.X,
-                            client.Tamer.Location.Y).Serialize());
+                    client.SetGameQuit(false);
                 }
                 else
                 {
                     _dungeonServer.RemoveClient(client);
-                    client.Send(new MapSwapPacket(
-                            _configuration[GamerServerPublic],
-                            _configuration[GameServerPort],
-                            client.Tamer.Location.MapId,
-                            client.Tamer.Location.X,
-                            client.Tamer.Location.Y)
-                        .Serialize());
                 }
+
+                client.Send(new MapSwapPacket(
+                        _configuration[GamerServerPublic],
+                        _configuration[GameServerPort],
+                        client.Tamer.Location.MapId,
+                        client.Tamer.Location.X,
+                        client.Tamer.Location.Y)
+                    .Serialize());
             }
             else
             {

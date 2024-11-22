@@ -10,7 +10,6 @@ using DigitalWorldOnline.Commons.Extensions;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Config;
-using DigitalWorldOnline.Commons.Models.Events;
 using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Commons.Models.Mechanics;
 using DigitalWorldOnline.Commons.Models.Servers;
@@ -24,9 +23,6 @@ using Microsoft.IdentityModel.Tokens;
 using DigitalWorldOnline.GameHost;
 using MediatR;
 using Serilog;
-using System.IO;
-using System.Xml.Schema;
-using Newtonsoft.Json.Linq;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -120,7 +116,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     //_logger.Information($"Verifying if tamer have buffs without membership");
 
-                    var buff = _assets.BuffInfo.Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123).ToList();
+                    var buff = _assets.BuffInfo.Where(x => x.BuffId == 50121 || x.BuffId == 50122 || x.BuffId == 50123)
+                        .ToList();
 
                     buff.ForEach(buffAsset =>
                     {
@@ -132,7 +129,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             {
                                 buffData.SetDuration(0, true);
 
-                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0).Serialize());
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0).Serialize());
                             }
                         }
                     });
@@ -146,7 +144,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 client.Send(new MembershipPacket());
 
-                await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId, client.MembershipExpirationDate));
+                await _sender.Send(
+                    new UpdateAccountMembershipCommand(client.AccountId, client.MembershipExpirationDate));
             }
 
             _logger.Debug($"Sending account cash coins packet for character {client.TamerId}...");
@@ -164,7 +163,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
 
             if (client.Tamer.HasXai)
-            {                        
+            {
                 _logger.Debug($"Sending XAI info packet for character {client.TamerId}...");
                 client.Send(new XaiInfoPacket(client.Tamer.Xai));
 
@@ -179,11 +178,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _logger.Information($"Sending tamer relations packet for character {client.TamerId}...");
                 client.Send(new TamerRelationsPacket(client.Tamer.Friends, client.Tamer.Foes));
                 await _sender.Send(new UpdateCharacterInitialPacketSentOnceSentCommand(client.TamerId, true));
-                
+
                 if (!client.DungeonMap)
                 {
                     var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
-                    
+
                     var channels = new Dictionary<byte, byte>();
 
                     var mapChannels = await _sender.Send(new ChannelsByMapIdQuery(client.Tamer.Location.MapId));
@@ -210,7 +209,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             client.Send(new UpdateMovementSpeedPacket(client.Tamer));
 
             _logger.Debug($"Searching guild information for character {client.TamerId}...");
-            client.Tamer.SetGuild(_mapper.Map<GuildModel>(await _sender.Send(new GuildByCharacterIdQuery(client.TamerId))));
+            client.Tamer.SetGuild(
+                _mapper.Map<GuildModel>(await _sender.Send(new GuildByCharacterIdQuery(client.TamerId))));
 
             if (client.Tamer.Guild != null)
             {
@@ -219,14 +219,16 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     if (guildMember.CharacterInfo == null)
                     {
                         var guildMemberClient = _mapServer.FindClientByTamerId(guildMember.CharacterId);
-                        
+
                         if (guildMemberClient != null)
                         {
                             guildMember.SetCharacterInfo(guildMemberClient.Tamer);
                         }
                         else
                         {
-                            guildMember.SetCharacterInfo(_mapper.Map<CharacterModel>(await _sender.Send(new CharacterByIdQuery(guildMember.CharacterId))));
+                            guildMember.SetCharacterInfo(
+                                _mapper.Map<CharacterModel>(
+                                    await _sender.Send(new CharacterByIdQuery(guildMember.CharacterId))));
                         }
                     }
                 }
@@ -236,8 +238,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     if (client.ReceiveWelcome)
                     {
                         _logger.Debug($"Sending guild information packet for character {client.TamerId}...");
-                        _mapServer.BroadcastForUniqueTamer(guildMember.CharacterId, new GuildInformationPacket(client.Tamer.Guild).Serialize());
-                        _dungeonServer.BroadcastForUniqueTamer(guildMember.CharacterId, new GuildInformationPacket(client.Tamer.Guild).Serialize());
+                        _mapServer.BroadcastForUniqueTamer(guildMember.CharacterId,
+                            new GuildInformationPacket(client.Tamer.Guild).Serialize());
+                        _dungeonServer.BroadcastForUniqueTamer(guildMember.CharacterId,
+                            new GuildInformationPacket(client.Tamer.Guild).Serialize());
                     }
                 }
 
@@ -248,27 +252,30 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Send(new GuildHistoricPacket(client.Tamer.Guild.Historic));
             }
 
-            if (client.ReceiveWelcome)
+            /*if (client.ReceiveWelcome)
+            {*/
+            await _sender.Send(new UpdateCharacterFriendsCommand(client.Tamer, true));
+            client.Tamer.Friended.ToList().ForEach(friend =>
             {
-                client.Tamer.Friends.ToList().ForEach(friend =>
-                {
-                    _logger.Debug($"Sending friend connection packet for character {friend.FriendId}...");
-                    _mapServer.BroadcastForUniqueTamer(friend.FriendId, new FriendConnectPacket(client.Tamer.Name).Serialize());
-                    _dungeonServer.BroadcastForUniqueTamer(friend.FriendId, new FriendConnectPacket(client.Tamer.Name).Serialize());
-                });
+                _logger.Information($"Sending friend connection packet for character {friend.CharacterId}...");
+                _mapServer.BroadcastForUniqueTamer(friend.CharacterId,
+                    new FriendConnectPacket(client.Tamer.Name).Serialize());
+                _dungeonServer.BroadcastForUniqueTamer(friend.CharacterId,
+                    new FriendConnectPacket(client.Tamer.Name).Serialize());
+            });
 
-                if (client.Tamer.Guild != null)
-                {
-                    _logger.Debug($"Getting guild rank position for guild {client.Tamer.Guild.Id}...");
-                    var guildRank = await _sender.Send(new GuildCurrentRankByGuildIdQuery(client.Tamer.Guild.Id));
+            if (client.Tamer.Guild != null)
+            {
+                _logger.Debug($"Getting guild rank position for guild {client.Tamer.Guild.Id}...");
+                var guildRank = await _sender.Send(new GuildCurrentRankByGuildIdQuery(client.Tamer.Guild.Id));
 
-                    if (guildRank > 0 && guildRank <= 100)
-                    {
-                        _logger.Debug($"Sending guild rank packet for character {client.TamerId}...");
-                        client.Send(new GuildRankPacket(guildRank));
-                    }
+                if (guildRank > 0 && guildRank <= 100)
+                {
+                    _logger.Debug($"Sending guild rank packet for character {client.TamerId}...");
+                    client.Send(new GuildRankPacket(guildRank));
                 }
             }
+            /*}*/
 
             _logger.Debug($"Updating tamer state for character {client.TamerId}...");
 
@@ -290,11 +297,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
 
             var currentMap = _assets.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
-            
+
             if (currentMap != null)
             {
                 var characterRegion = client.Tamer.MapRegions[currentMap.RegionIndex];
-                
+
                 if (characterRegion != null)
                 {
                     if (characterRegion.Unlocked == 0)
@@ -302,13 +309,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         characterRegion.Unlock();
 
                         await _sender.Send(new UpdateCharacterMapRegionCommand(characterRegion));
-                        _logger.Verbose($"Character {client.TamerId} unlocked region {currentMap.RegionIndex} at {client.TamerLocation}.");
+                        _logger.Verbose(
+                            $"Character {client.TamerId} unlocked region {currentMap.RegionIndex} at {client.TamerLocation}.");
                     }
                 }
                 else
                 {
                     client.Send(new SystemMessagePacket($"Unknown region index {currentMap.RegionIndex}."));
-                    _logger.Warning($"Unknown region index {currentMap.RegionIndex} for character {client.TamerId} at {client.TamerLocation}.");
+                    _logger.Warning(
+                        $"Unknown region index {currentMap.RegionIndex} for character {client.TamerId} at {client.TamerLocation}.");
                 }
             }
             else
@@ -316,15 +325,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Send(new SystemMessagePacket($"Unknown map info for map id {client.Tamer.Location.MapId}."));
                 _logger.Warning($"Unknown map info for map id {client.Tamer.Location.MapId}.");
             }
-
         }
 
         private void UpdateSkillCooldown(GameClient client)
         {
-
             if (client.Tamer.Partner.HasActiveSkills())
             {
-
                 foreach (var evolution in client.Tamer.Partner.Evolutions)
                 {
                     foreach (var skill in evolution.Skills)
@@ -339,7 +345,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
 
                 List<int> SkillIds = new List<int>(5);
-                var packetEvolution = client.Tamer.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Tamer.Partner.CurrentType);
+                var packetEvolution =
+                    client.Tamer.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Tamer.Partner.CurrentType);
 
                 if (packetEvolution != null)
                 {
@@ -349,16 +356,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     {
                         slot++;
 
-                        var skillInfo = _assets.DigimonSkillInfo.FirstOrDefault(x => x.Type == client.Partner.CurrentType && x.Slot == slot);
-                        
+                        var skillInfo = _assets.DigimonSkillInfo.FirstOrDefault(x =>
+                            x.Type == client.Partner.CurrentType && x.Slot == slot);
+
                         if (skillInfo != null)
                         {
                             SkillIds.Add(skillInfo.SkillId);
                         }
                     }
 
-                    client?.Send(new SkillUpdateCooldownPacket(client.Tamer.Partner.GeneralHandler, client.Tamer.Partner.CurrentType, packetEvolution, SkillIds));
-
+                    client?.Send(new SkillUpdateCooldownPacket(client.Tamer.Partner.GeneralHandler,
+                        client.Tamer.Partner.CurrentType, packetEvolution, SkillIds));
                 }
             }
         }
@@ -381,8 +389,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         private void NotifyMinimap(GameClient client, KillSpawnSourceMobConfigModel mob)
         {
-            client.Send(new KillSpawnMinimapNotifyPacket(mob.SourceMobType, mob.CurrentSourceMobRequiredAmount).Serialize());
-
+            client.Send(new KillSpawnMinimapNotifyPacket(mob.SourceMobType, mob.CurrentSourceMobRequiredAmount)
+                .Serialize());
         }
 
         private void NotifyMapChat(GameClient client, GameMap map, KillSpawnConfigModel sourceKillSpawn)
@@ -390,7 +398,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             foreach (var targetMob in sourceKillSpawn.TargetMobs)
             {
                 client.Send(new KillSpawnChatNotifyPacket(map.MapId, map.Channel, targetMob.TargetMobType).Serialize());
-
             }
         }
     }

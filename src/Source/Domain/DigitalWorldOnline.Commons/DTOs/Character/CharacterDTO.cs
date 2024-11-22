@@ -6,7 +6,6 @@ using DigitalWorldOnline.Commons.DTOs.Events;
 using DigitalWorldOnline.Commons.DTOs.Mechanics;
 using DigitalWorldOnline.Commons.DTOs.Shop;
 using DigitalWorldOnline.Commons.DTOs.Base;
-using DigitalWorldOnline.Commons.Models.Asset;
 
 namespace DigitalWorldOnline.Commons.DTOs.Character
 {
@@ -39,6 +38,8 @@ namespace DigitalWorldOnline.Commons.DTOs.Character
         public List<ItemListDTO> ItemList { get; set; }
         public List<DigimonDTO> Digimons { get; set; }
         public List<CharacterFriendDTO> Friends { get; set; }
+        
+        public List<CharacterFriendDTO> Friended { get; set; }
         public List<CharacterFoeDTO> Foes { get; set; }
         public CharacterArenaPointsDTO Points { get; set; }
         public List<CharacterMapRegionDTO> MapRegions { get; set; }

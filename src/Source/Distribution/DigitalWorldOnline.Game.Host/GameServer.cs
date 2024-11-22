@@ -16,7 +16,6 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using System.Security.AccessControl;
 
 namespace DigitalWorldOnline.Game
 {
@@ -230,7 +229,8 @@ namespace DigitalWorldOnline.Game
                                 {
                                     var targetDungeon = _dungeonsServer.FindClientByTamerId(memberId);
                                     if (targetDungeon != null)
-                                        targetDungeon.Send(new PartyMemberWarpGatePacket(party[dungeonClient.TamerId], gameClientEvent.Client.Tamer)
+                                        targetDungeon.Send(new PartyMemberWarpGatePacket(party[dungeonClient.TamerId],
+                                                gameClientEvent.Client.Tamer)
                                             .Serialize());
                                 }
 
@@ -299,21 +299,25 @@ namespace DigitalWorldOnline.Game
             }
         }
 
-        private void CharacterFriendsNotification(GameClientEvent gameClientEvent)
+        private async void CharacterFriendsNotification(GameClientEvent gameClientEvent)
         {
-            gameClientEvent.Client.Tamer.Friends.ForEach(friend =>
+            try
             {
-                // _logger.Information($"Sending friend disconnection packet for character {friend.FriendId}...");
-                //_mapServer.BroadcastForUniqueTamer(friend.FriendId, new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
-                //_dungeonsServer.BroadcastForUniqueTamer(friend.FriendId, new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+                gameClientEvent.Client.Tamer.Friended.ForEach(friend =>
+                {
+                    _logger.Information($"Sending friend disconnection packet for character {friend.FriendId}...");
+                    _mapServer.BroadcastForUniqueTamer(friend.FriendId,
+                        new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+                    _dungeonsServer.BroadcastForUniqueTamer(friend.FriendId,
+                        new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+                });
 
-                var targetClient = _mapServer.FindClientByTamerId(friend.FriendId);
-
-                if (targetClient == null) targetClient = _dungeonsServer.FindClientByTamerId(friend.FriendId);
-
-                if (targetClient != null)
-                    targetClient.Send(new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
-            });
+                await _sender.Send(new UpdateCharacterFriendsCommand(gameClientEvent.Client.Tamer, false));
+            }
+            catch (Exception e)
+            {
+                throw; // TODO handle exception
+            }
         }
 
         private void CharacterTargetTraderNotification(GameClientEvent gameClientEvent)
@@ -432,9 +436,12 @@ namespace DigitalWorldOnline.Game
 
             Task.Run(() => _mapServer.StartAsync(cancellationToken));
             Task.Run(() => _mapServer.LoadAllMaps(cancellationToken));
-            Task.Run(() => _mapServer.CallDiscordWarnings("Server Online", "13ff00", "1307467492888805476", "1280948869739450438"));
+            Task.Run(() =>
+                _mapServer.CallDiscordWarnings("Server Online", "13ff00", "1307467492888805476",
+                    "1280948869739450438"));
             Task.Run(() => _pvpServer.StartAsync(cancellationToken));
             Task.Run(() => _dungeonsServer.StartAsync(cancellationToken));
+            Task.Run(() => _sender.Send(new UpdateCharacterFriendsCommand(null, false)));
             //Task.Run(() => _eventServer.StartAsync(cancellationToken));
 
             return Task.CompletedTask;
@@ -469,12 +476,23 @@ namespace DigitalWorldOnline.Game
         /// </summary>
         private void OnStopping()
         {
-            _logger.Information($"Disconnecting clients from {GetType().Name}...");
+            try
+            {
+                _logger.Information($"Disconnecting clients from {GetType().Name}...");
 
-            _ = _mapServer.CallDiscordWarnings("Server Offline", "fc0303", "1307467492888805476",
-                "1280948869739450438");
-            
-            Shutdown();
+                Task.Run(async () => await _sender.Send(new UpdateCharacterFriendsCommand(null, false)));
+
+                _logger.Information($"Made all friends offline {GetType().Name}...");
+
+                _ = _mapServer.CallDiscordWarnings("Server Offline", "fc0303", "1307467492888805476",
+                    "1280948869739450438");
+                Shutdown();
+                return;
+            }
+            catch (Exception e)
+            {
+                throw; // TODO handle exception
+            }
         }
 
         /// <summary>

@@ -1,6 +1,4 @@
-﻿using DigitalWorldOnline.Commons.DTOs.Character;
-using DigitalWorldOnline.Commons.DTOs.Events;
-using DigitalWorldOnline.Commons.Enums;
+﻿using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Model.Character;
@@ -132,6 +130,11 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// Character friends.
         /// </summary>
         public List<CharacterFriendModel> Friends { get; private set; }
+
+        /// <summary>
+        /// Character friends.
+        /// </summary>
+        public List<CharacterFriendModel> Friended { get; private set; }
 
         /// <summary>
         /// Character Arena Points.
@@ -284,6 +287,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
             Digimons = new List<DigimonModel>();
             TimeReward = new TimeRewardModel();
             Friends = new List<CharacterFriendModel>();
+            Friended = new List<CharacterFriendModel>();
             Points = new CharacterArenaPointsModel();
             MapRegions = new List<CharacterMapRegionModel>();
             ViewLocation = new Location();

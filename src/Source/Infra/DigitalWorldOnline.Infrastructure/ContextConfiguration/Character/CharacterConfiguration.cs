@@ -6,10 +6,6 @@ using DigitalWorldOnline.Commons.DTOs.Shop;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using DigitalWorldOnline.Commons.Models.Character;
-using System.Reflection.Emit;
-using DigitalWorldOnline.Commons.DTOs.Assets;
-using DigitalWorldOnline.Commons.Models.Asset;
 
 namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
 {
@@ -178,6 +174,13 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
                 .HasMany(x => x.Friends)
                 .WithOne(x => x.Character)
                 .HasForeignKey(x => x.CharacterId);
+
+            builder
+                .HasMany(x => x.Friended)
+                .WithOne(x => x.Friend)
+                .HasForeignKey(x => x.FriendId)
+                .HasPrincipalKey(x => x.Id)
+                .OnDelete(DeleteBehavior.NoAction);
 
             builder
                 .HasMany(x => x.Foes)

@@ -87,6 +87,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .Include(x => x.ActiveSkill)
                 .Include(x => x.DailyPoints)
                 .Include(x => x.Friends)
+                .Include(x => x.Friended)
                 .Include(x => x.Foes)
                 .Include(x => x.Encyclopedia)
                 .ThenInclude(y => y.Evolutions)

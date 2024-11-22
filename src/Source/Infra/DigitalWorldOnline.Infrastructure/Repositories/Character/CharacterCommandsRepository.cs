@@ -6,19 +6,15 @@ using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Mechanics;
 using DigitalWorldOnline.Commons.Model.Character;
-using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Events;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.Chat;
-using DigitalWorldOnline.Commons.Models;
 using DigitalWorldOnline.Commons.DTOs.Character;
 using DigitalWorldOnline.Commons.DTOs.Digimon;
-using DigitalWorldOnline.Commons.DTOs.Account;
-using DigitalWorldOnline.Commons.DTOs.Events;
 using DigitalWorldOnline.Commons.DTOs.Base;
 using DigitalWorldOnline.Commons.DTOs.Chat;
 using Microsoft.EntityFrameworkCore;
-using MediatR;
+using Microsoft.IdentityModel.Tokens;
 
 namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 {
@@ -1351,6 +1347,28 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 dto.CreateDate = DateTime.Now;
                 _context.CharacterEncyclopediaEvolutions.Update(dto);
                 _context.SaveChanges();
+            }
+        }
+
+        public async Task UpdateCharacterFriendsAsync(CharacterModel? character, bool connected = false)
+        {
+            // Fetch and update records
+            List<CharacterFriendDTO> dto;
+            if (character != null)
+            {
+                dto = await _context.CharacterFriends
+                    .Where(x => x.FriendId == character.Id)
+                    .ToListAsync();
+            }
+            else
+            {
+                dto = await _context.CharacterFriends
+                    .ToListAsync();
+            }
+            if (!dto.IsNullOrEmpty())
+            {
+                dto.ForEach(friend => friend.SetConnected(connected));
+                await _context.SaveChangesAsync();
             }
         }
     }

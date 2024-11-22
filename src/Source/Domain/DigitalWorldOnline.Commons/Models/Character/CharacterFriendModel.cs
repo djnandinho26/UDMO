@@ -45,5 +45,10 @@
         {
             CharacterId = tamer.Id;
         }
+
+        public void SetConnected(bool online)
+        {
+            Connected = online;
+        }
     }
 }

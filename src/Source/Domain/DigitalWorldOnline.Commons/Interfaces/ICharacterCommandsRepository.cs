@@ -1,10 +1,8 @@
-﻿using DigitalWorldOnline.Commons.DTOs.Account;
-using DigitalWorldOnline.Commons.DTOs.Character;
+﻿using DigitalWorldOnline.Commons.DTOs.Character;
 using DigitalWorldOnline.Commons.DTOs.Digimon;
 using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.Model.Character;
-using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Chat;
@@ -137,5 +135,7 @@ namespace DigitalWorldOnline.Commons.Interfaces
         Task UpdateCharacterEncyclopediaAsync(CharacterEncyclopediaModel characterEncyclopedia);
 
         Task UpdateCharacterEncyclopediaEvolutionsAsync(CharacterEncyclopediaEvolutionsModel characterEncyclopedia);
+
+        Task UpdateCharacterFriendsAsync(CharacterModel? character, bool connected);
     }
 }

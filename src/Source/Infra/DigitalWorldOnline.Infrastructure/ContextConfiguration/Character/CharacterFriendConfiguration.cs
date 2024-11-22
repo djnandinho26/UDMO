@@ -33,6 +33,16 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
                 .Property(x => x.FriendId)
                 .HasColumnType("bigint")
                 .IsRequired();
+
+            builder
+                .HasOne(x => x.Character)
+                .WithMany(x => x.Friends)
+                .HasForeignKey(x => x.CharacterId);
+
+            builder
+                .HasOne(x => x.Friend)
+                .WithMany(x => x.Friended)
+                .HasForeignKey(x => x.FriendId);
         }
     }
 }

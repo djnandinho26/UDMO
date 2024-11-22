@@ -1,12 +1,12 @@
 ﻿using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.Character;
-using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Config;
 using DigitalWorldOnline.Commons.Models.Map.Dungeons;
 using DigitalWorldOnline.Commons.Models.TamerShop;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using System.Text;
+using DigitalWorldOnline.Commons.Packets.GameServer;
 
 namespace DigitalWorldOnline.Commons.Models.Map
 {
@@ -250,6 +250,18 @@ namespace DigitalWorldOnline.Commons.Models.Map
         {
             BroadcastForTamerViews(client.TamerId, new UnloadTamerPacket(client.Tamer).Serialize());
 
+            var friendedCharacterIds = client.Tamer.Friended.Select(f => f.CharacterId).ToList();
+            
+            List<GameClient> SelectedClients = Clients
+                .Where(gameClient => friendedCharacterIds.Contains(gameClient.TamerId))
+                .ToList();
+
+            Console.WriteLine($"ClientsCount: {SelectedClients.Count}");
+            SelectedClients.ForEach(friend =>
+            {
+                Console.WriteLine($"Tamer ID: {friend.TamerId}");
+                friend.Send(new FriendDisconnectPacket(client.Tamer.Name).Serialize());
+            });
 #if DEBUG
             var serialized = SerializeHideTamer(client.Tamer);
             //File.WriteAllText($"Hides\\Hide{client.TamerId}To{client.TamerId}_Views_{DateTime.Now:dd_MM_yy_HH_mm_ss}.temp", serialized);

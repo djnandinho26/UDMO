@@ -3954,6 +3954,8 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
 
                     b.HasIndex("CharacterId");
 
+                    b.HasIndex("FriendId");
+
                     b.ToTable("Friend", "Character");
                 });
 
@@ -4429,7 +4431,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2024, 11, 19, 10, 32, 1, 334, DateTimeKind.Local).AddTicks(6265),
+                            CreatedAt = new DateTime(2024, 11, 22, 16, 34, 40, 281, DateTimeKind.Local).AddTicks(1600),
                             Hash = "pMgM+NOH0Z+RwR9F1iFVOOwKrW1iDaifx4jWDnH1Dbo="
                         });
                 });
@@ -6110,10 +6112,10 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         {
                             Id = 1L,
                             Active = true,
-                            CreatedAt = new DateTime(2024, 11, 19, 10, 32, 1, 341, DateTimeKind.Local).AddTicks(1845),
+                            CreatedAt = new DateTime(2024, 11, 22, 16, 34, 40, 287, DateTimeKind.Local).AddTicks(4284),
                             Interval = 1,
                             Name = "Daily Quests",
-                            NextRunTime = new DateTime(2024, 11, 20, 0, 0, 0, 0, DateTimeKind.Local),
+                            NextRunTime = new DateTime(2024, 11, 23, 0, 0, 0, 0, DateTimeKind.Local),
                             Type = 1
                         });
                 });
@@ -6851,7 +6853,15 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("DigitalWorldOnline.Commons.DTOs.Character.CharacterDTO", "Friend")
+                        .WithMany("Friended")
+                        .HasForeignKey("FriendId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.Navigation("Character");
+
+                    b.Navigation("Friend");
                 });
 
             modelBuilder.Entity("DigitalWorldOnline.Commons.DTOs.Character.CharacterIncubatorDTO", b =>
@@ -7529,6 +7539,8 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                     b.Navigation("Encyclopedia");
 
                     b.Navigation("Foes");
+
+                    b.Navigation("Friended");
 
                     b.Navigation("Friends");
 
