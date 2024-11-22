@@ -347,10 +347,10 @@ namespace DigitalWorldOnline.Commons.Models.Character
             if (updateSlots)
             {
                 var count = Digimons.Count;
+
                 Digimons.OrderByDescending(x => x.Slot).ToList().ForEach(digimon =>
                 {
                     count--;
-                    //digimon.SetSlot((byte)count);
                 });
             }
         }
@@ -358,6 +358,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         public void UpdateSlots()
         {
             var count = Digimons.Count;
+
             Digimons.OrderByDescending(x => x.Slot).ToList().ForEach(digimon =>
             {
                 count--;

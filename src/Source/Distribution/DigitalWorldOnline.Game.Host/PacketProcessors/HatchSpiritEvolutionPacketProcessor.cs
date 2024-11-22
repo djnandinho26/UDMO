@@ -128,14 +128,20 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
             }
 
-            byte i = 0;
+            /*byte i = 0;
             while (i < client.Tamer.DigimonSlots)
             {
                 if (client.Tamer.Digimons.FirstOrDefault(digimonModel => digimonModel.Slot == i) == null)
                     break;
 
                 i++;
-            }
+            }*/
+
+            byte? digimonSlot = (byte)Enumerable.Range(0, client.Tamer.DigimonSlots)
+                            .FirstOrDefault(slot => client.Tamer.Digimons.FirstOrDefault(x => x.Slot == slot) == null);
+
+            if (digimonSlot == null)
+                return;
 
             var newDigimon = DigimonModel.Create(
                 digiName,
@@ -143,7 +149,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 targetType,
                 DigimonHatchGradeEnum.Default,
                 UtilitiesFunctions.GetLevelSize(3),
-                i
+                (byte)digimonSlot
             );
 
             newDigimon.NewLocation(client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y);
@@ -177,11 +183,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
 
-            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000),
-                client.Tamer.Digimons.FindIndex(digimonModel => digimonModel == newDigimon)));
+            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), (byte)digimonSlot));
 
-            client.Send(new HatchSpiritEvolutionPacket(targetType, (int)client.Tamer.Inventory.Bits, materialToPacket,
-                requiredsToPacket));
+            client.Send(new HatchSpiritEvolutionPacket(targetType, (int)client.Tamer.Inventory.Bits, materialToPacket, requiredsToPacket));
             client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory));
 
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));

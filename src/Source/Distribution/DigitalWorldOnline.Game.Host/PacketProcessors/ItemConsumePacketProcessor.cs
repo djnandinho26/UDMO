@@ -489,9 +489,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         private async Task HatchItem(GameClient client, short itemSlot, ItemModel targetItem)
         {
-            var free = false;
-
             var hatchInfo = _assets.Hatchs.FirstOrDefault(x => x.ItemId == targetItem.ItemInfo.ItemId);
+
             if (hatchInfo == null)
             {
                 _logger.Warning($"Unknown hatch info for egg {targetItem.ItemInfo.ItemId}.");
@@ -499,88 +498,73 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            byte i = 0;
-            while (i < client.Tamer.DigimonSlots)
-            {
-                if (client.Tamer.Digimons.FirstOrDefault(x => x.Slot == i) == null)
-                {
-                    free = true;
-                    break;
-                }
+            byte? digimonSlot = (byte)Enumerable.Range(0, client.Tamer.DigimonSlots)
+                            .FirstOrDefault(slot => client.Tamer.Digimons.FirstOrDefault(x => x.Slot == slot) == null);
 
-                i++;
+            if (digimonSlot == null)
+                return;
+
+            var newDigimon = DigimonModel.Create("digiName", hatchInfo.HatchType, hatchInfo.HatchType, DigimonHatchGradeEnum.Perfect, 12500, (byte)digimonSlot);
+
+            newDigimon.NewLocation(client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y);
+
+            newDigimon.SetBaseInfo(_statusManager.GetDigimonBaseInfo(newDigimon.BaseType));
+
+            newDigimon.SetBaseStatus(_statusManager.GetDigimonBaseStatus(newDigimon.BaseType, newDigimon.Level, newDigimon.Size));
+
+            newDigimon.AddEvolutions(_assets.EvolutionInfo.First(x => x.Type == newDigimon.BaseType));
+
+            if (newDigimon.BaseInfo == null || newDigimon.BaseStatus == null || !newDigimon.Evolutions.Any())
+            {
+                _logger.Warning($"Unknown digimon info for {newDigimon.BaseType}.");
+                client.Send(new SystemMessagePacket($"Unknown digimon info for {newDigimon.BaseType}."));
+                return;
             }
 
-            if (free)
+            newDigimon.SetTamer(client.Tamer);
+
+            client.Tamer.AddDigimon(newDigimon);
+
+            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), (byte)digimonSlot));
+
+            var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
+
+            if (digimonInfo != null)
             {
-                DigimonModel newDigimon;
+                newDigimon.SetId(digimonInfo.Id);
+                var slot = -1;
 
-                newDigimon = DigimonModel.Create("digiName", hatchInfo.HatchType, hatchInfo.HatchType, DigimonHatchGradeEnum.Perfect, 12500, i);
-
-                newDigimon.NewLocation(client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y);
-
-                newDigimon.SetBaseInfo(_statusManager.GetDigimonBaseInfo(newDigimon.BaseType));
-
-                newDigimon.SetBaseStatus(_statusManager.GetDigimonBaseStatus(newDigimon.BaseType, newDigimon.Level, newDigimon.Size));
-
-                newDigimon.AddEvolutions(_assets.EvolutionInfo.First(x => x.Type == newDigimon.BaseType));
-
-                if (newDigimon.BaseInfo == null || newDigimon.BaseStatus == null || !newDigimon.Evolutions.Any())
+                foreach (var digimon in newDigimon.Evolutions)
                 {
-                    _logger.Warning($"Unknown digimon info for {newDigimon.BaseType}.");
-                    client.Send(new SystemMessagePacket($"Unknown digimon info for {newDigimon.BaseType}."));
-                    return;
-                }
+                    slot++;
 
-                newDigimon.SetTamer(client.Tamer);
+                    var evolution = digimonInfo.Evolutions[slot];
 
-                client.Tamer.AddDigimon(newDigimon);
-
-                client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), client.Tamer.Digimons.FindIndex(x => x == newDigimon)));
-
-                var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
-
-                if (digimonInfo != null)
-                {
-                    newDigimon.SetId(digimonInfo.Id);
-                    var slot = -1;
-
-                    foreach (var digimon in newDigimon.Evolutions)
+                    if (evolution != null)
                     {
-                        slot++;
+                        digimon.SetId(evolution.Id);
 
-                        var evolution = digimonInfo.Evolutions[slot];
+                        var skillSlot = -1;
 
-                        if (evolution != null)
+                        foreach (var skill in digimon.Skills)
                         {
-                            digimon.SetId(evolution.Id);
+                            skillSlot++;
 
-                            var skillSlot = -1;
+                            var dtoSkill = evolution.Skills[skillSlot];
 
-                            foreach (var skill in digimon.Skills)
-                            {
-                                skillSlot++;
-
-                                var dtoSkill = evolution.Skills[skillSlot];
-
-                                skill.SetId(dtoSkill.Id);
-                            }
+                            skill.SetId(dtoSkill.Id);
                         }
                     }
                 }
-
-                client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1, itemSlot);
-                await _sender.Send(new UpdateItemCommand(targetItem));
-
-                client.Send(UtilitiesFunctions.GroupPackets(
-                        new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                        new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
             }
-            else
-            {
-                client.Send(new SystemMessagePacket($"You don't have free space to hatch digimon"));
-                client.Send(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type));
-            }
+
+            client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1, itemSlot);
+            await _sender.Send(new UpdateItemCommand(targetItem));
+
+            client.Send(UtilitiesFunctions.GroupPackets(
+                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
+                    new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
+
         }
 
         private async Task CashTamerSkills(GameClient client, short itemSlot, ItemModel targetItem)
@@ -1504,7 +1488,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
 
 
-                if (ItemId == 70102) 
+                if (ItemId == 70102)
                 {
                     var buffData = new List<(int BuffId, int Value1, int Value2)>
                     {

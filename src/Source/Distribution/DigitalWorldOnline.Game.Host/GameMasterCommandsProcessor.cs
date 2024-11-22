@@ -148,16 +148,19 @@ namespace DigitalWorldOnline.Game
                             break;
                         }
 
-                        byte i = 0;
+                        /*byte i = 0;
                         while (i < client.Tamer.DigimonSlots)
                         {
                             if (client.Tamer.Digimons.FirstOrDefault(x => x.Slot == i) == null)
                                 break;
 
                             i++;
-                        }
+                        }*/
 
-                        var newDigimon = DigimonModel.Create(digiName, digiId, digiId, DigimonHatchGradeEnum.Perfect, 12500, i);
+                        byte digimonSlot = (byte)Enumerable.Range(0, client.Tamer.DigimonSlots)
+                            .FirstOrDefault(slot => client.Tamer.Digimons.FirstOrDefault(x => x.Slot == slot) == null);
+
+                        var newDigimon = DigimonModel.Create(digiName, digiId, digiId, DigimonHatchGradeEnum.Perfect, 12500, digimonSlot);
 
                         newDigimon.NewLocation(client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y);
 
@@ -179,7 +182,7 @@ namespace DigitalWorldOnline.Game
 
                         client.Tamer.AddDigimon(newDigimon);
 
-                        client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), client.Tamer.Digimons.FindIndex(x => x == newDigimon)));
+                        client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), newDigimon.Slot)); 
 
                         var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
 

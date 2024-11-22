@@ -431,18 +431,11 @@ namespace DigitalWorldOnline.Game
             _hostApplicationLifetime.ApplicationStopped.Register(OnStopped);
 
             Task.Run(() => _mapServer.StartAsync(cancellationToken));
-            //_logger.Information($"_mapServer.StartAsync OK");
             Task.Run(() => _mapServer.LoadAllMaps(cancellationToken));
-            Task.Run(() =>
-                _mapServer.CallDiscordWarnings("Server Online", "13ff00", "1307467492888805476",
-                    "1280948869739450438"));
-            //_logger.Information($"_mapServer.LoadAllMaps OK");
+            Task.Run(() => _mapServer.CallDiscordWarnings("Server Online", "13ff00", "1307467492888805476", "1280948869739450438"));
             Task.Run(() => _pvpServer.StartAsync(cancellationToken));
-            //_logger.Information($"_pvpServer.StartAsync OK");
             Task.Run(() => _dungeonsServer.StartAsync(cancellationToken));
-            //_logger.Information($"_dungeonsServer.StartAsync OK");
             //Task.Run(() => _eventServer.StartAsync(cancellationToken));
-            //_logger.Information($"_eventServer.StartAsync OK");
 
             return Task.CompletedTask;
         }

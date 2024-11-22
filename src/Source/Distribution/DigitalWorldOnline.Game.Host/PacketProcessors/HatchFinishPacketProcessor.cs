@@ -62,14 +62,20 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             
             
-            byte i = 0;
+            /*byte i = 0;
             while (i < client.Tamer.DigimonSlots)
             {
                 if (client.Tamer.Digimons.FirstOrDefault(x => x.Slot == i) == null)
                     break;
 
                 i++;
-            }
+            }*/
+
+            byte? digimonSlot = (byte)Enumerable.Range(0, client.Tamer.DigimonSlots)
+                            .FirstOrDefault(slot => client.Tamer.Digimons.FirstOrDefault(x => x.Slot == slot) == null);
+
+            if (digimonSlot == null)
+                return;
 
             var newDigimon = DigimonModel.Create(
                 digiName,
@@ -77,7 +83,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 hatchInfo.HatchType,
                 (DigimonHatchGradeEnum)client.Tamer.Incubator.HatchLevel,
                 client.Tamer.Incubator.GetLevelSize(),
-                i
+                (byte)digimonSlot
             );
 
             newDigimon.NewLocation(
@@ -129,7 +135,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             await _sender.Send(new UpdateIncubatorCommand(client.Tamer.Incubator));
 
-            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), client.Tamer.Digimons.FindIndex(x => x == newDigimon)));
+            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), (byte)digimonSlot));
 
             if (digimonInfo != null)
             {
