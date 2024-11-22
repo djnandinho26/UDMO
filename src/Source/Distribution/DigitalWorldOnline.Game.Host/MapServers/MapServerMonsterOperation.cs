@@ -449,7 +449,7 @@ namespace DigitalWorldOnline.GameHost
 
         private void CallDiscordWarnings(string v1, string v2)
         {
-            throw new NotImplementedException();
+            // throw new NotImplementedException();
         }
 
         private static void CheckDebuff(GameMap map, MobConfigModel mob, List<MobDebuffModel> debuffs)
