@@ -1281,7 +1281,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
                     new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
 
-            _logger.Information($"Tamer {client.Tamer.Name} consumed {targetItem.ItemId} : {targetItem.ItemInfo.Name}");
+           // _logger.Information($"Tamer {client.Tamer.Name} consumed {targetItem.ItemId} : {targetItem.ItemInfo.Name}");
         }
 
         private async Task IncreaseArchiveSlots(GameClient client, short itemSlot, ItemModel targetItem)
@@ -1986,7 +1986,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
                     new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
 
-            _logger.Verbose($"Tamer {client.Tamer.Name} consumed 1 : {targetItem.ItemInfo.Name}");
+            // _logger.Verbose($"Tamer {client.Tamer.Name} consumed 1 : {targetItem.ItemInfo.Name}");
         }
 
     }
