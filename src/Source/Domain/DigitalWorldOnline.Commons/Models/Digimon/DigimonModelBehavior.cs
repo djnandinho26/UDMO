@@ -376,7 +376,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
 
         public int DeckBuffAsCalculation()
         {
-            return AS + DeckBuffCalculation(DeckBookInfoTypesEnum.AS, _baseAs);
+            return AS - DeckBuffCalculation(DeckBookInfoTypesEnum.AS, _baseAs);
         }
 
         public void SetHp(int value)

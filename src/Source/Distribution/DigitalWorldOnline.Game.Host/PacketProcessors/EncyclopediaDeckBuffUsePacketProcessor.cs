@@ -56,13 +56,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             int deckBuffAsCalculation = client.Tamer.Partner.DeckBuffAsCalculation();
 
-            client.Tamer.Partner.SetHp(deckBuffHpCalculation);
+            /*client.Tamer.Partner.SetHp(deckBuffHpCalculation);
 
-            client.Tamer.Partner.SetAs(deckBuffAsCalculation);
+            client.Tamer.Partner.SetAs(deckBuffAsCalculation);*/
 
             _logger.Information($"Current MHP: {client.Tamer.Partner.HP}, Current AS: {client.Tamer.Partner.AS}");
+            _logger.Information($"Calculated MHP: {deckBuffHpCalculation}, Calculated AS: {deckBuffAsCalculation}");
 
-            client.Send(new EncyclopediaDeckBuffUsePacket(deckBuffHpCalculation, deckBuffAsCalculation));
+            client.Send(new EncyclopediaDeckBuffUsePacket(client.Tamer.Partner.HP, client.Tamer.Partner.AS));
         }
     }
 }
