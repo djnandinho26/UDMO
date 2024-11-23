@@ -146,7 +146,10 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                      (Character?.ChipsetStatus(_baseAt, SkillCodeApplyAttributeEnum.AT,
                          SkillCodeApplyAttributeEnum.DA) ?? 0) +
                      BuffAttribute(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) +
+                     DeckBuffCalculation(DeckBookInfoTypesEnum.AT, _baseAt) +
                      (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AT, _baseAt) ?? 0));
+
+                //Console.WriteLine($"AT Value: {intValue} | AT Deck: {DeckBuffCalculation(DeckBookInfoTypesEnum.AT, _baseAt)}");
 
                 return intValue;
             }
@@ -265,6 +268,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.HP, 0) ?? 0) +
             (Character?.ChipsetStatus(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) ?? 0) +
             BuffAttribute(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) +
+            DeckBuffCalculation(DeckBookInfoTypesEnum.HP, _baseHp) +
             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.HP, _baseHp) ?? 0);
 
         public int MS => _fsMs;
@@ -333,6 +337,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
 
         private int DeckBuffCalculation(DeckBookInfoTypesEnum deckBookInfoType, int baseValue)
         {
+            var totalValue = 0.0;
+
             if (Character != null)
             {
                 DeckBuffModel? characterDeckBuff = Character.DeckBuff;
@@ -345,15 +351,12 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
 
                     if (option != null && option.DeckBookInfo != null)
                     {
-                        switch (option.DeckBookInfo.Type)
-                        {
-                            /*case DeckBookInfoTypesEnum.AT:
-                                break;*/
-                        }
+                        totalValue = baseValue * (option.Value / 100);
+
+                        return (int)totalValue;
                     }
                 }
             }
-
 
             return 0;
         }

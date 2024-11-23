@@ -429,9 +429,7 @@ namespace DigitalWorldOnline.Game
 
             Task.Run(() => _mapServer.StartAsync(cancellationToken));
             Task.Run(() => _mapServer.LoadAllMaps(cancellationToken));
-            Task.Run(() =>
-                _mapServer.CallDiscordWarnings("Server Online", "13ff00", "1307467492888805476",
-                    "1280948869739450438"));
+            //Task.Run(() => _mapServer.CallDiscordWarnings("Server Online", "13ff00", "1307467492888805476", "1280948869739450438"));
             Task.Run(() => _pvpServer.StartAsync(cancellationToken));
             Task.Run(() => _dungeonsServer.StartAsync(cancellationToken));
             Task.Run(() => _sender.Send(new UpdateCharacterFriendsCommand(null, false)));
