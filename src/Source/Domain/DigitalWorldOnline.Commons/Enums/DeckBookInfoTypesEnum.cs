@@ -3,11 +3,11 @@
     public enum DeckBookInfoTypesEnum
     {
         None,
-        AT,
-        SK,
-        CD,
-        SC,
-        HP,
-        AS,
+        AT, // Attack
+        SK, // Skill Damage
+        CD, // Critical Damage
+        SC, // Skill cool down
+        HP, // Max HP
+        AS, // Attack Speed
     }
 }

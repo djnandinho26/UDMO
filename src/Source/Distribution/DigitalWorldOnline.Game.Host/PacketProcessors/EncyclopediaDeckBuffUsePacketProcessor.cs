@@ -52,16 +52,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             await _sender.Send(new UpdateCharacterDeckBuffCommand(client.Tamer));
 
-            int deckBuffHpCalculation = client.Tamer.Partner.DeckBuffHpCalculation();
-
-            int deckBuffAsCalculation = client.Tamer.Partner.DeckBuffAsCalculation();
-
-            /*client.Tamer.Partner.SetHp(deckBuffHpCalculation);
-
-            client.Tamer.Partner.SetAs(deckBuffAsCalculation);*/
-
-            _logger.Information($"Current MHP: {client.Tamer.Partner.HP}, Current AS: {client.Tamer.Partner.AS}");
-            _logger.Information($"Calculated MHP: {deckBuffHpCalculation}, Calculated AS: {deckBuffAsCalculation}");
+            /*_logger.Information(
+                $"\nCurrent MHP: {client.Tamer.Partner.HP}\nCurrent AS: {client.Tamer.Partner.AS}\n" +
+                $"Current AT: {client.Tamer.Partner.AT}\nCurrent CD: {client.Tamer.Partner.CD}\nCurrent SCD: {client.Tamer.Partner.SCD}" +
+                $"\nCurrent SK: {client.Tamer.Partner.SKD}");*/
 
             client.Send(new EncyclopediaDeckBuffUsePacket(client.Tamer.Partner.HP, client.Tamer.Partner.AS));
         }

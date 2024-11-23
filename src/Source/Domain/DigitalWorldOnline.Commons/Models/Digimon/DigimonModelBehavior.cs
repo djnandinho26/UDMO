@@ -126,6 +126,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                                    GetSealStatus(StatusTypeEnum.AS) -
                                    (Character?.AccessoryStatus(AccessoryStatusTypeEnum.AS, _baseAs) ?? 0) -
                                    BuffAttribute(_baseAs, SkillCodeApplyAttributeEnum.AS) -
+                                   DeckBuffCalculation(DeckBookInfoTypesEnum.AS, _baseAs) -
                                    (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AS, _baseAs) ?? 0);
 
                 return Math.Max(calculatedAS, 300); // Limite para que AS seja no mínimo 300
@@ -140,19 +141,17 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
             get
             {
                 int intValue =
-                    (_baseAt +
-                     (_baseAt * Digiclone.ATValue / 100) +
-                     _fsAt +
-                     GetSealStatus(StatusTypeEnum.AT) +
-                     GetTitleStatus(StatusTypeEnum.AT) +
-                     (Character?.AccessoryStatus(AccessoryStatusTypeEnum.AT, 0) ?? 0) +
-                     (Character?.ChipsetStatus(_baseAt, SkillCodeApplyAttributeEnum.AT,
-                         SkillCodeApplyAttributeEnum.DA) ?? 0) +
-                     BuffAttribute(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) +
-                     DeckBuffCalculation(DeckBookInfoTypesEnum.AT, _baseAt) +
-                     (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AT, _baseAt) ?? 0));
-
-                //Console.WriteLine($"AT Value: {intValue} | AT Deck: {DeckBuffCalculation(DeckBookInfoTypesEnum.AT, _baseAt)}");
+                    _baseAt +
+                    (_baseAt * Digiclone.ATValue / 100) +
+                    _fsAt +
+                    GetSealStatus(StatusTypeEnum.AT) +
+                    GetTitleStatus(StatusTypeEnum.AT) +
+                    (Character?.AccessoryStatus(AccessoryStatusTypeEnum.AT, 0) ?? 0) +
+                    (Character?.ChipsetStatus(_baseAt, SkillCodeApplyAttributeEnum.AT,
+                        SkillCodeApplyAttributeEnum.DA) ?? 0) +
+                    BuffAttribute(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) +
+                    (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AT, _baseAt) ?? 0) +
+                    DeckBuffCalculation(DeckBookInfoTypesEnum.AT, _baseAt);
 
                 return intValue;
             }
@@ -182,7 +181,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                     _baseCd +
                     (Character?.AccessoryStatus(AccessoryStatusTypeEnum.CD, 0) ?? 0) +
                     BuffAttribute(_baseCd, SkillCodeApplyAttributeEnum.CAT) +
-                    (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.CD, _baseCd) ?? 0);
+                    (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.CD, _baseCd) ?? 0) +
+                    DeckBuffCalculation(DeckBookInfoTypesEnum.CD, _baseCd);
 
                 return critValue;
             }
@@ -240,27 +240,40 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
              BuffAttribute(_baseHt, SkillCodeApplyAttributeEnum.HT) +
              (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.HT, _baseHt) ?? 0));
 
-        public short SKD => (short)
-            (0 +
-             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.SCD, 0) ?? 0) +
-             (Character?.ChipsetStatus(0, SkillCodeApplyAttributeEnum.SkillDamageByAttribute) ?? 0));
+        public short SKD
+        {
+            get
+            {
+                int calculated = 0 +
+                                 (Character?.AccessoryStatus(AccessoryStatusTypeEnum.SCD, 0) ?? 0) +
+                                 (Character?.ChipsetStatus(0, SkillCodeApplyAttributeEnum.SkillDamageByAttribute) ?? 0);
+                return (short)(calculated + DeckBuffCalculation(DeckBookInfoTypesEnum.SC, calculated));
+            }
+        }
 
-        public short SCD => (short)
-            (BuffAttribute(0, SkillCodeApplyAttributeEnum.SCD) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Data, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Vacina, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Virus, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Unknown, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Ice, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Water, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Fire, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Earth, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Wind, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Wood, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Light, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Dark, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Thunder, 0) ?? 0) +
-             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Steel, 0) ?? 0));
+        public short SCD
+        {
+            get
+            {
+                int calculated = (BuffAttribute(0, SkillCodeApplyAttributeEnum.SCD) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Data, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Vacina, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Virus, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Unknown, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Ice, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Water, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Fire, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Earth, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Wind, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Wood, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Light, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Dark, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Thunder, 0) ?? 0) +
+                                  (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Steel, 0) ?? 0));
+
+                return (short)(calculated + DeckBuffCalculation(DeckBookInfoTypesEnum.SK, calculated));
+            }
+        }
 
         public int HP
         {
@@ -357,7 +370,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                     if (option != null && option.DeckBookInfo != null)
                     {
                         totalValue = baseValue * (option.Value / 100.0);
-                        return (int)totalValue;
+                        
+                        return (int)(totalValue) == 0 ? (int)(option.Value * 100) : (int)totalValue;
                     }
 
                     return 0;
