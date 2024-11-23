@@ -1,9 +1,7 @@
 ﻿using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
-using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Models;
-using DigitalWorldOnline.Commons.Models.Asset;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Config;
 using DigitalWorldOnline.Commons.Models.Digimon;
@@ -11,13 +9,8 @@ using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Commons.Models.Summon;
 using DigitalWorldOnline.Commons.Models.TamerShop;
 using DigitalWorldOnline.Commons.Packets.MapServer;
-using Microsoft.Data.SqlClient;
 using Newtonsoft.Json;
-using System;
 using System.Diagnostics;
-using System.Drawing;
-using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace DigitalWorldOnline.GameHost
@@ -452,6 +445,14 @@ namespace DigitalWorldOnline.GameHost
                 gameClient.TamerId == client.TamerId && gameClient.Tamer.Channel == client.Tamer.Channel));
 
             map?.BroadcastForTamerViewsAndSelf(client.TamerId, packet);
+        }
+
+        public void BroadcastForTamerViews(GameClient client, byte[] packet)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient =>
+                gameClient.TamerId == client.TamerId && gameClient.Tamer.Channel == client.Tamer.Channel));
+
+            map?.BroadcastForTamerViewOnly(client.TamerId, packet);
         }
 
         public void AddMapDrop(Drop drop, long tamerId)
