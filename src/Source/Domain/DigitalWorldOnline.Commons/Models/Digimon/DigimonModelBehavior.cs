@@ -12,6 +12,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         private int _handlerValue = 0;
         private int _currentHP = 0;
         private int _currentDS = 0;
+        private int _currentAS = 0;
+        private int _currentMHP = 0;
 
         private int _properModel => (CurrentType * 128 + 16) << 8;
 
@@ -128,6 +130,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
 
                 return Math.Max(calculatedAS, 300); // Limite para que AS seja no mínimo 300
             }
+            set { _currentAS = value; }
         }
 
         public short AR => (short)_baseAr;
@@ -259,17 +262,20 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
              (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Thunder, 0) ?? 0) +
              (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Steel, 0) ?? 0));
 
-        public int HP =>
-            _baseHp +
-            _fsHp +
-            (_baseHp * Digiclone.HPValue / 100) +
-            GetSealStatus(StatusTypeEnum.HP) +
-            GetTitleStatus(StatusTypeEnum.HP) +
-            (Character?.AccessoryStatus(AccessoryStatusTypeEnum.HP, 0) ?? 0) +
-            (Character?.ChipsetStatus(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) ?? 0) +
-            BuffAttribute(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) +
-            DeckBuffCalculation(DeckBookInfoTypesEnum.HP, _baseHp) +
-            (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.HP, _baseHp) ?? 0);
+        public int HP
+        {
+            get => _baseHp +
+                   _fsHp +
+                   (_baseHp * Digiclone.HPValue / 100) +
+                   GetSealStatus(StatusTypeEnum.HP) +
+                   GetTitleStatus(StatusTypeEnum.HP) +
+                   (Character?.AccessoryStatus(AccessoryStatusTypeEnum.HP, 0) ?? 0) +
+                   (Character?.ChipsetStatus(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) ?? 0) +
+                   BuffAttribute(_baseHp, SkillCodeApplyAttributeEnum.MaxHP) +
+                   DeckBuffCalculation(DeckBookInfoTypesEnum.HP, _baseHp) +
+                   (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.HP, _baseHp) ?? 0);
+            set { _currentMHP = value; }
+        }
 
         public int MS => _fsMs;
 
@@ -348,17 +354,39 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                         characterDeckBuff.Options.FirstOrDefault(x =>
                             x.DeckBookInfo?.Type == deckBookInfoType &&
                             x.Condition == DeckBuffConditionsEnum.Passive);
-
                     if (option != null && option.DeckBookInfo != null)
                     {
-                        totalValue = baseValue * (option.Value / 100);
-
+                        totalValue = baseValue * (option.Value / 100.0);
                         return (int)totalValue;
                     }
+
+                    return 0;
                 }
+
+                return 0;
             }
 
             return 0;
+        }
+
+        public int DeckBuffHpCalculation()
+        {
+            return HP + DeckBuffCalculation(DeckBookInfoTypesEnum.HP, _baseHp);
+        }
+
+        public int DeckBuffAsCalculation()
+        {
+            return AS + DeckBuffCalculation(DeckBookInfoTypesEnum.AS, _baseAs);
+        }
+
+        public void SetHp(int value)
+        {
+            HP = value;
+        }
+
+        public void SetAs(int value)
+        {
+            AS = value;
         }
 
         /// <summary>

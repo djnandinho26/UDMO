@@ -147,5 +147,6 @@ namespace DigitalWorldOnline.Commons.Interfaces
         Task<List<EvolutionArmorAssetDTO>> GetEvolutionArmorAssetsAsync();
         Task<List<ExtraEvolutionNpcAssetDTO>> GetExtraEvolutionNpcAssetAsync();
         Task<List<GotchaAssetDTO>> GetGotchaAssetsAsync();
+        Task<List<DeckBuffAssetDTO>> GetDeckBuffAssetsAsync();
     }
 }

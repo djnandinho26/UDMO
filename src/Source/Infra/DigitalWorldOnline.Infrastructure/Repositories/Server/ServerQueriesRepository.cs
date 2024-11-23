@@ -653,5 +653,14 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Server
                 .ToListAsync();
         }
 
+        public async Task<List<DeckBuffAssetDTO>> GetDeckBuffAssetsAsync()
+        {
+            return await _context.DeckBuff
+                .AsNoTracking()
+                .Include(x => x.Options)
+                .ThenInclude(x => x.DeckBookInfo)
+                .ToListAsync();
+        }
+
     }
 }

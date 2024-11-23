@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using DigitalWorldOnline.Application;
+using DigitalWorldOnline.Commons.DTOs.Assets;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Character;
@@ -13,6 +15,7 @@ using DigitalWorldOnline.Commons.DTOs.Character;
 using DigitalWorldOnline.Commons.DTOs.Digimon;
 using DigitalWorldOnline.Commons.DTOs.Base;
 using DigitalWorldOnline.Commons.DTOs.Chat;
+using DigitalWorldOnline.Commons.Models.Asset;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -1229,16 +1232,25 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             return;
         }
 
-        public async Task UpdateCharacterDeckbuffAsync(CharacterModel character)
+        public async Task UpdateCharacterDeckBuffAsync(CharacterModel character)
         {
             var dto = await _context.Character
                 .AsNoTracking()
+                .Include(x => x.DeckBuff)
+                .ThenInclude(x => x.Options)
+                .ThenInclude(x => x.DeckBookInfo)
                 .FirstOrDefaultAsync(x => x.Id == character.Id);
+
 
             if (dto != null)
             {
-                dto.DeckBuffId = character.DeckBuffId;
+                DeckBuffAssetDTO? deckBuffModel = _context.DeckBuff.AsNoTracking()
+                    .Include(x => x.Options)
+                    .ThenInclude(x => x.DeckBookInfo)
+                    .FirstOrDefault(x => x.Id == dto.DeckBuffId);
 
+                dto.DeckBuffId = character.DeckBuffId;
+                dto.DeckBuff = deckBuffModel;
                 _context.Update(dto);
                 _context.SaveChanges();
             }
@@ -1365,6 +1377,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 dto = await _context.CharacterFriends
                     .ToListAsync();
             }
+
             if (!dto.IsNullOrEmpty())
             {
                 dto.ForEach(friend => friend.SetConnected(connected));

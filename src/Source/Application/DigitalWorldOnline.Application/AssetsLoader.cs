@@ -66,6 +66,8 @@ namespace DigitalWorldOnline.Application
 
         public List<GotchaAssetModel> Gotcha { get; private set; }
 
+        public List<DeckBuffModel> DeckBuffs { get; private set; }
+
         public AssetsLoader(ISender sender, IMapper mapper, ILogger logger)
         {
             _sender = sender;
@@ -164,6 +166,7 @@ namespace DigitalWorldOnline.Application
             CashShopAssets = _mapper.Map<List<CashShopAssetModel>>(await _sender.Send(new CashShopAssetsQuery()));
             TimeRewardAssets = _mapper.Map<List<TimeRewardAssetModel>>(await _sender.Send(new TimeRewardAssetsQuery()));
             TimeRewardEvents = _mapper.Map<List<TimeRewardModel>>(await _sender.Send(new TimeRewardEventsQuery()));
+            DeckBuffs = _mapper.Map<List<DeckBuffModel>>(await _sender.Send(new DeckBuffAssetsQuery()));
 
             try
 
