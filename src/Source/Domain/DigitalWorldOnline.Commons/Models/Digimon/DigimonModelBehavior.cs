@@ -1,4 +1,5 @@
-﻿using DigitalWorldOnline.Commons.DTOs.Assets;
+﻿using System.Diagnostics;
+using DigitalWorldOnline.Commons.DTOs.Assets;
 using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Models.Asset;
@@ -120,10 +121,10 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
             get
             {
                 int calculatedAS = _baseAs -
-                    GetSealStatus(StatusTypeEnum.AS) -
-                    (Character?.AccessoryStatus(AccessoryStatusTypeEnum.AS, _baseAs) ?? 0) -
-                    BuffAttribute(_baseAs, SkillCodeApplyAttributeEnum.AS) -
-                    (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AS, _baseAs) ?? 0);
+                                   GetSealStatus(StatusTypeEnum.AS) -
+                                   (Character?.AccessoryStatus(AccessoryStatusTypeEnum.AS, _baseAs) ?? 0) -
+                                   BuffAttribute(_baseAs, SkillCodeApplyAttributeEnum.AS) -
+                                   (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AS, _baseAs) ?? 0);
 
                 return Math.Max(calculatedAS, 300); // Limite para que AS seja no mínimo 300
             }
@@ -137,14 +138,15 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
             {
                 int intValue =
                     (_baseAt +
-                    (_baseAt * Digiclone.ATValue / 100) +
-                    _fsAt +
-                    GetSealStatus(StatusTypeEnum.AT) +
-                    GetTitleStatus(StatusTypeEnum.AT) +
-                    (Character?.AccessoryStatus(AccessoryStatusTypeEnum.AT, 0) ?? 0) +
-                    (Character?.ChipsetStatus(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) ?? 0) +
-                    BuffAttribute(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) +
-                    (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AT, _baseAt) ?? 0));
+                     (_baseAt * Digiclone.ATValue / 100) +
+                     _fsAt +
+                     GetSealStatus(StatusTypeEnum.AT) +
+                     GetTitleStatus(StatusTypeEnum.AT) +
+                     (Character?.AccessoryStatus(AccessoryStatusTypeEnum.AT, 0) ?? 0) +
+                     (Character?.ChipsetStatus(_baseAt, SkillCodeApplyAttributeEnum.AT,
+                         SkillCodeApplyAttributeEnum.DA) ?? 0) +
+                     BuffAttribute(_baseAt, SkillCodeApplyAttributeEnum.AT, SkillCodeApplyAttributeEnum.DA) +
+                     (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.AT, _baseAt) ?? 0));
 
                 return intValue;
             }
@@ -152,19 +154,19 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
 
         public short BL => (short)
             (_baseBl +
-            (Digiclone.BLValue) +
-            GetSealStatus(StatusTypeEnum.BL) +
-            (Character?.AccessoryStatus(AccessoryStatusTypeEnum.BL, 0) ?? 0) +
-            BuffAttribute(_baseBl, SkillCodeApplyAttributeEnum.BL));
+             (Digiclone.BLValue) +
+             GetSealStatus(StatusTypeEnum.BL) +
+             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.BL, 0) ?? 0) +
+             BuffAttribute(_baseBl, SkillCodeApplyAttributeEnum.BL));
 
         public int CC =>
             (_baseCc +
-            (_baseCc * Digiclone.CTValue / 100) +
-            GetSealStatus(StatusTypeEnum.CT) +
-            GetTitleStatus(StatusTypeEnum.CT) +
-            (Character?.AccessoryStatus(AccessoryStatusTypeEnum.CT, 0) ?? 0) +
-            (Character?.ChipsetStatus(_baseCc, SkillCodeApplyAttributeEnum.CA) ?? 0) +
-            BuffAttribute(_baseCc, SkillCodeApplyAttributeEnum.CA));
+             (_baseCc * Digiclone.CTValue / 100) +
+             GetSealStatus(StatusTypeEnum.CT) +
+             GetTitleStatus(StatusTypeEnum.CT) +
+             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.CT, 0) ?? 0) +
+             (Character?.ChipsetStatus(_baseCc, SkillCodeApplyAttributeEnum.CA) ?? 0) +
+             BuffAttribute(_baseCc, SkillCodeApplyAttributeEnum.CA));
 
         public int CD
         {
@@ -173,7 +175,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                 int critValue =
                     _baseCd +
                     (Character?.AccessoryStatus(AccessoryStatusTypeEnum.CD, 0) ?? 0) +
-                     BuffAttribute(_baseCd, SkillCodeApplyAttributeEnum.CAT) +
+                    BuffAttribute(_baseCd, SkillCodeApplyAttributeEnum.CAT) +
                     (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.CD, _baseCd) ?? 0);
 
                 return critValue;
@@ -195,13 +197,13 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
 
         public short DE => (short)
             (_baseDe +
-            _fsDe +
-            GetSealStatus(StatusTypeEnum.DE) +
-            GetTitleStatus(StatusTypeEnum.DE) +
-            (Character?.AccessoryStatus(AccessoryStatusTypeEnum.DE, 0) ?? 0) +
-            (Character?.ChipsetStatus(_baseDe, SkillCodeApplyAttributeEnum.DP) ?? 0) +
-            BuffAttribute(_baseDe, SkillCodeApplyAttributeEnum.DP) +
-            (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.DE, _baseDe) ?? 0));
+             _fsDe +
+             GetSealStatus(StatusTypeEnum.DE) +
+             GetTitleStatus(StatusTypeEnum.DE) +
+             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.DE, 0) ?? 0) +
+             (Character?.ChipsetStatus(_baseDe, SkillCodeApplyAttributeEnum.DP) ?? 0) +
+             BuffAttribute(_baseDe, SkillCodeApplyAttributeEnum.DP) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.DE, _baseDe) ?? 0));
 
         public int DS =>
             _baseDs +
@@ -209,49 +211,50 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
             GetSealStatus(StatusTypeEnum.DS) +
             GetTitleStatus(StatusTypeEnum.DS) +
             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.DS, 0) ?? 0) +
-            (Character?.ChipsetStatus(_baseDs, SkillCodeApplyAttributeEnum.MaxDS, SkillCodeApplyAttributeEnum.DS) ?? 0) +
+            (Character?.ChipsetStatus(_baseDs, SkillCodeApplyAttributeEnum.MaxDS, SkillCodeApplyAttributeEnum.DS) ??
+             0) +
             BuffAttribute(_baseDs, SkillCodeApplyAttributeEnum.MaxDS, SkillCodeApplyAttributeEnum.DS) +
             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.DS, _baseDs) ?? 0);
 
         public int EV =>
             (_baseEv +
-            (_baseEv * Digiclone.EVValue / 100) +
-            GetSealStatus(StatusTypeEnum.EV) +
-            GetTitleStatus(StatusTypeEnum.EV) +
-            (Character?.AccessoryStatus(AccessoryStatusTypeEnum.EV, 0) ?? 0) +
-            (Character?.ChipsetStatus(_baseEv, SkillCodeApplyAttributeEnum.EV, SkillCodeApplyAttributeEnum.ER) ?? 0) +
-            BuffAttribute(_baseEv, SkillCodeApplyAttributeEnum.EV, SkillCodeApplyAttributeEnum.ER)); //100 = 1%
+             (_baseEv * Digiclone.EVValue / 100) +
+             GetSealStatus(StatusTypeEnum.EV) +
+             GetTitleStatus(StatusTypeEnum.EV) +
+             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.EV, 0) ?? 0) +
+             (Character?.ChipsetStatus(_baseEv, SkillCodeApplyAttributeEnum.EV, SkillCodeApplyAttributeEnum.ER) ?? 0) +
+             BuffAttribute(_baseEv, SkillCodeApplyAttributeEnum.EV, SkillCodeApplyAttributeEnum.ER)); //100 = 1%
 
         public short HT => (short)
             (_baseHt +
-            GetSealStatus(StatusTypeEnum.HT) +
-            GetTitleStatus(StatusTypeEnum.HT) +
-            (Character?.AccessoryStatus(AccessoryStatusTypeEnum.HT, 0) ?? 0) +
-            (Character?.ChipsetStatus(_baseHt, SkillCodeApplyAttributeEnum.HT) ?? 0) +
-            BuffAttribute(_baseHt, SkillCodeApplyAttributeEnum.HT) +
-            (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.HT, _baseHt) ?? 0));
+             GetSealStatus(StatusTypeEnum.HT) +
+             GetTitleStatus(StatusTypeEnum.HT) +
+             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.HT, 0) ?? 0) +
+             (Character?.ChipsetStatus(_baseHt, SkillCodeApplyAttributeEnum.HT) ?? 0) +
+             BuffAttribute(_baseHt, SkillCodeApplyAttributeEnum.HT) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.HT, _baseHt) ?? 0));
 
         public short SKD => (short)
-         (0 +
-         (Character?.AccessoryStatus(AccessoryStatusTypeEnum.SCD, 0) ?? 0) +
-         (Character?.ChipsetStatus(0, SkillCodeApplyAttributeEnum.SkillDamageByAttribute) ?? 0));
+            (0 +
+             (Character?.AccessoryStatus(AccessoryStatusTypeEnum.SCD, 0) ?? 0) +
+             (Character?.ChipsetStatus(0, SkillCodeApplyAttributeEnum.SkillDamageByAttribute) ?? 0));
 
         public short SCD => (short)
-        (BuffAttribute(0, SkillCodeApplyAttributeEnum.SCD) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Data, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Vacina, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Virus, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Unknown, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Ice, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Water, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Fire, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Earth, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Wind, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Wood, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Light, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Dark, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Thunder, 0) ?? 0) +
-        (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Steel, 0) ?? 0));
+            (BuffAttribute(0, SkillCodeApplyAttributeEnum.SCD) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Data, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Vacina, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Virus, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Unknown, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Ice, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Water, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Fire, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Earth, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Wind, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Wood, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Light, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Dark, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Thunder, 0) ?? 0) +
+             (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Steel, 0) ?? 0));
 
         public int HP =>
             _baseHp +
@@ -301,23 +304,24 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                             case SkillCodeApplyTypeEnum.AlsoPercent:
                             case SkillCodeApplyTypeEnum.Percent:
                             case SkillCodeApplyTypeEnum.Unknown105:
+                            {
+                                SomaValue += apply.Value + (buff.TypeN) * apply.IncreaseValue;
+
+                                if (apply.Attribute == SkillCodeApplyAttributeEnum.SCD ||
+                                    apply.Attribute == SkillCodeApplyAttributeEnum.CAT)
                                 {
-                                    SomaValue += apply.Value + (buff.TypeN) * apply.IncreaseValue;
-
-                                    if (apply.Attribute == SkillCodeApplyAttributeEnum.SCD || apply.Attribute == SkillCodeApplyAttributeEnum.CAT)
-                                    {
-                                        totalValue = SomaValue * 100;
-                                        break;
-                                    }
-                                    //else if (apply.Attribute == SkillCodeApplyAttributeEnum.CAT)
-                                    //{
-                                        //totalValue = SomaValue;
-                                        //break;
-                                    //}
-
-                                    //totalValue += (int)Math.Ceiling((double)(SomaValue) / 100 * baseValue);   // Arredonda os valores
-                                    totalValue += (SomaValue / 100.0) * baseValue;
+                                    totalValue = SomaValue * 100;
+                                    break;
                                 }
+                                //else if (apply.Attribute == SkillCodeApplyAttributeEnum.CAT)
+                                //{
+                                //totalValue = SomaValue;
+                                //break;
+                                //}
+
+                                //totalValue += (int)Math.Ceiling((double)(SomaValue) / 100 * baseValue);   // Arredonda os valores
+                                totalValue += (SomaValue / 100.0) * baseValue;
+                            }
                                 break;
                         }
                     }
@@ -327,14 +331,41 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
             return (int)totalValue;
         }
 
+        private int DeckBuffCalculation(DeckBookInfoTypesEnum deckBookInfoType, int baseValue)
+        {
+            if (Character != null)
+            {
+                DeckBuffModel? characterDeckBuff = Character.DeckBuff;
+                if (characterDeckBuff != null)
+                {
+                    DeckBuffOptionModel? option =
+                        characterDeckBuff.Options.FirstOrDefault(x =>
+                            x.DeckBookInfo?.Type == deckBookInfoType &&
+                            x.Condition == DeckBuffConditionsEnum.Passive);
+
+                    if (option != null && option.DeckBookInfo != null)
+                    {
+                        switch (option.DeckBookInfo.Type)
+                        {
+                            /*case DeckBookInfoTypesEnum.AT:
+                                break;*/
+                        }
+                    }
+                }
+            }
+
+
+            return 0;
+        }
+
         /// <summary>
         /// Sets the default basic character information.
         /// </summary>
         private void SetBaseData()
         {
             Level = 1;
-            CurrentHp = 5000;    // 250
-            CurrentDs = 5000;    // 100
+            CurrentHp = 5000; // 250
+            CurrentDs = 5000; // 100
             LastHitTime = DateTime.MinValue;
             CreateDate = DateTime.Now;
         }
@@ -369,7 +400,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         /// <param name="type">Digimon type.</param>
         /// <param name="hatchGrade">Digimon hatch grade.</param>
         /// <param name="size">Digimon size.</param>
-        public static DigimonModel Create(string name, int model, int type, DigimonHatchGradeEnum hatchGrade, short size, byte slot)
+        public static DigimonModel Create(string name, int model, int type, DigimonHatchGradeEnum hatchGrade,
+            short size, byte slot)
         {
             var digimon = new DigimonModel()
             {
@@ -606,12 +638,14 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         /// Updates digimon last hit time.
         /// </summary>
         /// <param name="time">Last hit time (in milliseconds).</param>
-        public void UpdateLastHitTime(int time = 0) => LastHitTime = DateTime.Now.AddMilliseconds(time); //TODO: NextHitTime?
+        public void UpdateLastHitTime(int time = 0) =>
+            LastHitTime = DateTime.Now.AddMilliseconds(time); //TODO: NextHitTime?
 
         public void UpdateTranscendenceExp(long Exp)
         {
             TranscendenceExperience = Exp;
         }
+
         /// <summary>
         /// Updates the current digimon base status value.
         /// </summary>
@@ -711,17 +745,17 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                     AttributeExperience.IncreaseAttributeExperience(value, BaseInfo.Attribute);
                     break;
                 case DigimonAttributeEnum.Unknown:
+                {
+                    switch (CurrentType)
                     {
-                        switch (CurrentType)
-                        {
-                            //TODO: fixo com base na forma atual + equipamento
-                            // Rookie 35% | Champion 45% | Ultimate 55% | Mega 65% | Burst Mode is 75%
-                            // +equipment (max 100%)
+                        //TODO: fixo com base na forma atual + equipamento
+                        // Rookie 35% | Champion 45% | Ultimate 55% | Mega 65% | Burst Mode is 75%
+                        // +equipment (max 100%)
 
-                            default:
-                                break;
-                        }
+                        default:
+                            break;
                     }
+                }
                     break;
             }
         }
