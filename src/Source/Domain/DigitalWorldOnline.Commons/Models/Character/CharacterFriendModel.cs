@@ -28,6 +28,10 @@
         public long FriendId { get; private set; }
 
         public long CharacterId { get; private set; }
+        
+        public CharacterModel? Character { get; private set; }
+        
+        public CharacterModel? Friend { get; private set; }
 
         public static CharacterFriendModel Create(string name, long tamerId, bool online)
         {

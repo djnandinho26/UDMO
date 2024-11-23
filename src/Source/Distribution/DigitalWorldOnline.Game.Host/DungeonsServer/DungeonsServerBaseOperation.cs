@@ -571,6 +571,13 @@ namespace DigitalWorldOnline.GameHost
             map?.BroadcastForTamerViewsAndSelf(sourceId, packet);
         }
 
+        public void BroadcastForTamerViews(long sourceId, byte[] packet)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == sourceId));
+
+            map?.BroadcastForTamerViewOnly(sourceId, packet);
+        }
+
         public void AddMapDrop(Drop drop, long tamerId)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));

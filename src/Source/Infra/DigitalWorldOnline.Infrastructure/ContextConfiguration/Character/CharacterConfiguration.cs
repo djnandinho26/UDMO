@@ -188,6 +188,13 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
                 .HasForeignKey(x => x.CharacterId);
 
             builder
+                .HasMany(x => x.Foed)
+                .WithOne(x => x.Foe)
+                .HasForeignKey(x => x.FoeId)
+                .HasPrincipalKey(x => x.Id)
+                .OnDelete(DeleteBehavior.NoAction);
+
+            builder
                 .HasOne(x => x.Points)
                 .WithOne(x => x.Character)
                 .HasForeignKey<CharacterArenaPointsDTO>(x => x.CharacterId);

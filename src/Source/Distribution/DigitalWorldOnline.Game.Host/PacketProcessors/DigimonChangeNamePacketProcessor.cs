@@ -2,6 +2,8 @@
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
+using DigitalWorldOnline.Commons.Packets.MapServer;
+using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.GameHost;
 using MediatR;
 using Serilog;
@@ -13,15 +15,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         public GameServerPacketEnum Type => GameServerPacketEnum.DigimonChangeName;
 
         private readonly MapServer _mapServer;
+        private readonly DungeonsServer _dungeonServer;
         private readonly ILogger _logger;
         private readonly ISender _sender;
 
         public DigimonChangeNamePacketProcessor(
             MapServer mapServer,
+            DungeonsServer dungeonServer,
             ILogger logger,
             ISender sender)
         {
             _mapServer = mapServer;
+            _dungeonServer = dungeonServer;
             _logger = logger;
             _sender = sender;
         }
@@ -44,7 +49,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 await _sender.Send(new ChangeDigimonNameByIdCommand(digimonID, newName));
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-
+                
+                _mapServer.BroadcastForTamerViews(client, UtilitiesFunctions.GroupPackets(
+                    new UnloadTamerPacket(client.Tamer).Serialize(),
+                    new LoadTamerPacket(client.Tamer).Serialize()
+                ));
+                _dungeonServer.BroadcastForTamerViews(client.TamerId, UtilitiesFunctions.GroupPackets(
+                    new UnloadTamerPacket(client.Tamer).Serialize(),
+                    new LoadTamerPacket(client.Tamer).Serialize()
+                ));
                 //client.Send(new DigimonChangeNamePacket(CharacterChangeNameType.Sucess, itemSlot, oldName, newName));
                 //client.Send(new DigimonChangeNamePacket(CharacterChangeNameType.Complete, oldName, newName, itemSlot));
 

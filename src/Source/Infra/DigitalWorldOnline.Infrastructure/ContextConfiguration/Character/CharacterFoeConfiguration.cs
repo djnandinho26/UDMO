@@ -28,6 +28,21 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Character
                 .Property(x => x.FoeId)
                 .HasColumnType("bigint")
                 .IsRequired();
+            
+            builder
+                .Property(x => x.CharacterId)
+                .HasColumnType("bigint")
+                .IsRequired();
+
+            builder
+                .HasOne(x => x.Character)
+                .WithMany(x => x.Foes)
+                .HasForeignKey(x => x.CharacterId);
+
+            builder
+                .HasOne(x => x.Foe)
+                .WithMany(x => x.Foed)
+                .HasForeignKey(x => x.FoeId);
         }
     }
 }

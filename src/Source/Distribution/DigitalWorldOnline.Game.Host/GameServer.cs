@@ -160,7 +160,7 @@ namespace DigitalWorldOnline.Game
 
                     if (targetClient == null) continue;
 
-                    targetClient.Send(new PartyMemberLeavePacket(party[gameClientEvent.Client.TamerId].Key)
+                    targetClient.Send(new PartyMemberDisconnectedPacket(party[gameClientEvent.Client.TamerId].Key)
                         .Serialize());
                 }
 
@@ -301,23 +301,16 @@ namespace DigitalWorldOnline.Game
 
         private async void CharacterFriendsNotification(GameClientEvent gameClientEvent)
         {
-            try
+            gameClientEvent.Client.Tamer.Friended.ForEach(friend =>
             {
-                gameClientEvent.Client.Tamer.Friended.ForEach(friend =>
-                {
-                    _logger.Information($"Sending friend disconnection packet for character {friend.FriendId}...");
-                    _mapServer.BroadcastForUniqueTamer(friend.FriendId,
-                        new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
-                    _dungeonsServer.BroadcastForUniqueTamer(friend.FriendId,
-                        new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
-                });
+                _logger.Information($"Sending friend disconnection packet for character {friend.FriendId}...");
+                _mapServer.BroadcastForUniqueTamer(friend.FriendId,
+                    new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+                _dungeonsServer.BroadcastForUniqueTamer(friend.FriendId,
+                    new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+            });
 
-                await _sender.Send(new UpdateCharacterFriendsCommand(gameClientEvent.Client.Tamer, false));
-            }
-            catch (Exception e)
-            {
-                throw; // TODO handle exception
-            }
+            await _sender.Send(new UpdateCharacterFriendsCommand(gameClientEvent.Client.Tamer, false));
         }
 
         private void CharacterTargetTraderNotification(GameClientEvent gameClientEvent)

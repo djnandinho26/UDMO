@@ -41,6 +41,7 @@ namespace DigitalWorldOnline.Commons.DTOs.Character
         
         public List<CharacterFriendDTO> Friended { get; set; }
         public List<CharacterFoeDTO> Foes { get; set; }
+        public List<CharacterFoeDTO> Foed { get; set; }
         public CharacterArenaPointsDTO Points { get; set; }
         public List<CharacterMapRegionDTO> MapRegions { get; set; }
         public CharacterBuffListDTO BuffList { get; set; }

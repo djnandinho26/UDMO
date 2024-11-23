@@ -24,6 +24,7 @@ using Serilog;
 using Serilog.Events;
 using System.Globalization;
 using System.Reflection;
+using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Commons.Utils;
 
 namespace DigitalWorldOnline.Game

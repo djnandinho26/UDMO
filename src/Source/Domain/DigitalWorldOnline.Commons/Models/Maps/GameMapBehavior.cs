@@ -132,7 +132,7 @@ namespace DigitalWorldOnline.Commons.Models.Map
         public void BroadcastForTargetTamers(List<long> targetTamers, byte[] packet)
         {
             var clients = Clients.Where(x => targetTamers.Contains(x.TamerId)).ToList();
-
+           
             clients.ForEach(client => { client.Send(packet); });
         }
 
@@ -145,6 +145,11 @@ namespace DigitalWorldOnline.Commons.Models.Map
         {
             BroadcastForTamerViews(sourceId, packet);
             BroadcastForSelf(sourceId, packet);
+        }
+
+        public void BroadcastForTamerViewOnly(long sourceId, byte[] packet)
+        {
+            BroadcastForTamerViews(sourceId, packet);
         }
 
         private void BroadcastForTamerViews(long sourceId, byte[] packet)
@@ -249,19 +254,7 @@ namespace DigitalWorldOnline.Commons.Models.Map
         public void RemoveClient(GameClient client)
         {
             BroadcastForTamerViews(client.TamerId, new UnloadTamerPacket(client.Tamer).Serialize());
-
-            var friendedCharacterIds = client.Tamer.Friended.Select(f => f.CharacterId).ToList();
             
-            List<GameClient> SelectedClients = Clients
-                .Where(gameClient => friendedCharacterIds.Contains(gameClient.TamerId))
-                .ToList();
-
-            Console.WriteLine($"ClientsCount: {SelectedClients.Count}");
-            SelectedClients.ForEach(friend =>
-            {
-                Console.WriteLine($"Tamer ID: {friend.TamerId}");
-                friend.Send(new FriendDisconnectPacket(client.Tamer.Name).Serialize());
-            });
 #if DEBUG
             var serialized = SerializeHideTamer(client.Tamer);
             //File.WriteAllText($"Hides\\Hide{client.TamerId}To{client.TamerId}_Views_{DateTime.Now:dd_MM_yy_HH_mm_ss}.temp", serialized);

@@ -147,6 +147,12 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// </summary>
         public List<CharacterFoeModel> Foes { get; private set; }
 
+
+        /// <summary>
+        /// Character blocked tamers.
+        /// </summary>
+        public List<CharacterFoeModel> Foed { get; private set; }
+
         /// <summary>
         /// Current buff list.
         /// </summary>
@@ -284,6 +290,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
             BuffList = new CharacterBuffListModel();
             SealList = new CharacterSealListModel();
             Foes = new List<CharacterFoeModel>();
+            Foed = new List<CharacterFoeModel>();
             Digimons = new List<DigimonModel>();
             TimeReward = new TimeRewardModel();
             Friends = new List<CharacterFriendModel>();
