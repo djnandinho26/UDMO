@@ -247,7 +247,9 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                 int calculated = 0 +
                                  (Character?.AccessoryStatus(AccessoryStatusTypeEnum.SCD, 0) ?? 0) +
                                  (Character?.ChipsetStatus(0, SkillCodeApplyAttributeEnum.SkillDamageByAttribute) ?? 0);
-                return (short)(calculated + DeckBuffCalculation(DeckBookInfoTypesEnum.SC, calculated));
+
+                int sentCalculation = calculated == 0 ? 10000 : calculated;
+                return (short)(calculated + DeckBuffCalculation(DeckBookInfoTypesEnum.SC, sentCalculation));
             }
         }
 
@@ -271,7 +273,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                                   (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Thunder, 0) ?? 0) +
                                   (Character?.DigiviceAccessoryStatus(AccessoryStatusTypeEnum.Steel, 0) ?? 0));
 
-                return (short)(calculated + DeckBuffCalculation(DeckBookInfoTypesEnum.SK, calculated));
+                int sentCalculation = calculated == 0 ? 10000 : calculated;
+                return (short)(calculated + DeckBuffCalculation(DeckBookInfoTypesEnum.SK, sentCalculation));
             }
         }
 
@@ -370,8 +373,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                     if (option != null && option.DeckBookInfo != null)
                     {
                         totalValue = baseValue * (option.Value / 100.0);
-                        
-                        return (int)(totalValue) == 0 ? (int)(option.Value * 100) : (int)totalValue;
+                        return (int)totalValue;
                     }
 
                     return 0;
