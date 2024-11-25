@@ -4,6 +4,8 @@ using DigitalWorldOnline.Commons.Models.Servers;
 using DigitalWorldOnline.Commons.DTOs.Config;
 using DigitalWorldOnline.Commons.DTOs.Server;
 using DigitalWorldOnline.Application.Separar.Queries;
+using DigitalWorldOnline.Commons.DTOs.Config.Events;
+using DigitalWorldOnline.Commons.Models.Config.Events;
 using DigitalWorldOnline.Commons.Models.Summon;
 
 namespace DigitalWorldOnline.Infrastructure.Mapping
@@ -23,7 +25,7 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
 
             CreateMap<MobLocationConfigModel, MobLocationConfigDTO>()
                 .ReverseMap();
-            
+
             CreateMap<MobExpRewardConfigModel, MobExpRewardConfigDTO>()
                 .ReverseMap();
 
@@ -37,10 +39,10 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
                 .ReverseMap();
 
             CreateMap<SummonModel, SummonDTO>()
-         .ReverseMap();
+                .ReverseMap();
 
             CreateMap<SummonMobModel, SummonMobDTO>()
-             .ReverseMap();
+                .ReverseMap();
 
             CreateMap<SummonMobLocationModel, SummonMobLocationDTO>()
                 .ReverseMap();
@@ -56,7 +58,7 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
 
             CreateMap<SummonMobItemDropModel, SummonMobItemDropDTO>()
                 .ReverseMap();
-         
+
             CreateMap<AdminUserModel, UserDTO>()
                 .ReverseMap();
 
@@ -71,13 +73,13 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
 
             CreateMap<HatchConfigModel, HatchConfigDTO>()
                 .ReverseMap();
-            
+
             CreateMap<KillSpawnConfigModel, KillSpawnConfigDTO>()
                 .ReverseMap();
-            
+
             CreateMap<FruitConfigModel, FruitConfigDTO>()
                 .ReverseMap();
-            
+
             CreateMap<FruitSizeConfigModel, FruitSizeConfigDTO>()
                 .ReverseMap();
 
@@ -85,6 +87,30 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
                 .ReverseMap();
 
             CreateMap<KillSpawnSourceMobConfigModel, KillSpawnSourceMobConfigDTO>()
+                .ReverseMap();
+
+            CreateMap<EventConfigModel, EventConfigDTO>()
+                .ReverseMap();
+
+            CreateMap<EventMapsConfigModel, EventMapsConfigDTO>()
+                .ReverseMap();
+
+            CreateMap<EventBitsDropConfigModel, EventBitsDropConfigDTO>()
+                .ReverseMap();
+
+            CreateMap<EventItemDropConfigModel, EventItemDropConfigDTO>()
+                .ReverseMap();
+
+            CreateMap<EventMobConfigModel, EventMobConfigDTO>()
+                .ReverseMap();
+
+            CreateMap<EventMobDropRewardConfigModel, EventMobDropRewardConfigDTO>()
+                .ReverseMap();
+
+            CreateMap<EventMobExpRewardConfigModel, EventMobExpRewardConfigDTO>()
+                .ReverseMap();
+
+            CreateMap<EventMobLocationConfigModel, EventMobLocationConfigDTO>()
                 .ReverseMap();
         }
     }

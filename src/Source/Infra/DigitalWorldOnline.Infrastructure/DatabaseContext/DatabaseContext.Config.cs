@@ -1,7 +1,13 @@
 ﻿using DigitalWorldOnline.Commons.DTOs.Config;
+using DigitalWorldOnline.Commons.DTOs.Config.Events;
 using DigitalWorldOnline.Commons.DTOs.Server;
 using DigitalWorldOnline.Infrastructure.ContextConfiguration.Config;
+using DigitalWorldOnline.Infrastructure.ContextConfiguration.Config.Events;
 using Microsoft.EntityFrameworkCore;
+using BitsDropRewardConfigConfiguration =
+    DigitalWorldOnline.Infrastructure.ContextConfiguration.Config.BitsDropRewardConfigConfiguration;
+using ItemDropRewardConfigConfiguration =
+    DigitalWorldOnline.Infrastructure.ContextConfiguration.Config.ItemDropRewardConfigConfiguration;
 
 namespace DigitalWorldOnline.Infrastructure
 {
@@ -17,6 +23,10 @@ namespace DigitalWorldOnline.Infrastructure
         public DbSet<HatchConfigDTO> HatchConfig { get; set; }
         public DbSet<FruitConfigDTO> FruitConfig { get; set; }
         public DbSet<SummonDTO> SummonsConfig { get; set; }
+        
+        public DbSet<EventConfigDTO> EventConfig { get; set; }
+        
+        public DbSet<EventMapsConfigDTO> EventMapsConfig { get; set; }
 
         internal static void ConfigEntityConfiguration(ModelBuilder builder)
         {
@@ -45,6 +55,15 @@ namespace DigitalWorldOnline.Infrastructure
             builder.ApplyConfiguration(new FruitSizeConfiguration());
             builder.ApplyConfiguration(new KillSpawnTargetMobConfigConfiguration());
             builder.ApplyConfiguration(new KillSpawnSourceMobConfigConfiguration());
+
+            builder.ApplyConfiguration(new EventConfigConfiguration());
+            builder.ApplyConfiguration(new EventMapsConfigConfiguration());
+            builder.ApplyConfiguration(new EventMobConfigConfiguration());
+            builder.ApplyConfiguration(new EventMobExpRewardConfigConfiguration());
+            builder.ApplyConfiguration(new EventMobLocationConfigConfiguration());
+            builder.ApplyConfiguration(new EventMobDropRewardConfigConfiguration());
+            builder.ApplyConfiguration(new EventItemDropRewardConfigConfiguration());
+            builder.ApplyConfiguration(new EventBitsDropRewardConfigConfiguration());
         }
     }
 }

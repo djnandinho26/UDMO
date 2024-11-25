@@ -87,7 +87,7 @@ namespace DigitalWorldOnline.Game
 
                     services.AddSingleton<MapServer>();
                     services.AddSingleton<PvpServer>();
-                    //services.AddSingleton<EventServer>();
+                    services.AddSingleton<EventServer>();
                     services.AddSingleton<DungeonsServer>();
                     services.AddSingleton<AssetsLoader>();
                     services.AddSingleton<ConfigsLoader>();

@@ -54,7 +54,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var portalId = packet.ReadInt();
 
-            //_logger.Information($"Normal PortalId: {portalId}");
+            _logger.Information($"Normal PortalId: {portalId}");
 
             var portal = _assets.Portal.FirstOrDefault(x => x.Id == portalId);
 

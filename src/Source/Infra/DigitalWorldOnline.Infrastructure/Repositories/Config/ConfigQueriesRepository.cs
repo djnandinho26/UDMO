@@ -1,4 +1,5 @@
 ﻿using DigitalWorldOnline.Commons.DTOs.Config;
+using DigitalWorldOnline.Commons.DTOs.Config.Events;
 using DigitalWorldOnline.Commons.Interfaces;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,12 +19,12 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Config
             return await _context.MobConfig
                 .AsNoTracking()
                 .AsSplitQuery()
-                    .Include(y => y.Location)
-                    .Include(y => y.ExpReward)
-                    .Include(y => y.DropReward)
-                        .ThenInclude(z => z.Drops)
-                    .Include(y => y.DropReward)
-                        .ThenInclude(z => z.BitsDrop)
+                .Include(y => y.Location)
+                .Include(y => y.ExpReward)
+                .Include(y => y.DropReward)
+                .ThenInclude(z => z.Drops)
+                .Include(y => y.DropReward)
+                .ThenInclude(z => z.BitsDrop)
                 .Where(x => x.GameMapConfigId == configId)
                 .ToListAsync();
         }
@@ -34,15 +35,15 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Config
                 .AsSplitQuery()
                 .AsNoTracking()
                 .Include(x => x.Mobs)
-                    .ThenInclude(y => y.Location)
+                .ThenInclude(y => y.Location)
                 .Include(x => x.Mobs)
-                    .ThenInclude(y => y.ExpReward)
+                .ThenInclude(y => y.ExpReward)
                 .Include(x => x.Mobs)
-                    .ThenInclude(y => y.DropReward)
-                        .ThenInclude(z => z.Drops)
+                .ThenInclude(y => y.DropReward)
+                .ThenInclude(z => z.Drops)
                 .Include(x => x.Mobs)
-                    .ThenInclude(y => y.DropReward)
-                        .ThenInclude(z => z.BitsDrop)
+                .ThenInclude(y => y.DropReward)
+                .ThenInclude(z => z.BitsDrop)
                 .ToListAsync();
         }
 
@@ -62,24 +63,73 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Config
 
         public async Task<List<MobConfigDTO>> GetMapMobsByIdAsync(int mapId)
         {
-            var mapDto = await _context.MapConfig.FirstOrDefaultAsync(x=>x.MapId == mapId);
+            var mapDto = await _context.MapConfig.FirstOrDefaultAsync(x => x.MapId == mapId);
 
             if (mapDto != null)
             {
                 return await _context.MobConfig
                     .AsNoTracking()
                     .AsSplitQuery()
-                        .Include(y => y.Location)
-                        .Include(y => y.ExpReward)
-                        .Include(y => y.DropReward)
-                            .ThenInclude(z => z.Drops)
-                        .Include(y => y.DropReward)
-                            .ThenInclude(z => z.BitsDrop)
+                    .Include(y => y.Location)
+                    .Include(y => y.ExpReward)
+                    .Include(y => y.DropReward)
+                    .ThenInclude(z => z.Drops)
+                    .Include(y => y.DropReward)
+                    .ThenInclude(z => z.BitsDrop)
                     .Where(x => x.GameMapConfigId == mapDto.Id)
                     .ToListAsync();
             }
             else
                 return default;
+        }
+
+        public async Task<List<EventConfigDTO>> GetEventsConfigAsync()
+        {
+            return await _context.EventConfig
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Map)
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Mobs)
+                .ThenInclude(y => y.Location)
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Mobs)
+                .ThenInclude(y => y.ExpReward)
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Mobs)
+                .ThenInclude(y => y.DropReward)
+                .ThenInclude(z => z.Drops)
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Mobs)
+                .ThenInclude(y => y.DropReward)
+                .ThenInclude(z => z.BitsDrop)
+                .ToListAsync();
+        }
+
+        public async Task<List<EventConfigDTO>> GetEventsConfigAsync(bool isEnabled)
+        {
+            return await _context.EventConfig
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Map)
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Mobs)
+                .ThenInclude(y => y.Location)
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Mobs)
+                .ThenInclude(y => y.ExpReward)
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Mobs)
+                .ThenInclude(y => y.DropReward)
+                .ThenInclude(z => z.Drops)
+                .Include(x => x.EventMaps)
+                .ThenInclude(y => y.Mobs)
+                .ThenInclude(y => y.DropReward)
+                .ThenInclude(z => z.BitsDrop)
+                .Where(x => x.IsEnabled == isEnabled)
+                .ToListAsync();
         }
     }
 }

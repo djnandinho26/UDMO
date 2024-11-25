@@ -62,7 +62,7 @@
     </HeaderContent>
     <RowTemplate>
         <MudTd DataLabel="ItemId">@context.ItemId</MudTd>
-        <MudTd>@context.Maps.Select(x => x)</MudTd>
+        <MudTd>@string.Join(", ", context.Maps)</MudTd>
         <MudTd>
             <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => Update(context.Id))" Title="Update" Size="Size.Small"></MudIconButton>
             <MudIconButton Icon="@Icons.Material.Filled.ContentCopy" OnClick="@(() => Duplicate(context.Id))" Title="Duplicate" Size="Size.Small"></MudIconButton>
