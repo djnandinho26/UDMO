@@ -5,6 +5,7 @@ using DigitalWorldOnline.Commons.DTOs.Config.Events;
 using DigitalWorldOnline.Commons.Models.Config.Events;
 using DigitalWorldOnline.Commons.Models.Summon;
 using DigitalWorldOnline.Commons.ViewModel.Asset;
+using DigitalWorldOnline.Commons.ViewModel.Events;
 using DigitalWorldOnline.Commons.ViewModel.Mobs;
 using DigitalWorldOnline.Commons.ViewModel.Summons;
 
@@ -34,10 +35,10 @@ namespace DigitalWorldOnline.Admin.Data
             CreateMap<MobConfigDTO, MobUpdateViewModel>()
                 .ReverseMap();
             
-            CreateMap<EventConfigModel, EventConfigDTO>()
+            CreateMap<EventViewModel, EventConfigDTO>()
                 .ReverseMap();
 
-            CreateMap<EventMapsConfigModel, EventMapsConfigDTO>()
+            CreateMap<EventMapViewModel, EventMapsConfigDTO>()
                 .ReverseMap();
 
             CreateMap<EventBitsDropConfigModel, EventBitsDropConfigDTO>()

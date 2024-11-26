@@ -2,6 +2,7 @@
 using DigitalWorldOnline.Commons.DTOs.Assets;
 using DigitalWorldOnline.Commons.DTOs.Character;
 using DigitalWorldOnline.Commons.DTOs.Config;
+using DigitalWorldOnline.Commons.DTOs.Config.Events;
 using DigitalWorldOnline.Commons.DTOs.Server;
 using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Account;
@@ -67,5 +68,11 @@ namespace DigitalWorldOnline.Commons.Repositories.Admin
         Task UpdateSpawnPointAsync(MapRegionAssetDTO spawnPoint, long mapId);
 
         Task UpdateUserAsync(UserDTO user);
+        
+        Task<EventConfigDTO> AddEventConfigAsync(EventConfigDTO eventConfig);
+
+        Task UpdateEventConfigAsync(EventConfigDTO eventConfig);
+
+        Task DeleteEventConfigAsync(long id);
     }
 }

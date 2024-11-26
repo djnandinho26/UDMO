@@ -32,7 +32,6 @@
 	
 	<ItemGroup>
 	  <Folder Include="Pages\Chat\" />
-	  <Folder Include="Pages\Events\" />
 	  <Folder Include="Pages\Items\" />
 	  <Folder Include="Pages\Settings\" />
 	</ItemGroup>

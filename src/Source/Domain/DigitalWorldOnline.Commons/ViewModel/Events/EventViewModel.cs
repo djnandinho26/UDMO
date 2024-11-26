@@ -1,8 +1,9 @@
 ﻿using DigitalWorldOnline.Commons.Enums.Events;
+using DigitalWorldOnline.Commons.Models.Config.Events;
 
-namespace DigitalWorldOnline.Commons.DTOs.Config.Events
+namespace DigitalWorldOnline.Commons.ViewModel.Events
 {
-    public sealed class EventConfigDTO
+    public class EventViewModel
     {
         /// <summary>
         /// Unique sequential identifier.
@@ -15,28 +16,17 @@ namespace DigitalWorldOnline.Commons.DTOs.Config.Events
         public string Name { get; set; }
 
         /// <summary>
-        /// Description
+        /// Brief textual summary providing details about the event.
         /// </summary>
         public string Description { get; set; }
 
         /// <summary>
-        /// Indicates if the map is enabled.
+        /// Indicates whether the event is enabled.
         /// </summary>
         public bool IsEnabled { get; set; }
 
-        /// <summary>
-        /// Specifies the day of the week on which the event starts.
-        /// </summary>
         public EventStartDayEnum StartDay { get; set; } = EventStartDayEnum.Everyday;
-
-        /// <summary>
-        /// Duration of time from the start.
-        /// </summary>
         public TimeSpan StartsAt { get; set; }
-
-        /// <summary>
-        /// Child mobs.
-        /// </summary>
-        public List<EventMapsConfigDTO> EventMaps { get; set; }
+        public List<EventMapViewModel> EventMaps { get; set; }
     }
 }

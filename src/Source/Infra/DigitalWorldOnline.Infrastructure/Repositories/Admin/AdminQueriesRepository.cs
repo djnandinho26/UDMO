@@ -736,5 +736,92 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
 
             return result;
         }
+        public async Task<GetEventsQueryDto> GetEventsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        {
+            var result = new GetEventsQueryDto();
+
+            if (string.IsNullOrEmpty(sortColumn))
+                sortColumn = "Id";
+
+            if (filter?.Length < 3)
+                filter = string.Empty;
+
+            if (sortDirection == SortDirectionEnum.None)
+                sortDirection = SortDirectionEnum.Asc;
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                result.TotalRegisters = await _context.EventConfig
+                    .AsNoTracking()
+                    .Where(x => x.Name.Contains(filter) || x.Description.Contains(filter) || x.Id.ToString().Contains(filter))
+                    .CountAsync();
+
+                result.Registers = await _context.EventConfig
+                    .AsNoTracking()
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Map)
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Mobs)
+                    .ThenInclude(y => y.Location)
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Mobs)
+                    .ThenInclude(y => y.ExpReward)
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Mobs)
+                    .ThenInclude(y => y.DropReward)
+                    .ThenInclude(z => z.Drops)
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Mobs)
+                    .ThenInclude(y => y.DropReward)
+                    .ThenInclude(z => z.BitsDrop)
+                    .Where(x => x.Name.Contains(filter) || x.Description.Contains(filter) || x.Id.ToString().Contains(filter))
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
+            else
+            {
+                result.TotalRegisters = await _context.EventConfig
+                    .AsNoTracking()
+                    .CountAsync();
+
+                result.Registers = await _context.EventConfig
+                    .AsNoTracking()
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Map)
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Mobs)
+                    .ThenInclude(y => y.Location)
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Mobs)
+                    .ThenInclude(y => y.ExpReward)
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Mobs)
+                    .ThenInclude(y => y.DropReward)
+                    .ThenInclude(z => z.Drops)
+                    .Include(x => x.EventMaps)
+                    .ThenInclude(y => y.Mobs)
+                    .ThenInclude(y => y.DropReward)
+                    .ThenInclude(z => z.BitsDrop)
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
+
+            return result;
+        }
+
+        public async Task<GetEventConfigByIdQueryDto> GetEventConfigByIdAsync(long id)
+        {
+            var result = new GetEventConfigByIdQueryDto();
+
+            result.Register = await _context.EventConfig
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            return result;
+        }
     }
 }

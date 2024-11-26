@@ -58,5 +58,9 @@ namespace DigitalWorldOnline.Application.Admin.Repositories
         Task<GetHatchConfigsQueryDto> GetHatchConfigsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
 
         Task<GetPlayersQueryDto> GetPlayersAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
+        
+        Task<GetEventsQueryDto> GetEventsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
+        
+        Task<GetEventConfigByIdQueryDto> GetEventConfigByIdAsync(long id);
     }
 }

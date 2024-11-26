@@ -4,6 +4,7 @@ using DigitalWorldOnline.Commons.DTOs.Account;
 using DigitalWorldOnline.Commons.DTOs.Assets;
 using DigitalWorldOnline.Commons.DTOs.Character;
 using DigitalWorldOnline.Commons.DTOs.Config;
+using DigitalWorldOnline.Commons.DTOs.Config.Events;
 using DigitalWorldOnline.Commons.DTOs.Server;
 using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Account;
@@ -549,6 +550,48 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return AccountCreateResult.Created;
         }
 
+        public async Task<EventConfigDTO> AddEventConfigAsync(EventConfigDTO eventConfig)
+        {
+            _context.EventConfig.Add(eventConfig);
+
+            await _context.SaveChangesAsync();
+
+            return eventConfig;
+        }
+
+        public async Task DeleteEventConfigAsync(long id)
+        {
+            var dto = await _context.EventConfig
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            if (dto != null)
+            {
+                _context.Remove(dto);
+
+                _context.SaveChanges();
+            }
+        }
+
+        public async Task UpdateEventConfigAsync(EventConfigDTO eventConfig)
+        {
+            var dto = await _context.EventConfig
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == eventConfig.Id);
+
+            if (dto != null)
+            {
+                dto.Name = eventConfig.Name;
+                dto.Description = eventConfig.Description;
+                dto.IsEnabled = eventConfig.IsEnabled;
+                dto.StartDay = eventConfig.StartDay;
+                dto.StartsAt = eventConfig.StartsAt;
+
+                _context.Update(dto);
+
+                _context.SaveChanges();
+            }
+        }
 
         
     }
