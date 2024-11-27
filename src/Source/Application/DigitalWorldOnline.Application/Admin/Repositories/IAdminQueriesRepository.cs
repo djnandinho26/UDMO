@@ -76,5 +76,7 @@ namespace DigitalWorldOnline.Application.Admin.Repositories
         Task<GetMapConfigQueryDto> GetMapConfigAsync(string filter);
 
         Task<GetEventMobByIdQueryDto> GetEventMobByIdAsync(long id);
+
+        Task<GetEventRaidsQueryDto> GetEventRaidsAsync(long mapId, int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
     }
 }

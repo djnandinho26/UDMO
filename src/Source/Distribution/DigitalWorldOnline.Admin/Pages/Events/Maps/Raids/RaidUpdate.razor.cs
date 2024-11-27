@@ -15,9 +15,9 @@ using System.Threading.Tasks;
 using DigitalWorldOnline.Commons.DTOs.Config.Events;
 using DigitalWorldOnline.Commons.ViewModel.Events;
 
-namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
+namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Raids
 {
-    public partial class MobUpdate
+    public partial class RaidUpdate
     {
         private MudAutocomplete<EventMobAssetViewModel> _selectedMobAsset;
         private MudAutocomplete<ItemAssetViewModel> _selectedItemAsset;
@@ -59,10 +59,9 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
             long.TryParse(EventId, out _eventId);
             
             long.TryParse(MapId, out _mapId);
-            
             if (long.TryParse(MobId, out _id))
             {
-                Logger.Information("Searching mob by id {id}", _id);
+                Logger.Information("Searching raid by id {id}", _id);
 
                 var target = await Sender.Send(
                     new GetEventMobByIdQuery(_id)
@@ -89,8 +88,8 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
 
             if (_id == 0)
             {
-                Logger.Information("Invalid mob id parameter: {parameter}", MobId);
-                Toast.Add("Mob not found, try again later.", Severity.Warning);
+                Logger.Information("Invalid raid id parameter: {parameter}", MobId);
+                Toast.Add("Raid not found, try again later.", Severity.Warning);
 
                 Return();
             }
@@ -150,7 +149,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
                 _mob.GameMapConfigId = backupMapId;
                 _mob.Id = backupId;
                 _mob.RespawnInterval = backupRespawn;
-                _mob.Class = 4;
+                _mob.Class = 8;
                 _mob.Duration = backupDuration;
                 _mob.Round = backupRound;
             }
@@ -183,7 +182,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
 
                 StateHasChanged();
 
-                Logger.Information("Updating mob id {id}", _mob.Id);
+                Logger.Information("Updating raid id {id}", _mob.Id);
 
                 _mob.DropReward.Drops.RemoveAll(x => x.ItemInfo == null);
                 _mob.DropReward.Drops.ForEach(drop =>
@@ -203,14 +202,14 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
 
                 await Sender.Send(new DeleteEventMobCommand(_mob.Id));
 
-                Logger.Information("Mob id {id} update", _mob.Id);
+                Logger.Information("Raid id {id} update", _mob.Id);
 
-                Toast.Add("Mob updated successfully.", Severity.Success);
+                Toast.Add("Raid updated successfully.", Severity.Success);
             }
             catch (Exception ex)
             {
-                Logger.Error("Error updating mob with id {id}: {ex}", _mob.Id, ex.Message);
-                Toast.Add("Unable to update mob, try again later.", Severity.Error);
+                Logger.Error("Error updating raid with id {id}: {ex}", _mob.Id, ex.Message);
+                Toast.Add("Unable to update raid, try again later.", Severity.Error);
             }
             finally
             {
@@ -225,7 +224,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
         private void Return()
         {
             if (_mapId > 0)
-                Nav.NavigateTo($"/events/{_eventId}/maps/{_mapId}/mobs");
+                Nav.NavigateTo($"/events/{_eventId}/maps/{_mapId}/raids");
             else
                 Nav.NavigateTo($"/events/{_eventId}/maps");
         }

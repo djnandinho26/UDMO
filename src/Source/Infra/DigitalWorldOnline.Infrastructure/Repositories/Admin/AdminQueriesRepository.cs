@@ -1070,7 +1070,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
 
             return result;
         }
-        
+
         public async Task<GetEventMobByIdQueryDto> GetEventMobByIdAsync(long id)
         {
             var result = new GetEventMobByIdQueryDto();
@@ -1084,6 +1084,69 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                 .Include(x => x.DropReward)
                 .ThenInclude(y => y.BitsDrop)
                 .SingleOrDefaultAsync(x => x.Id == id);
+
+            return result;
+        }
+
+        public async Task<GetEventRaidsQueryDto> GetEventRaidsAsync(long mapId, int limit, int offset,
+            string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
+        {
+            var result = new GetEventRaidsQueryDto();
+
+            if (string.IsNullOrEmpty(sortColumn))
+                sortColumn = "Id";
+
+            if (filter?.Length < 3)
+                filter = string.Empty;
+
+            if (sortDirection == SortDirectionEnum.None)
+                sortDirection = SortDirectionEnum.Desc;
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                result.TotalRegisters = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Where(x => x.EventMapConfigId == mapId && x.Class == 8 &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .CountAsync();
+
+                result.Registers = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Include(x => x.Location)
+                    .Include(x => x.ExpReward)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.Drops)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.BitsDrop)
+                    .Where(x => x.EventMapConfigId == mapId && x.Class == 8 &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
+            else
+            {
+                result.TotalRegisters = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Where(x => x.EventMapConfigId == mapId)
+                    .CountAsync();
+
+                result.Registers = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Include(x => x.Location)
+                    .Include(x => x.ExpReward)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.Drops)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.BitsDrop)
+                    .Where(x => x.EventMapConfigId == mapId && x.Class == 8)
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
 
             return result;
         }

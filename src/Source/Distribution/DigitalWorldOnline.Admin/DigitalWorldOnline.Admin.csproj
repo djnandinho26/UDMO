@@ -74,6 +74,11 @@
 	  <AdditionalFiles Include="Pages\Events\Maps\Mobs\MobDuplicate.razor" />
 	  <AdditionalFiles Include="Pages\Events\Maps\Mobs\Mobs.razor" />
 	  <AdditionalFiles Include="Pages\Events\Maps\Mobs\MobUpdate.razor" />
+	  <AdditionalFiles Include="Pages\Events\Maps\Raids\RaidCreation.razor" />
+	  <AdditionalFiles Include="Pages\Events\Maps\Raids\RaidDelete.razor" />
+	  <AdditionalFiles Include="Pages\Events\Maps\Raids\RaidDuplicate.razor" />
+	  <AdditionalFiles Include="Pages\Events\Maps\Raids\Raids.razor" />
+	  <AdditionalFiles Include="Pages\Events\Maps\Raids\RaidUpdate.razor" />
 	</ItemGroup>
 	
 	<ItemGroup>

@@ -15,27 +15,24 @@ using System.Threading.Tasks;
 using DigitalWorldOnline.Commons.DTOs.Config.Events;
 using DigitalWorldOnline.Commons.ViewModel.Events;
 
-namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
+namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Raids
 {
-    public partial class MobUpdate
+    public partial class RaidCreation
     {
         private MudAutocomplete<EventMobAssetViewModel> _selectedMobAsset;
         private MudAutocomplete<ItemAssetViewModel> _selectedItemAsset;
 
-        EventMobUpdateViewModel _mob = new EventMobUpdateViewModel();
+        EventMobCreationViewModel _mob = new EventMobCreationViewModel();
         bool Loading = false;
+        string _mapName;
         long _eventId;
         long _mapId;
-        long _id;
 
         [Parameter]
         public string EventId { get; set; }
 
         [Parameter]
         public string MapId { get; set; }
-
-        [Parameter]
-        public string MobId { get; set; }
 
         [Inject]
         public NavigationManager Nav { get; set; }
@@ -55,31 +52,21 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
         protected override async Task OnInitializedAsync()
         {
             await base.OnInitializedAsync();
-            
-            long.TryParse(EventId, out _eventId);
-            
-            long.TryParse(MapId, out _mapId);
-            
-            if (long.TryParse(MobId, out _id))
-            {
-                Logger.Information("Searching mob by id {id}", _id);
 
-                var target = await Sender.Send(
-                    new GetEventMobByIdQuery(_id)
+            long.TryParse(EventId, out _eventId);
+
+            if (long.TryParse(MapId, out _mapId))
+            {
+                Logger.Information("Searching raids by map id {id}", _mapId);
+
+                var targetMap = await Sender.Send(
+                    new GetEventMapByIdQuery(_mapId)
                 );
 
-                if (target.Register == null)
-                    _id = 0;
+                if (targetMap.Register == null)
+                    _mapId = 0;
                 else
-                {
-                    _mapId = target.Register.EventMapConfigId;
-                    _mob = Mapper.Map<EventMobUpdateViewModel>(target.Register);
-                    _mob.DropReward?.Drops.ForEach(async drop =>
-                    {
-                        var itemInfoQuery = await Sender.Send(new GetItemAssetByIdQuery(drop.ItemId));
-                        drop.ItemInfo = Mapper.Map<ItemAssetViewModel>(itemInfoQuery.Register);
-                    });
-                }
+                    _mapName = targetMap.Register.Map.Name;
             }
         }
 
@@ -87,16 +74,16 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
         {
             await base.OnAfterRenderAsync(firstRender);
 
-            if (_id == 0)
+            if (_mapId == 0)
             {
-                Logger.Information("Invalid mob id parameter: {parameter}", MobId);
-                Toast.Add("Mob not found, try again later.", Severity.Warning);
+                Logger.Information("Invalid map id parameter: {parameter}", MapId);
+                Toast.Add("Map not found, try again later.", Severity.Warning);
 
                 Return();
             }
         }
 
-        private async Task<IEnumerable<EventMobAssetViewModel>> GetMobAssets(string value)
+        private async Task<IEnumerable<EventMobAssetViewModel>> GetRaidAssets(string value)
         {
             if (string.IsNullOrEmpty(value) || value.Length < 3)
             {
@@ -105,7 +92,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
                     _selectedMobAsset.Clear();
                 }
 
-                return new EventMobAssetViewModel[0];
+                return Array.Empty<EventMobAssetViewModel>();
             }
 
             var assets = await Sender.Send(new GetMobAssetQuery(value));
@@ -122,7 +109,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
                     _selectedItemAsset.Clear();
                 }
 
-                return new ItemAssetViewModel[0];
+                return Array.Empty<ItemAssetViewModel>();
             }
 
             var assets = await Sender.Send(new GetItemAssetQuery(value));
@@ -137,20 +124,16 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
                 var backupExp = _mob.ExpReward;
                 var backupLocation = _mob.Location;
                 var backupDrop = _mob.DropReward;
-                var backupMapId = _mob.GameMapConfigId;
-                var backupId = _mob.Id;
-                var backupRespawn = _mob.RespawnInterval;
+                var backupSpawn = _mob.RespawnInterval;
                 var backupDuration = _mob.Duration;
                 var backupRound = _mob.Round;
 
-                _mob = Mapper.Map<EventMobUpdateViewModel>(_selectedMobAsset.Value);
+                _mob = Mapper.Map<EventMobCreationViewModel>(_selectedMobAsset.Value);
                 _mob.ExpReward = backupExp;
                 _mob.Location = backupLocation;
                 _mob.DropReward = backupDrop;
-                _mob.GameMapConfigId = backupMapId;
-                _mob.Id = backupId;
-                _mob.RespawnInterval = backupRespawn;
-                _mob.Class = 4;
+                _mob.RespawnInterval = backupSpawn > 5 ? backupSpawn : 5;
+                _mob.Class = 8;
                 _mob.Duration = backupDuration;
                 _mob.Round = backupRound;
             }
@@ -160,7 +143,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
 
         private void AddDrop()
         {
-            if (_mob.DropReward.Drops.Any())
+            if(_mob.DropReward.Drops.Any())
                 _mob.DropReward.Drops.Add(new MobItemDropViewModel(_mob.DropReward.Drops.Max(x => x.Id)));
             else
                 _mob.DropReward.Drops.Add(new MobItemDropViewModel());
@@ -175,42 +158,39 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
             StateHasChanged();
         }
 
-        private async Task Update()
+        private async Task Create()
         {
+            if (_mob.Empty)
+                return;
+
             try
             {
                 Loading = true;
 
                 StateHasChanged();
 
-                Logger.Information("Updating mob id {id}", _mob.Id);
+                Logger.Information("Creating new raid with type {type}", _mob.Type);
 
                 _mob.DropReward.Drops.RemoveAll(x => x.ItemInfo == null);
+
                 _mob.DropReward.Drops.ForEach(drop =>
                 {
                     drop.ItemId = drop.ItemInfo.ItemId;
                 });
 
                 var newMob = Mapper.Map<EventMobConfigDTO>(_mob);
-                newMob.Id = 0;
-                newMob.Location.Id = 0;
-                newMob.ExpReward.Id = 0;
-                newMob.DropReward.Id = 0;
-                newMob.DropReward.BitsDrop.Id = 0;
-                newMob.DropReward.Drops.ForEach(drop => { drop.Id = 0; });
+                newMob.EventMapConfigId = _mapId;
 
                 await Sender.Send(new CreateEventMobCommand(newMob));
 
-                await Sender.Send(new DeleteEventMobCommand(_mob.Id));
+                Logger.Information("Raid created with type {type}", _mob.Type);
 
-                Logger.Information("Mob id {id} update", _mob.Id);
-
-                Toast.Add("Mob updated successfully.", Severity.Success);
+                Toast.Add("Raid created successfully.", Severity.Success);
             }
             catch (Exception ex)
             {
-                Logger.Error("Error updating mob with id {id}: {ex}", _mob.Id, ex.Message);
-                Toast.Add("Unable to update mob, try again later.", Severity.Error);
+                Logger.Error("Error creating raid with type {type}: {ex}", _mob.Type, ex.Message);
+                Toast.Add("Unable to create raid, try again later.", Severity.Error);
             }
             finally
             {
@@ -225,7 +205,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
         private void Return()
         {
             if (_mapId > 0)
-                Nav.NavigateTo($"/events/{_eventId}/maps/{_mapId}/mobs");
+                Nav.NavigateTo($"/events/{_eventId}/maps/{_mapId}/raids");
             else
                 Nav.NavigateTo($"/events/{_eventId}/maps");
         }
