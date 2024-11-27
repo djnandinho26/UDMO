@@ -48,7 +48,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events
 
         private void ViewMaps(long id)
         {
-            Nav.NavigateTo($"/events/maps/{id}");
+            Nav.NavigateTo($"/events/{id}/maps");
         }
 
         private void Create()

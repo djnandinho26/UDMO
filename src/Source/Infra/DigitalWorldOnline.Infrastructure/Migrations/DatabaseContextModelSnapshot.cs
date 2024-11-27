@@ -2189,6 +2189,9 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                     b.Property<byte>("RegionIndex")
                         .HasColumnType("tinyint");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.ToTable("Map", "Asset");
@@ -4402,6 +4405,11 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<byte>("Rounds")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint")
+                        .HasDefaultValue((byte)1);
+
                     b.Property<int>("StartDay")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
@@ -4541,6 +4549,11 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                     b.Property<DateTime?>("DeathTime")
                         .HasColumnType("datetime");
 
+                    b.Property<int>("Duration")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<int>("EVValue")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
@@ -4614,6 +4627,11 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
 
                     b.Property<DateTime?>("ResurrectionTime")
                         .HasColumnType("datetime");
+
+                    b.Property<byte>("Round")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint")
+                        .HasDefaultValue((byte)1);
 
                     b.Property<int>("Type")
                         .HasColumnType("int");
@@ -4833,7 +4851,7 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         new
                         {
                             Id = 1L,
-                            CreatedAt = new DateTime(2024, 11, 25, 2, 9, 44, 323, DateTimeKind.Local).AddTicks(8133),
+                            CreatedAt = new DateTime(2024, 11, 27, 4, 59, 33, 891, DateTimeKind.Local).AddTicks(756),
                             Hash = "pMgM+NOH0Z+RwR9F1iFVOOwKrW1iDaifx4jWDnH1Dbo="
                         });
                 });
@@ -6514,10 +6532,10 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
                         {
                             Id = 1L,
                             Active = true,
-                            CreatedAt = new DateTime(2024, 11, 25, 2, 9, 44, 337, DateTimeKind.Local).AddTicks(1554),
+                            CreatedAt = new DateTime(2024, 11, 27, 4, 59, 33, 902, DateTimeKind.Local).AddTicks(3651),
                             Interval = 1,
                             Name = "Daily Quests",
-                            NextRunTime = new DateTime(2024, 11, 26, 0, 0, 0, 0, DateTimeKind.Local),
+                            NextRunTime = new DateTime(2024, 11, 28, 0, 0, 0, 0, DateTimeKind.Local),
                             Type = 1
                         });
                 });

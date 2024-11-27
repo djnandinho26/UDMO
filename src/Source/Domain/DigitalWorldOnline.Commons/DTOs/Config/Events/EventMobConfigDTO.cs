@@ -46,6 +46,11 @@ namespace DigitalWorldOnline.Commons.DTOs.Config.Events
         public int Class { get; set; }
 
         /// <summary>
+        /// Monster coliseum Round
+        /// </summary>
+        public byte Round { get; set; }
+
+        /// <summary>
         /// Mob reaction type.
         /// </summary>
         public DigimonReactionTypeEnum ReactionType { get; set; }
@@ -79,6 +84,11 @@ namespace DigitalWorldOnline.Commons.DTOs.Config.Events
         /// Respawn interval in seconds.
         /// </summary>
         public int RespawnInterval { get; set; }
+
+        /// <summary>
+        /// Monster spawn duration.
+        /// </summary>
+        public int Duration { get; set; }
 
         /// <summary>
         /// Initial location.

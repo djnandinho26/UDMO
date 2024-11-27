@@ -25,6 +25,12 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Config.Events
 
             builder.Property(e => e.IsEnabled)
                 .IsRequired();
+            
+            builder
+                .Property(e => e.Rounds)
+                .HasColumnType("tinyint")
+                .HasDefaultValue(1)
+                .IsRequired();
 
             builder.Property(e => e.StartDay)
                 .HasConversion(new ValueConverter<EventStartDayEnum, int>(

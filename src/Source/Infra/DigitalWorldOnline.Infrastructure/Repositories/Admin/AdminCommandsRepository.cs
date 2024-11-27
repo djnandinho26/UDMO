@@ -120,8 +120,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             {
                 _context.RemoveRange(
                     await _context.Character
-                    .Where(x => x.AccountId == id)
-                    .ToListAsync()
+                        .Where(x => x.AccountId == id)
+                        .ToListAsync()
                 );
 
                 _context.Remove(dto);
@@ -238,9 +238,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                 .Include(x => x.Location)
                 .Include(x => x.ExpReward)
                 .Include(x => x.DropReward)
-                    .ThenInclude(y => y.Drops)
+                .ThenInclude(y => y.Drops)
                 .Include(x => x.DropReward)
-                    .ThenInclude(y => y.BitsDrop)
+                .ThenInclude(y => y.BitsDrop)
                 .SingleOrDefaultAsync(x => x.Id == id);
 
             if (dto != null)
@@ -522,7 +522,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             }
         }
 
-        public async Task<AccountCreateResult> CreateAccountAsync(string username, string email, string discordId, string password)
+        public async Task<AccountCreateResult> CreateAccountAsync(string username, string email, string discordId,
+            string password)
         {
             var existentAccount = await _context.Account
                 .FirstOrDefaultAsync(x =>
@@ -586,6 +587,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                 dto.IsEnabled = eventConfig.IsEnabled;
                 dto.StartDay = eventConfig.StartDay;
                 dto.StartsAt = eventConfig.StartsAt;
+                dto.Rounds = eventConfig.Rounds;
 
                 _context.Update(dto);
 
@@ -593,6 +595,130 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             }
         }
 
-        
+        public async Task<EventMapsConfigDTO> AddEventMapConfigAsync(EventMapsConfigDTO eventMapConfig)
+        {
+            _context.EventMapsConfig.Add(eventMapConfig);
+
+            await _context.SaveChangesAsync();
+
+            return eventMapConfig;
+        }
+
+        public async Task DeleteEventMapConfigAsync(long id)
+        {
+            var dto = await _context.EventMapsConfig
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            if (dto != null)
+            {
+                _context.Remove(dto);
+
+                _context.SaveChanges();
+            }
+        }
+
+        public async Task UpdateEventMapConfigAsync(EventMapsConfigDTO eventMapConfig)
+        {
+            var dto = await _context.EventMapsConfig
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == eventMapConfig.Id);
+
+            if (dto != null)
+            {
+                dto.MapId = eventMapConfig.MapId;
+                dto.Channels = eventMapConfig.Channels;
+                dto.IsEnabled = eventMapConfig.IsEnabled;
+
+                _context.Update(dto);
+
+                _context.SaveChanges();
+            }
+        }
+
+        public async Task<EventMobConfigDTO> AddEventMobAsync(EventMobConfigDTO mob)
+        {
+            var targetMap = await _context.EventMapsConfig
+                .SingleAsync(x => x.Id == mob.EventMapConfigId);
+
+            mob.Location.MapId = (short)targetMap.MapId;
+            mob.DropReward?.Drops.ForEach(drop => drop.Id = 0);
+
+            _context.EventMobConfig.Add(mob);
+            await _context.SaveChangesAsync();
+
+            return mob;
+        }
+
+        public async Task DeleteEventMapMobsAsync(long id)
+        {
+            var dto = await _context.EventMapsConfig
+                .AsNoTracking()
+                .Include(x => x.Mobs)
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            if (dto != null)
+            {
+                _context.RemoveRange(dto.Mobs);
+
+                _context.SaveChanges();
+            }
+        }
+
+        public async Task DeleteEventMobAsync(long id)
+        {
+            var dto = await _context.EventMobConfig
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            if (dto != null)
+            {
+                _context.Remove(dto);
+
+                _context.SaveChanges();
+            }
+        }
+
+        public async Task DuplicateEventMobAsync(long id)
+        {
+            var dto = await _context.EventMobConfig
+                .AsNoTracking()
+                .Include(x => x.Location)
+                .Include(x => x.ExpReward)
+                .Include(x => x.DropReward)
+                .ThenInclude(y => y.Drops)
+                .Include(x => x.DropReward)
+                .ThenInclude(y => y.BitsDrop)
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            if (dto != null)
+            {
+                var clonedEntity = (EventMobConfigDTO)dto.Clone();
+                clonedEntity.Id = 0;
+
+                if (clonedEntity.Location == null)
+                    clonedEntity.Location = new EventMobLocationConfigDTO();
+                else
+                    clonedEntity.Location.Id = 0;
+
+                if (clonedEntity.ExpReward == null)
+                    clonedEntity.ExpReward = new EventMobExpRewardConfigDTO();
+                else
+                    clonedEntity.ExpReward.Id = 0;
+
+                if (clonedEntity.DropReward == null)
+                    clonedEntity.DropReward = new EventMobDropRewardConfigDTO();
+                else
+                {
+                    clonedEntity.DropReward.Id = 0;
+                    clonedEntity.DropReward.Drops.ToList().ForEach(drop => drop.Id = 0);
+                    clonedEntity.DropReward.BitsDrop.Id = 0;
+                }
+
+                _context.Add(clonedEntity);
+
+                _context.SaveChanges();
+            }
+        }
     }
 }

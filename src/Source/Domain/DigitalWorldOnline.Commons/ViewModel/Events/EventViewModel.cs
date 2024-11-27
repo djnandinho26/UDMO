@@ -25,8 +25,13 @@ namespace DigitalWorldOnline.Commons.ViewModel.Events
         /// </summary>
         public bool IsEnabled { get; set; }
 
+        /// <summary>
+        /// Monster coliseum Round
+        /// </summary>
+        public byte Rounds { get; set; }
+
         public EventStartDayEnum StartDay { get; set; } = EventStartDayEnum.Everyday;
-        public TimeSpan StartsAt { get; set; }
+        public TimeSpan? StartsAt { get; set; } = new TimeSpan(00, 00, 00);
         public List<EventMapViewModel> EventMaps { get; set; }
     }
 }

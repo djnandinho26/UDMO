@@ -18,6 +18,11 @@ namespace DigitalWorldOnline.Commons.DTOs.Config.Events
         /// Description
         /// </summary>
         public string Description { get; set; }
+        
+        /// <summary>
+        /// Monster coliseum Round
+        /// </summary>
+        public byte Rounds { get; set; }
 
         /// <summary>
         /// Indicates if the map is enabled.
@@ -28,7 +33,7 @@ namespace DigitalWorldOnline.Commons.DTOs.Config.Events
         /// Specifies the day of the week on which the event starts.
         /// </summary>
         public EventStartDayEnum StartDay { get; set; } = EventStartDayEnum.Everyday;
-
+        
         /// <summary>
         /// Duration of time from the start.
         /// </summary>

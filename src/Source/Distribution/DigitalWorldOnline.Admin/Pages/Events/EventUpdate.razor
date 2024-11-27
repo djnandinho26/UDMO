@@ -42,7 +42,18 @@
                     <MudCheckBox @bind-Checked="_event.IsEnabled"
                                  Label="Is Enabled"/>
                 </MudItem>
+                
                 <MudItem xs="6" xl="6" sm="6">
+                    <MudNumericField @bind-Value="_event.Rounds"
+                                     For="@(() => _event.Rounds)"
+                                     Label="Round"
+                                     T="byte"
+                                     Variant="Variant.Outlined"
+                                     Required
+                                     RequiredError="Required"
+                                     Min="0"
+                                     Max="byte.MaxValue">
+                    </MudNumericField>
                 </MudItem>
                 <MudItem xs="6" xl="6" sm="6">
                     <MudSelect Required RequiredError="Required" T="EventStartDayEnum" @bind-Value="_event.StartDay">
@@ -59,8 +70,8 @@
                 </MudItem>
 
                 <MudItem xs="6" xl="6" sm="6">
-                    <MudTimePicker @bind-Value="_event.StartsAt" Label="StartHour"
-                                   T="hour" Variant="Variant.Outlined" Required RequiredError="Required"/>
+                    <MudTimePicker @bind-Time="_event.StartsAt" Label="Start Hour"
+                                   Variant="Variant.Outlined" Required RequiredError="Required"/>
                 </MudItem>
 
                 <MudItem xs="12" xl="12" sm="12">
@@ -68,8 +79,12 @@
 
                 <MudItem xs="12" xl="12" sm="12">
                     <MudStack Row="true" Spacing="2">
-                        <MudButton Color="Color.Primary" Variant="Variant.Filled" ButtonType="ButtonType.Submit">Save changes</MudButton>
-                        <MudButton Color="Color.Inherit" Variant="Variant.Filled" ButtonType="ButtonType.Button" OnClick="Return">Return</MudButton>
+                        <MudButton Color="Color.Primary" Variant="Variant.Filled" ButtonType="ButtonType.Submit">Save
+                            changes
+                        </MudButton>
+                        <MudButton Color="Color.Inherit" Variant="Variant.Filled" ButtonType="ButtonType.Button"
+                                   OnClick="Return">Return
+                        </MudButton>
                     </MudStack>
                 </MudItem>
             </MudGrid>

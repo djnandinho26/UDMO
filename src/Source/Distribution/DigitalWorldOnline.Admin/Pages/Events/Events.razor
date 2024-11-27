@@ -59,6 +59,12 @@
             <MudTableSortLabel Enabled="false" T="EventViewModel"><b>Maps</b></MudTableSortLabel>
         </MudTh>
         <MudTh>
+            <MudTableSortLabel SortLabel="Enabled" T="EventViewModel"><b>Enabled</b></MudTableSortLabel>
+        </MudTh>
+        <MudTh>
+            <MudTableSortLabel SortLabel="Rounds" T="EventViewModel"><b>Rounds</b></MudTableSortLabel>
+        </MudTh>
+        <MudTh>
             <MudTableSortLabel Enabled="false" T="EventViewModel"><b>Actions</b></MudTableSortLabel>
         </MudTh>
     </HeaderContent>
@@ -66,8 +72,10 @@
         <MudTd DataLabel="EventId">@context.Id</MudTd>
         <MudTd DataLabel="Email">@context.Name</MudTd>
         <MudTd DataLabel="Mobs">@context.EventMaps.Count</MudTd>
+        <MudTd DataLabel="Enabled">@((context.IsEnabled) ? "Yes" : "No")</MudTd>
+        <MudTd DataLabel="Rounds">@context.Rounds</MudTd>
         <MudTd>
-            <MudIconButton Icon="@Icons.Material.Filled.Map" OnClick="@(() => ViewMaps(context.Id))" Title="Spawn Points" Size="Size.Small"></MudIconButton>
+            <MudIconButton Icon="@Icons.Material.Filled.Map" OnClick="@(() => ViewMaps(context.Id))" Title="View Maps" Size="Size.Small"></MudIconButton>
             <MudIconButton Icon="@Icons.Material.Filled.Edit" OnClick="@(() => Update(context.Id))" Title="Update" Size="Size.Small"></MudIconButton>
             <MudIconButton Icon="@Icons.Material.Filled.Delete" OnClick="@(() => Delete(context.Id))" Title="Delete" Size="Size.Small"></MudIconButton>
         </MudTd>

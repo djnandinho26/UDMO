@@ -27,6 +27,8 @@ namespace DigitalWorldOnline.Infrastructure
         public DbSet<EventConfigDTO> EventConfig { get; set; }
         
         public DbSet<EventMapsConfigDTO> EventMapsConfig { get; set; }
+        
+        public DbSet<EventMobConfigDTO> EventMobConfig { get; set; }
 
         internal static void ConfigEntityConfiguration(ModelBuilder builder)
         {

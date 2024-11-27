@@ -62,5 +62,19 @@ namespace DigitalWorldOnline.Application.Admin.Repositories
         Task<GetEventsQueryDto> GetEventsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
         
         Task<GetEventConfigByIdQueryDto> GetEventConfigByIdAsync(long id);
+        
+        Task<GetEventMapsQueryDto> GetEventMapsAsync(long eventId, int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
+
+        Task<GetEventMapMobsQueryDto> GetEventMapMobsAsync(long mapId, int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
+
+        Task<GetEventMapMobByIdQueryDto> GetEventMapMobByIdAsync(long id);
+
+        Task<GetEventMapRaidsQueryDto> GetEventMapRaidsAsync(long mapId, int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
+        
+        Task<GetEventMapByIdQueryDto> GetEventMapByIdAsync(long id);
+        
+        Task<GetMapConfigQueryDto> GetMapConfigAsync(string filter);
+
+        Task<GetEventMobByIdQueryDto> GetEventMobByIdAsync(long id);
     }
 }

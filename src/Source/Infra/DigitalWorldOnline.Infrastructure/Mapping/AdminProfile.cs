@@ -3,10 +3,12 @@ using DigitalWorldOnline.Commons.DTOs.Account;
 using DigitalWorldOnline.Commons.DTOs.Assets;
 using DigitalWorldOnline.Commons.DTOs.Character;
 using DigitalWorldOnline.Commons.DTOs.Config;
+using DigitalWorldOnline.Commons.DTOs.Config.Events;
 using DigitalWorldOnline.Commons.DTOs.Server;
 using DigitalWorldOnline.Commons.ViewModel.Accounts;
 using DigitalWorldOnline.Commons.ViewModel.Clones;
 using DigitalWorldOnline.Commons.ViewModel.Containers;
+using DigitalWorldOnline.Commons.ViewModel.Events;
 using DigitalWorldOnline.Commons.ViewModel.Hatchs;
 using DigitalWorldOnline.Commons.ViewModel.Maps;
 using DigitalWorldOnline.Commons.ViewModel.Mobs;
@@ -47,6 +49,27 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
                 .ReverseMap();
 
             CreateMap<BitsDropConfigDTO, MobBitDropViewModel>()
+                .ReverseMap();
+
+            CreateMap<EventMapsConfigDTO, EventMapViewModel>()
+                .ForMember(dest => dest.MobsCount, x => x.MapFrom(src => src.Mobs.Count));
+
+            CreateMap<EventMobConfigDTO, MobViewModel>()
+                .ReverseMap();
+
+            CreateMap<EventMobLocationConfigDTO, MobLocationViewModel>()
+                .ReverseMap();
+
+            CreateMap<EventMobExpRewardConfigDTO, MobExpRewardViewModel>()
+                .ReverseMap();
+
+            CreateMap<EventMobDropRewardConfigDTO, MobDropRewardViewModel>()
+                .ReverseMap();
+
+            CreateMap<EventItemDropConfigDTO, MobItemDropViewModel>()
+                .ReverseMap();
+
+            CreateMap<EventBitsDropConfigDTO, MobBitDropViewModel>()
                 .ReverseMap();
 
             CreateMap<MapRegionAssetDTO, SpawnPointViewModel>()

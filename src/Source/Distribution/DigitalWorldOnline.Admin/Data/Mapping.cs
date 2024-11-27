@@ -34,7 +34,7 @@ namespace DigitalWorldOnline.Admin.Data
             CreateMap<ItemAssetDTO, ItemAssetViewModel>();
             CreateMap<MobConfigDTO, MobUpdateViewModel>()
                 .ReverseMap();
-            
+
             CreateMap<EventViewModel, EventConfigDTO>()
                 .ReverseMap();
 
@@ -50,6 +50,14 @@ namespace DigitalWorldOnline.Admin.Data
             CreateMap<EventMobConfigModel, EventMobConfigDTO>()
                 .ReverseMap();
 
+            CreateMap<EventMobCreationViewModel, EventMobConfigDTO>();
+            
+            CreateMap<EventMobAssetViewModel, EventMobConfigModel>()
+                .ForMember(dest => dest.ExpReward, opt => opt.Ignore())
+                .ForMember(dest => dest.Location, opt => opt.Ignore())
+                .ForMember(dest => dest.DropReward, opt => opt.Ignore())
+                .ForMember(dest => dest.Duration, opt => opt.Ignore());
+
             CreateMap<EventMobDropRewardConfigModel, EventMobDropRewardConfigDTO>()
                 .ReverseMap();
 
@@ -58,6 +66,8 @@ namespace DigitalWorldOnline.Admin.Data
 
             CreateMap<EventMobLocationConfigModel, EventMobLocationConfigDTO>()
                 .ReverseMap();
+
+            CreateMap<MapConfigDTO, MapConfigViewModel>();
         }
     }
 }

@@ -48,8 +48,21 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Config.Events
                 .IsRequired();
 
             builder
+                .Property(e => e.Duration)
+                .HasColumnType("int")
+                .HasDefaultValue(0)
+                .IsRequired();
+
+            builder
                 .Property(e => e.Class)
                 .HasColumnType("int")
+                .IsRequired();
+            
+
+            builder
+                .Property(e => e.Round)
+                .HasColumnType("tinyint")
+                .HasDefaultValue(1)
                 .IsRequired();
 
             builder

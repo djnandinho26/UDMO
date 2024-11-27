@@ -4,6 +4,7 @@ using DigitalWorldOnline.Commons.DTOs.Assets;
 using DigitalWorldOnline.Commons.Enums.Admin;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
+using DigitalWorldOnline.Commons.Enums;
 
 namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
 {
@@ -27,7 +28,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetAccountsQueryDto> GetAccountsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetAccountsQueryDto> GetAccountsAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetAccountsQueryDto();
 
@@ -72,7 +74,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetMapsQueryDto> GetMapsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetMapsQueryDto> GetMapsAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetMapsQueryDto();
 
@@ -119,7 +122,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetMobsQueryDto> GetMobsAsync(long mapId, int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetMobsQueryDto> GetMobsAsync(long mapId, int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetMobsQueryDto();
 
@@ -136,7 +140,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             {
                 result.TotalRegisters = await _context.MobConfig
                     .AsNoTracking()
-                    .Where(x => x.GameMapConfigId == mapId && (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .Where(x => x.GameMapConfigId == mapId &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
                     .CountAsync();
 
                 result.Registers = await _context.MobConfig
@@ -144,10 +149,11 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                     .Include(x => x.Location)
                     .Include(x => x.ExpReward)
                     .Include(x => x.DropReward)
-                        .ThenInclude(y => y.Drops)
+                    .ThenInclude(y => y.Drops)
                     .Include(x => x.DropReward)
-                        .ThenInclude(y => y.BitsDrop)
-                    .Where(x => x.GameMapConfigId == mapId && (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .ThenInclude(y => y.BitsDrop)
+                    .Where(x => x.GameMapConfigId == mapId &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
                     .Skip(offset)
                     .Take(limit)
                     .OrderBy($"{sortColumn} {sortDirection}")
@@ -165,9 +171,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                     .Include(x => x.Location)
                     .Include(x => x.ExpReward)
                     .Include(x => x.DropReward)
-                        .ThenInclude(y => y.Drops)
+                    .ThenInclude(y => y.Drops)
                     .Include(x => x.DropReward)
-                        .ThenInclude(y => y.BitsDrop)
+                    .ThenInclude(y => y.BitsDrop)
                     .Where(x => x.GameMapConfigId == mapId)
                     .Skip(offset)
                     .Take(limit)
@@ -178,7 +184,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetRaidsQueryDto> GetRaidsAsync(long mapId, int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetRaidsQueryDto> GetRaidsAsync(long mapId, int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetRaidsQueryDto();
 
@@ -195,7 +202,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             {
                 result.TotalRegisters = await _context.MobConfig
                     .AsNoTracking()
-                    .Where(x => x.GameMapConfigId == mapId && x.Class == 8 && (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .Where(x => x.GameMapConfigId == mapId && x.Class == 8 &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
                     .CountAsync();
 
                 result.Registers = await _context.MobConfig
@@ -203,10 +211,11 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                     .Include(x => x.Location)
                     .Include(x => x.ExpReward)
                     .Include(x => x.DropReward)
-                        .ThenInclude(y => y.Drops)
+                    .ThenInclude(y => y.Drops)
                     .Include(x => x.DropReward)
-                        .ThenInclude(y => y.BitsDrop)
-                    .Where(x => x.GameMapConfigId == mapId && x.Class == 8 && (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .ThenInclude(y => y.BitsDrop)
+                    .Where(x => x.GameMapConfigId == mapId && x.Class == 8 &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
                     .Skip(offset)
                     .Take(limit)
                     .OrderBy($"{sortColumn} {sortDirection}")
@@ -224,9 +233,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                     .Include(x => x.Location)
                     .Include(x => x.ExpReward)
                     .Include(x => x.DropReward)
-                        .ThenInclude(y => y.Drops)
+                    .ThenInclude(y => y.Drops)
                     .Include(x => x.DropReward)
-                        .ThenInclude(y => y.BitsDrop)
+                    .ThenInclude(y => y.BitsDrop)
                     .Where(x => x.GameMapConfigId == mapId && x.Class == 8)
                     .Skip(offset)
                     .Take(limit)
@@ -259,7 +268,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetServersQueryDto> GetServersAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetServersQueryDto> GetServersAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetServersQueryDto();
 
@@ -315,7 +325,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetUsersQueryDto> GetUsersAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string filter)
+        public async Task<GetUsersQueryDto> GetUsersAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string filter)
         {
             var result = new GetUsersQueryDto();
 
@@ -350,7 +361,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetSummonsQueryDto> GetSummonsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string filter)
+        public async Task<GetSummonsQueryDto> GetSummonsAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string filter)
         {
             var result = new GetSummonsQueryDto();
 
@@ -367,13 +379,15 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             {
                 result.TotalRegisters = await _context.SummonsConfig.AsNoTracking().CountAsync();
 
-                result.Registers = await _context.SummonsConfig.AsNoTracking().Skip(offset).Take(limit).OrderBy($"{sortColumn} {sortDirection}").ToListAsync();
+                result.Registers = await _context.SummonsConfig.AsNoTracking().Skip(offset).Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}").ToListAsync();
             }
             else
             {
                 result.TotalRegisters = await _context.SummonsConfig.AsNoTracking().CountAsync();
 
-                result.Registers = await _context.SummonsConfig.AsNoTracking().Skip(offset).Take(limit).OrderBy($"{sortColumn} {sortDirection}").ToListAsync();
+                result.Registers = await _context.SummonsConfig.AsNoTracking().Skip(offset).Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}").ToListAsync();
             }
 
             return result;
@@ -388,9 +402,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                 .Include(x => x.Location)
                 .Include(x => x.ExpReward)
                 .Include(x => x.DropReward)
-                    .ThenInclude(y => y.Drops)
+                .ThenInclude(y => y.Drops)
                 .Include(x => x.DropReward)
-                    .ThenInclude(y => y.BitsDrop)
+                .ThenInclude(y => y.BitsDrop)
                 .SingleOrDefaultAsync(x => x.Id == id);
 
             return result;
@@ -403,8 +417,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             result.Registers = await _context.MonsterBaseInfoAsset
                 .AsNoTracking()
                 .Where(x =>
-                //x.Class != 8 && 
-                (x.Type.ToString().Contains(filter) || x.Name.Contains(filter)))
+                    //x.Class != 8 && 
+                    (x.Type.ToString().Contains(filter) || x.Name.Contains(filter)))
                 .ToListAsync();
 
             return result;
@@ -445,7 +459,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetSpawnPointsQueryDto> GetSpawnPointsAssetAsync(int mapId, int limit, int offset, string sortColumn, SortDirectionEnum sortDirection)
+        public async Task<GetSpawnPointsQueryDto> GetSpawnPointsAssetAsync(int mapId, int limit, int offset,
+            string sortColumn, SortDirectionEnum sortDirection)
         {
             var result = new GetSpawnPointsQueryDto();
 
@@ -487,9 +502,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             var result = new GetSpawnPointByIdQueryDto();
 
             var dto = await _context.MapRegionAsset
-               .AsNoTracking()
-               .Include(x => x.MapRegionList)
-               .SingleOrDefaultAsync(x => x.Id == id);
+                .AsNoTracking()
+                .Include(x => x.MapRegionList)
+                .SingleOrDefaultAsync(x => x.Id == id);
 
             if (dto != null)
             {
@@ -502,7 +517,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetScansQueryDto> GetScansAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetScansQueryDto> GetScansAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetScansQueryDto();
 
@@ -554,14 +570,15 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             var result = new GetScanByIdQueryDto();
 
             result.Register = await _context.ScanDetail
-               .AsNoTracking()
-               .Include(x => x.Rewards)
-               .SingleOrDefaultAsync(x => x.Id == id);
+                .AsNoTracking()
+                .Include(x => x.Rewards)
+                .SingleOrDefaultAsync(x => x.Id == id);
 
             return result;
         }
 
-        public async Task<GetContainersQueryDto> GetContainersAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetContainersQueryDto> GetContainersAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetContainersQueryDto();
 
@@ -613,14 +630,15 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             var result = new GetContainerByIdQueryDto();
 
             result.Register = await _context.Container
-               .AsNoTracking()
-               .Include(x => x.Rewards)
-               .SingleOrDefaultAsync(x => x.Id == id);
+                .AsNoTracking()
+                .Include(x => x.Rewards)
+                .SingleOrDefaultAsync(x => x.Id == id);
 
             return result;
         }
 
-        public async Task<GetClonsQueryDto> GetClonsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetClonsQueryDto> GetClonsAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetClonsQueryDto();
 
@@ -631,8 +649,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                 sortDirection = SortDirectionEnum.Asc;
 
             result.TotalRegisters = await _context.CloneConfig
-                    .AsNoTracking()
-                    .CountAsync();
+                .AsNoTracking()
+                .CountAsync();
 
             result.Registers = await _context.CloneConfig
                 .AsNoTracking()
@@ -649,8 +667,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             var result = new GetClonByIdQueryDto();
 
             result.Register = await _context.CloneConfig
-               .AsNoTracking()
-               .SingleOrDefaultAsync(x => x.Id == id);
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
 
             return result;
         }
@@ -660,13 +678,14 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             var result = new GetHatchConfigByIdQueryDto();
 
             result.Register = await _context.HatchConfig
-               .AsNoTracking()
-               .SingleOrDefaultAsync(x => x.Id == id);
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
 
             return result;
         }
 
-        public async Task<GetHatchConfigsQueryDto> GetHatchConfigsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetHatchConfigsQueryDto> GetHatchConfigsAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetHatchConfigsQueryDto();
 
@@ -690,7 +709,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetPlayersQueryDto> GetPlayersAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        public async Task<GetPlayersQueryDto> GetPlayersAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetPlayersQueryDto();
 
@@ -707,7 +727,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             {
                 result.TotalRegisters = await _context.Character
                     .AsNoTracking()
-                    .Where(x=> x.Id.ToString().Contains(filter) || x.Name.Contains(filter))
+                    .Where(x => x.Id.ToString().Contains(filter) || x.Name.Contains(filter))
                     .CountAsync();
 
                 result.Registers = await _context.Character
@@ -736,7 +756,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
 
             return result;
         }
-        public async Task<GetEventsQueryDto> GetEventsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter)
+
+        public async Task<GetEventsQueryDto> GetEventsAsync(int limit, int offset, string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetEventsQueryDto();
 
@@ -753,7 +775,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             {
                 result.TotalRegisters = await _context.EventConfig
                     .AsNoTracking()
-                    .Where(x => x.Name.Contains(filter) || x.Description.Contains(filter) || x.Id.ToString().Contains(filter))
+                    .Where(x => x.Name.Contains(filter) || x.Description.Contains(filter) ||
+                                x.Id.ToString().Contains(filter))
                     .CountAsync();
 
                 result.Registers = await _context.EventConfig
@@ -774,7 +797,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                     .ThenInclude(y => y.Mobs)
                     .ThenInclude(y => y.DropReward)
                     .ThenInclude(z => z.BitsDrop)
-                    .Where(x => x.Name.Contains(filter) || x.Description.Contains(filter) || x.Id.ToString().Contains(filter))
+                    .Where(x => x.Name.Contains(filter) || x.Description.Contains(filter) ||
+                                x.Id.ToString().Contains(filter))
                     .Skip(offset)
                     .Take(limit)
                     .OrderBy($"{sortColumn} {sortDirection}")
@@ -819,6 +843,246 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
 
             result.Register = await _context.EventConfig
                 .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            return result;
+        }
+
+        public async Task<GetEventMapsQueryDto> GetEventMapsAsync(long eventId, int limit, int offset,
+            string sortColumn,
+            SortDirectionEnum sortDirection, string? filter)
+        {
+            var result = new GetEventMapsQueryDto();
+
+            if (string.IsNullOrEmpty(sortColumn))
+                sortColumn = "Id";
+
+            if (filter?.Length < 3)
+                filter = string.Empty;
+
+            if (sortDirection == SortDirectionEnum.None)
+                sortDirection = SortDirectionEnum.Asc;
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                result.TotalRegisters = await _context.EventMapsConfig
+                    .AsNoTracking()
+                    .Include(x => x.Map)
+                    .Where(x => x.Map.Name.Contains(filter) || x.MapId.ToString().Contains(filter))
+                    .Where(x => x.EventConfigId == eventId)
+                    .CountAsync();
+
+                result.Registers = await _context.EventMapsConfig
+                    .AsNoTracking()
+                    .Include(x => x.Mobs)
+                    .Include(x => x.Map)
+                    .Where(x => x.Map.Name.Contains(filter) || x.MapId.ToString().Contains(filter))
+                    .Where(x => x.EventConfigId == eventId)
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
+            else
+            {
+                result.TotalRegisters = await _context.EventMapsConfig
+                    .AsNoTracking()
+                    .CountAsync();
+
+                result.Registers = await _context.EventMapsConfig
+                    .AsNoTracking()
+                    .Include(x => x.Mobs)
+                    .Include(x => x.Map)
+                    .Where(x => x.EventConfigId == eventId)
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
+
+            return result;
+        }
+
+        public async Task<GetEventMapMobsQueryDto> GetEventMapMobsAsync(long mapId, int limit, int offset,
+            string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        {
+            var result = new GetEventMapMobsQueryDto();
+
+            if (string.IsNullOrEmpty(sortColumn))
+                sortColumn = "Id";
+
+            if (filter?.Length < 3)
+                filter = string.Empty;
+
+            if (sortDirection == SortDirectionEnum.None)
+                sortDirection = SortDirectionEnum.Desc;
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                result.TotalRegisters = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Where(x => x.EventMapConfigId == mapId &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .CountAsync();
+
+                result.Registers = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Include(x => x.Location)
+                    .Include(x => x.ExpReward)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.Drops)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.BitsDrop)
+                    .Where(x => x.EventMapConfigId == mapId &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
+            else
+            {
+                result.TotalRegisters = await _context.MobConfig
+                    .AsNoTracking()
+                    .Where(x => x.GameMapConfigId == mapId)
+                    .CountAsync();
+
+                result.Registers = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Include(x => x.Location)
+                    .Include(x => x.ExpReward)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.Drops)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.BitsDrop)
+                    .Where(x => x.EventMapConfigId == mapId)
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
+
+            return result;
+        }
+
+        public async Task<GetEventMapMobByIdQueryDto> GetEventMapMobByIdAsync(long id)
+        {
+            var result = new GetEventMapMobByIdQueryDto();
+
+            result.Register = await _context.EventMobConfig
+                .AsNoTracking()
+                .Include(x => x.Location)
+                .Include(x => x.ExpReward)
+                .Include(x => x.DropReward)
+                .ThenInclude(y => y.Drops)
+                .Include(x => x.DropReward)
+                .ThenInclude(y => y.BitsDrop)
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            return result;
+        }
+
+        public async Task<GetEventMapRaidsQueryDto> GetEventMapRaidsAsync(long mapId, int limit, int offset,
+            string sortColumn, SortDirectionEnum sortDirection, string? filter)
+        {
+            var result = new GetEventMapRaidsQueryDto();
+
+            if (string.IsNullOrEmpty(sortColumn))
+                sortColumn = "Id";
+
+            if (filter?.Length < 3)
+                filter = string.Empty;
+
+            if (sortDirection == SortDirectionEnum.None)
+                sortDirection = SortDirectionEnum.Desc;
+
+            if (!string.IsNullOrEmpty(filter))
+            {
+                result.TotalRegisters = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Where(x => x.EventMapConfigId == mapId && x.Class == 8 &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .CountAsync();
+
+                result.Registers = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Include(x => x.Location)
+                    .Include(x => x.ExpReward)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.Drops)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.BitsDrop)
+                    .Where(x => x.EventMapConfigId == mapId && x.Class == 8 &&
+                                (x.Name.Contains(filter) || x.Type.ToString().Contains(filter)))
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
+            else
+            {
+                result.TotalRegisters = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Where(x => x.EventMapConfigId == mapId)
+                    .CountAsync();
+
+                result.Registers = await _context.EventMobConfig
+                    .AsNoTracking()
+                    .Include(x => x.Location)
+                    .Include(x => x.ExpReward)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.Drops)
+                    .Include(x => x.DropReward)
+                    .ThenInclude(y => y.BitsDrop)
+                    .Where(x => x.EventMapConfigId == mapId && x.Class == 8)
+                    .Skip(offset)
+                    .Take(limit)
+                    .OrderBy($"{sortColumn} {sortDirection}")
+                    .ToListAsync();
+            }
+
+            return result;
+        }
+
+        public async Task<GetEventMapByIdQueryDto> GetEventMapByIdAsync(long id)
+        {
+            var result = new GetEventMapByIdQueryDto();
+
+            result.Register = await _context.EventMapsConfig
+                .AsNoTracking()
+                .Include(x => x.Map)
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            return result;
+        }
+
+        public async Task<GetMapConfigQueryDto> GetMapConfigAsync(string filter)
+        {
+            var result = new GetMapConfigQueryDto();
+
+            result.Registers = await _context.MapConfig
+                .AsNoTracking()
+                .Where(x =>
+                    x.Type == MapTypeEnum.Event &&
+                    //x.Class != 8 && 
+                    (x.MapId.ToString().Contains(filter) || x.Name.Contains(filter)))
+                .ToListAsync();
+
+            return result;
+        }
+        
+        public async Task<GetEventMobByIdQueryDto> GetEventMobByIdAsync(long id)
+        {
+            var result = new GetEventMobByIdQueryDto();
+
+            result.Register = await _context.EventMobConfig
+                .AsNoTracking()
+                .Include(x => x.Location)
+                .Include(x => x.ExpReward)
+                .Include(x => x.DropReward)
+                .ThenInclude(y => y.Drops)
+                .Include(x => x.DropReward)
+                .ThenInclude(y => y.BitsDrop)
                 .SingleOrDefaultAsync(x => x.Id == id);
 
             return result;

@@ -74,5 +74,19 @@ namespace DigitalWorldOnline.Commons.Repositories.Admin
         Task UpdateEventConfigAsync(EventConfigDTO eventConfig);
 
         Task DeleteEventConfigAsync(long id);
+        
+        Task<EventMapsConfigDTO> AddEventMapConfigAsync(EventMapsConfigDTO eventConfig);
+
+        Task UpdateEventMapConfigAsync(EventMapsConfigDTO eventConfig);
+
+        Task DeleteEventMapConfigAsync(long id);
+
+        Task<EventMobConfigDTO> AddEventMobAsync(EventMobConfigDTO mob);
+
+        Task DeleteEventMapMobsAsync(long id);
+
+        Task DeleteEventMobAsync(long id);
+        
+        Task DuplicateEventMobAsync(long id);
     }
 }

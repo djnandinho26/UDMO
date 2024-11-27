@@ -56,7 +56,10 @@ namespace DigitalWorldOnline.Commons.Models.Config.Events
         /// </summary>
         public int Class { get; private set; }
 
-        public DungeonDayOfWeekEnum WeekDay { get; set; }
+        /// <summary>
+        /// Monster coliseum Round
+        /// </summary>
+        public byte Round { get; set; }
 
         /// <summary>
         /// Digimon reaction type.
@@ -92,6 +95,11 @@ namespace DigitalWorldOnline.Commons.Models.Config.Events
         /// Respawn interval in seconds.
         /// </summary>
         public int RespawnInterval { get; private set; }
+
+        /// <summary>
+        /// Monster spawn duration.
+        /// </summary>
+        public int Duration { get; set; }
 
         /// <summary>
         /// Initial location.
@@ -159,6 +167,7 @@ namespace DigitalWorldOnline.Commons.Models.Config.Events
             RespawnInterval = 8;
             DebuffList = new MobDebuffListModel();
             CurrentAction = MobActionEnum.Wait;
+            Duration = 0;
             LastActionTime = DateTime.Now;
             AgressiveCheckTime = DateTime.Now;
             ViewCheckTime = DateTime.Now;

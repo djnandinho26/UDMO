@@ -68,6 +68,21 @@
 	  </None>
 	</ItemGroup>
 	
+	<ItemGroup>
+	  <AdditionalFiles Include="Pages\Events\Maps\Mobs\MobCreation.razor" />
+	  <AdditionalFiles Include="Pages\Events\Maps\Mobs\MobDelete.razor" />
+	  <AdditionalFiles Include="Pages\Events\Maps\Mobs\MobDuplicate.razor" />
+	  <AdditionalFiles Include="Pages\Events\Maps\Mobs\Mobs.razor" />
+	  <AdditionalFiles Include="Pages\Events\Maps\Mobs\MobUpdate.razor" />
+	</ItemGroup>
+	
+	<ItemGroup>
+	  <_ContentIncludedByDefault Remove="Pages\Events\Maps\SpawnPoints\SpawnPointCreation.razor" />
+	  <_ContentIncludedByDefault Remove="Pages\Events\Maps\SpawnPoints\SpawnPointDelete.razor" />
+	  <_ContentIncludedByDefault Remove="Pages\Events\Maps\SpawnPoints\SpawnPoints.razor" />
+	  <_ContentIncludedByDefault Remove="Pages\Events\Maps\SpawnPoints\SpawnPointUpdate.razor" />
+	</ItemGroup>
+	
 	<ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 	
 </Project>
