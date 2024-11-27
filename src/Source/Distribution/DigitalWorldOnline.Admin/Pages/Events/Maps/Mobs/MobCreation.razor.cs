@@ -125,14 +125,16 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
                 var backupLocation = _mob.Location;
                 var backupDrop = _mob.DropReward;
                 var backupSpawn = _mob.RespawnInterval;
-
+                var backupDuration = _mob.Duration;
+                var backupRound = _mob.Round;
                 _mob = Mapper.Map<EventMobCreationViewModel>(_selectedMobAsset.Value);
                 _mob.ExpReward = backupExp;
                 _mob.Location = backupLocation;
                 _mob.DropReward = backupDrop;
                 _mob.RespawnInterval = backupSpawn > 5 ? backupSpawn : 5;
                 _mob.Class = 4;
-                _mob.Duration = _selectedMobAsset.Value.Duration;
+                _mob.Duration = backupDuration;
+                _mob.Round = backupRound;
             }
 
             StateHasChanged();

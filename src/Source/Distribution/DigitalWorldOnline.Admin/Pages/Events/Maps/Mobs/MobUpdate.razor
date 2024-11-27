@@ -5,6 +5,7 @@
 @using DigitalWorldOnline.Commons.ViewModel.Mobs;
 @using DigitalWorldOnline.Commons.Enums;
 @using DigitalWorldOnline.Commons.ViewModel.Asset;
+@using DigitalWorldOnline.Commons.ViewModel.Events
 
 <MudPaper Style="overflow-x: hidden;
         padding: 20px;
@@ -22,7 +23,7 @@
                 <MudItem xs="12" xl="12" sm="12">
                     <MudAutocomplete @ref="_selectedMobAsset"
                                      ToStringFunc="@(e => e == null ? null : $"{e.Type} - {e.Name}")"
-                                     T="MobAssetViewModel"
+                                     T="EventMobAssetViewModel"
                                      Label="Mob Template"
                                      SearchFunc="GetMobAssets"
                                      ValueChanged="UpdateMobFields"
@@ -297,7 +298,16 @@
                                 </MudItem>
 
                                 <MudItem xs="3" xl="3" sm="3">
-                                    <MudCheckBox @bind-Checked="_mob.Coliseum" Label="Coliseum"></MudCheckBox>
+                                    <MudNumericField @bind-Value="_mob.Duration"
+                                                     For="@(() => _mob.Duration)"
+                                                     Label="Duration"
+                                                     T="int"
+                                                     Variant="Variant.Outlined"
+                                                     Required
+                                                     RequiredError="Required"
+                                                     Min="0"
+                                                     Max="int.MaxValue">
+                                    </MudNumericField>
                                 </MudItem>
 
                                 <MudItem xs="3" xl="3" sm="3">
@@ -311,33 +321,6 @@
                                                      Min="0"
                                                      Max="byte.MaxValue">
                                     </MudNumericField>
-                                </MudItem>
-
-                                <MudItem xs="3" xl="3" sm="3">
-                                    <MudSelect Required
-                                               RequiredError="Required"
-                                               T="DungeonDayOfWeekEnum"
-                                               For="@(() => _mob.WeekDay)"
-                                               @bind-Value="_mob.WeekDay">
-                                        @foreach (DungeonDayOfWeekEnum value in Enum.GetValues(typeof(DungeonDayOfWeekEnum)))
-                                        {
-                                            <MudSelectItem T="DungeonDayOfWeekEnum"
-                                                           Value="@value">@value</MudSelectItem>
-                                        }
-                                    </MudSelect>
-                                </MudItem>
-
-                                <MudItem xs="3" xl="3" sm="3">
-                                    <MudSelect Required
-                                               RequiredError="Required"
-                                               T="ColiseumMobTypeEnum"
-                                               For="@(() => _mob.ColiseumMobType)"
-                                               @bind-Value="_mob.ColiseumMobType">
-                                        @foreach (ColiseumMobTypeEnum value in Enum.GetValues(typeof(ColiseumMobTypeEnum)))
-                                        {
-                                            <MudSelectItem T="ColiseumMobTypeEnum" Value="@value">@value</MudSelectItem>
-                                        }
-                                    </MudSelect>
                                 </MudItem>
 
                                 <MudItem xs="3" xl="3" sm="3">

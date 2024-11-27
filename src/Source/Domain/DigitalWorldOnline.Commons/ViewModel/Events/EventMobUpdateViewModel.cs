@@ -1,9 +1,15 @@
 ﻿using DigitalWorldOnline.Commons.Enums.ClientEnums;
+using DigitalWorldOnline.Commons.ViewModel.Mobs;
 
 namespace DigitalWorldOnline.Commons.ViewModel.Events
 {
-    public class EventMobAssetViewModel
+    public class EventMobUpdateViewModel
     {
+        /// <summary>
+        /// Unique sequential identifier.
+        /// </summary>
+        public long Id { get; set; }
+
         /// <summary>
         /// Client reference for digimon type.
         /// </summary>
@@ -80,9 +86,9 @@ namespace DigitalWorldOnline.Commons.ViewModel.Events
         public int RespawnInterval { get; set; }
 
         /// <summary>
-        /// Monster spawn duration.
+        /// Respawn interval in seconds.
         /// </summary>
-        public int Duration { get; set; } = 0;
+        public int Duration { get; set; }
 
         /// <summary>
         /// Total Attack Speed value.
@@ -143,5 +149,29 @@ namespace DigitalWorldOnline.Commons.ViewModel.Events
         /// Total Walk Speed value.
         /// </summary>
         public int WSValue { get; set; }
+
+        /// <summary>
+        /// Initial location.
+        /// </summary>
+        public MobLocationViewModel Location { get; set; }
+
+        /// <summary>
+        /// Drop config.
+        /// </summary>
+        public MobDropRewardViewModel DropReward { get; set; }
+
+        /// <summary>
+        /// Exp config.
+        /// </summary>
+        public MobExpRewardViewModel ExpReward { get; set; }
+
+        public long GameMapConfigId { get; set; }
+
+        public EventMobUpdateViewModel()
+        {
+            Location = new MobLocationViewModel();
+            DropReward = new MobDropRewardViewModel();
+            ExpReward = new MobExpRewardViewModel();
+        }
     }
 }

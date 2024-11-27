@@ -49,7 +49,10 @@ namespace DigitalWorldOnline.Admin.Data
 
             CreateMap<EventMobConfigModel, EventMobConfigDTO>()
                 .ReverseMap();
-
+            
+            CreateMap<MonsterBaseInfoAssetDTO, EventMobAssetViewModel>();
+            CreateMap<EventMobAssetViewModel, EventMobCreationViewModel>();
+            CreateMap<EventMobAssetViewModel, EventMobUpdateViewModel>();
             CreateMap<EventMobCreationViewModel, EventMobConfigDTO>();
             
             CreateMap<EventMobAssetViewModel, EventMobConfigModel>()

@@ -12,15 +12,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using DigitalWorldOnline.Commons.ViewModel.Events;
 
 namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
 {
     public partial class MobUpdate
     {
-        private MudAutocomplete<MobAssetViewModel> _selectedMobAsset;
+        private MudAutocomplete<EventMobAssetViewModel> _selectedMobAsset;
         private MudAutocomplete<ItemAssetViewModel> _selectedItemAsset;
 
-        MobUpdateViewModel _mob = new MobUpdateViewModel();
+        EventMobUpdateViewModel _mob = new EventMobUpdateViewModel();
         bool Loading = false;
         long _mapId;
         long _id;
@@ -60,7 +61,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
                 else
                 {
                     _mapId = target.Register.GameMapConfigId;
-                    _mob = Mapper.Map<MobUpdateViewModel>(target.Register);
+                    _mob = Mapper.Map<EventMobUpdateViewModel>(target.Register);
                     _mob.DropReward?.Drops.ForEach(async drop =>
                     {
                         var itemInfoQuery = await Sender.Send(new GetItemAssetByIdQuery(drop.ItemId));
@@ -83,7 +84,7 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
             }
         }
 
-        private async Task<IEnumerable<MobAssetViewModel>> GetMobAssets(string value)
+        private async Task<IEnumerable<EventMobAssetViewModel>> GetMobAssets(string value)
         {
             if (string.IsNullOrEmpty(value) || value.Length < 3)
             {
@@ -92,12 +93,12 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
                     _selectedMobAsset.Clear();
                 }
 
-                return new MobAssetViewModel[0];
+                return new EventMobAssetViewModel[0];
             }
 
             var assets = await Sender.Send(new GetMobAssetQuery(value));
 
-            return Mapper.Map<List<MobAssetViewModel>>(assets.Registers);
+            return Mapper.Map<List<EventMobAssetViewModel>>(assets.Registers);
         }
 
         private async Task<IEnumerable<ItemAssetViewModel>> GetItemAssets(string value)
@@ -127,8 +128,10 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
                 var backupMapId = _mob.GameMapConfigId;
                 var backupId = _mob.Id;
                 var backupRespawn = _mob.RespawnInterval;
+                var backupDuration = _mob.Duration;
+                var backupRound = _mob.Round;
 
-                _mob = Mapper.Map<MobUpdateViewModel>(_selectedMobAsset.Value);
+                _mob = Mapper.Map<EventMobUpdateViewModel>(_selectedMobAsset.Value);
                 _mob.ExpReward = backupExp;
                 _mob.Location = backupLocation;
                 _mob.DropReward = backupDrop;
@@ -136,6 +139,8 @@ namespace DigitalWorldOnline.Admin.Pages.Events.Maps.Mobs
                 _mob.Id = backupId;
                 _mob.RespawnInterval = backupRespawn;
                 _mob.Class = 4;
+                _mob.Duration = backupDuration;
+                _mob.Round = backupRound;
             }
 
             StateHasChanged();
