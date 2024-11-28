@@ -1684,7 +1684,7 @@ namespace DigitalWorldOnline.Game
                         }
                         else
                         {
-                            var encyclopedia = client.Tamer.Encyclopedia.FirstOrDefault(x => x.DigimonEvolutionId == evoInfo?.EvolutionId);
+                            var encyclopedia = client.Tamer.Encyclopedia.FirstOrDefault(x => x.DigimonEvolutionId == evoInfo.EvolutionId);
 
                             if (encyclopedia == null)
                             {

@@ -6,6 +6,7 @@ using DigitalWorldOnline.Commons.Models.Map.Dungeons;
 using DigitalWorldOnline.Commons.Models.TamerShop;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using System.Text;
+using DigitalWorldOnline.Commons.Models.Config.Events;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 
 namespace DigitalWorldOnline.Commons.Models.Map
@@ -50,9 +51,23 @@ namespace DigitalWorldOnline.Commons.Models.Map
             for (short i = 1; i <= 2000; i++)
                 DropHandlers.Add(i, 0);
 
-            KillSpawns.ForEach(killSpawn => { killSpawn.ResetCurrentSourceMobAmount(); });
+            KillSpawns?.ForEach(killSpawn => { killSpawn.ResetCurrentSourceMobAmount(); });
 
-            Mobs.ForEach(mob =>
+            Mobs?.ForEach(mob =>
+            {
+                mob.UpdateCurrentHp(mob.HPValue);
+                mob.SetInitialLocation();
+
+                var mobKillSpawn = KillSpawns.FirstOrDefault(x => x.TargetMobs.Any(killSpawnTargetMobConfigModel =>
+                    killSpawnTargetMobConfigModel.TargetMobType == mob.Type));
+
+                if (mobKillSpawn != null)
+                {
+                    mob.SetAwaitingKillSpawn();
+                }
+            });
+
+            EventMobs?.ForEach(mob =>
             {
                 mob.UpdateCurrentHp(mob.HPValue);
                 mob.SetInitialLocation();
@@ -76,6 +91,13 @@ namespace DigitalWorldOnline.Commons.Models.Map
             return UpdateMobs;
         }
 
+        public bool RequestMobsUpdate(IList<EventMobConfigModel> mapMobs)
+        {
+            UpdateMobs = NeedToRemoveEventMobs(mapMobs);
+
+            return UpdateMobs;
+        }
+
         private bool NeedToAddMobs(IList<MobConfigModel> mapMobs)
         {
             MobsToAdd = new List<MobConfigModel>();
@@ -89,9 +111,36 @@ namespace DigitalWorldOnline.Commons.Models.Map
         {
             MobsToRemove = new List<MobConfigModel>();
 
-            MobsToRemove.AddRange(Mobs.Where(x => !mapMobs.Select(y => y.Id).Contains(x.Id)));
+            if (Mobs?.Any() ?? false)
+            {
+                MobsToRemove.AddRange(Mobs.Where(x => !mapMobs.Select(y => y.Id).Contains(x.Id)));
+            }
 
             return MobsToRemove.Count > 0;
+        }
+
+        private bool NeedToAddEventMobs(IList<EventMobConfigModel> mapMobs)
+        {
+            EventMobsToAdd = new List<EventMobConfigModel>();
+
+            if (EventMobs?.Any() ?? false)
+            {
+                EventMobsToAdd.AddRange(mapMobs.Where(x => !EventMobs.Select(y => y.Id).Contains(x.Id)));
+            }
+
+            return EventMobsToAdd.Count > 0;
+        }
+
+        private bool NeedToRemoveEventMobs(IList<EventMobConfigModel> mapMobs)
+        {
+            EventMobsToRemove = new List<EventMobConfigModel>();
+
+            if (EventMobs?.Any() ?? false)
+            {
+                EventMobsToRemove.AddRange(EventMobs.Where(x => !mapMobs.Select(y => y.Id).Contains(x.Id)));
+            }
+
+            return EventMobsToRemove.Count > 0;
         }
 
         public void FinishMobsUpdate()
@@ -132,7 +181,7 @@ namespace DigitalWorldOnline.Commons.Models.Map
         public void BroadcastForTargetTamers(List<long> targetTamers, byte[] packet)
         {
             var clients = Clients.Where(x => targetTamers.Contains(x.TamerId)).ToList();
-           
+
             clients.ForEach(client => { client.Send(packet); });
         }
 
@@ -254,7 +303,7 @@ namespace DigitalWorldOnline.Commons.Models.Map
         public void RemoveClient(GameClient client)
         {
             BroadcastForTamerViews(client.TamerId, new UnloadTamerPacket(client.Tamer).Serialize());
-            
+
 #if DEBUG
             var serialized = SerializeHideTamer(client.Tamer);
             //File.WriteAllText($"Hides\\Hide{client.TamerId}To{client.TamerId}_Views_{DateTime.Now:dd_MM_yy_HH_mm_ss}.temp", serialized);

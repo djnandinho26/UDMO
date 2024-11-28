@@ -1,4 +1,5 @@
-﻿using AutoMapper;
+﻿using System.Reflection;
+using AutoMapper;
 using DigitalWorldOnline.Application;
 using DigitalWorldOnline.Commons.DTOs.Assets;
 using DigitalWorldOnline.Commons.Interfaces;
@@ -1325,24 +1326,50 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
         {
             var dto = await _context.CharacterEncyclopedia
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == characterEncyclopedia.Id);
+                .Include(x => x.Evolutions)
+                .SingleOrDefaultAsync(x => x.Id == characterEncyclopedia.Id);
 
-            if (dto != null)
+            try
             {
-                dto.Level = characterEncyclopedia.Level;
-                dto.Size = characterEncyclopedia.Size;
-                dto.EnchantAT = characterEncyclopedia.EnchantAT;
-                dto.EnchantBL = characterEncyclopedia.EnchantBL;
-                dto.EnchantCT = characterEncyclopedia.EnchantCT;
-                dto.EnchantEV = characterEncyclopedia.EnchantEV;
-                dto.EnchantHP = characterEncyclopedia.EnchantHP;
-                dto.IsRewardAllowed = characterEncyclopedia.IsRewardAllowed;
-                dto.IsRewardReceived = characterEncyclopedia.IsRewardReceived;
-                dto.CreateDate = DateTime.Now;
-                dto.Evolutions =
+                foreach (var evolution in characterEncyclopedia.Evolutions)
+                {
+                    Console.WriteLine("Evolution:");
+
+                    foreach (PropertyInfo prop in evolution.GetType()
+                                 .GetProperties(BindingFlags.Public | BindingFlags.Instance))
+                    {
+                        var propValue = prop.GetValue(evolution, null);
+                        Console.WriteLine($"{prop.Name}: {propValue}");
+                    }
+
+                    Console.WriteLine("-----");
+                }
+
+                var evolutions =
                     _mapper.Map<List<CharacterEncyclopediaEvolutionsDTO>>(characterEncyclopedia.Evolutions);
-                _context.Update(dto);
-                _context.SaveChanges();
+                if (dto != null)
+                {
+                    dto.Level = characterEncyclopedia.Level;
+                    dto.Size = characterEncyclopedia.Size;
+                    dto.EnchantAT = characterEncyclopedia.EnchantAT;
+                    dto.EnchantBL = characterEncyclopedia.EnchantBL;
+                    dto.EnchantCT = characterEncyclopedia.EnchantCT;
+                    dto.EnchantEV = characterEncyclopedia.EnchantEV;
+                    dto.EnchantHP = characterEncyclopedia.EnchantHP;
+                    dto.IsRewardAllowed = characterEncyclopedia.IsRewardAllowed;
+                    dto.IsRewardReceived = characterEncyclopedia.IsRewardReceived;
+                    dto.CreateDate = DateTime.Now;
+                    Console.WriteLine($"Evolutions Count: {characterEncyclopedia.Evolutions.Count}");
+                    dto.Evolutions = evolutions;
+                    _context.Update(dto);
+                    _context.SaveChanges();
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+                Console.WriteLine(e.StackTrace);
+                throw;
             }
         }
 

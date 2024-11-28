@@ -1,6 +1,8 @@
 ﻿using AutoMapper;
 using DigitalWorldOnline.Application;
+using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Models.Config;
+using DigitalWorldOnline.Commons.Models.Config.Events;
 using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Game.Managers;
 using MediatR;
@@ -12,6 +14,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
     {
         private readonly EventQueueManager _eventQueueManager;
         private readonly StatusManager _statusManager;
+        private readonly ConfigsLoader _configs;
         private readonly ExpManager _expManager;
         private readonly DropManager _dropManager;
         private readonly AssetsLoader _assets;
@@ -19,7 +22,9 @@ namespace DigitalWorldOnline.GameHost.EventsServer
         private readonly ISender _sender;
         private readonly IMapper _mapper;
 
-        public List<GameMap> Maps { get; set; }
+        public List<EventConfigModel> Events { get; private set; }
+
+        public List<GameMap> Maps { get; set; } = new List<GameMap>();
 
         public int MobAmount { get; }
         public int DropAmount { get; }
@@ -29,6 +34,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
         public EventServer(
             EventQueueManager eventQueueManager,
             AssetsLoader assets,
+            ConfigsLoader configs,
             StatusManager statusManager,
             ExpManager expManager,
             DropManager dropManager,
@@ -41,6 +47,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             _expManager = expManager;
             _dropManager = dropManager;
             _assets = assets.Load();
+            _configs = configs.Load();
             _logger = logger;
             _sender = sender;
             _mapper = mapper;
@@ -50,7 +57,13 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
             _randomPoints = GenerateRandomPoints(MobAmount + DropAmount, 17662, 71080, 13055, 79041, 1000);
 
+            Events = InitializeAsync().GetAwaiter().GetResult();
             AddContent();
+        }
+
+        private async Task<List<EventConfigModel>> InitializeAsync()
+        {
+            return _mapper.Map<List<EventConfigModel>>(await _sender.Send(new EventsConfigQuery()));
         }
 
         /*
@@ -74,17 +87,23 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
         private void AddContent()
         {
-            Maps = new List<GameMap>()
+            Events?.ForEach(eventConfig =>
+            {
+                eventConfig.EventMaps.ForEach(eventMap =>
+                {
+                    Maps.Add(new GameMap(eventMap.Map.MapId, AddMobs(), AddDrops()));
+                });
+            });
+            /*Maps = new List<GameMap>()
             {
                 new GameMap(9001, AddMobs(), AddDrops()),
                 new GameMap(9002, AddBoss(), new List<Drop>())
-            };
+            };*/
         }
 
-        private List<MobConfigModel> AddMobs()
+        private List<EventMobConfigModel> AddMobs()
         {
-            var mobs = new List<MobConfigModel>();
-            return mobs;
+            return new List<EventMobConfigModel>();
         }
 
         private List<Drop> AddDrops()
@@ -92,15 +111,16 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             return new List<Drop>();
         }
 
-        private List<MobConfigModel> AddBoss()
+        private List<EventMobConfigModel> AddBoss()
         {
             //11940
             //15213
 
-            return new List<MobConfigModel>();
+            return new List<EventMobConfigModel>();
         }
 
-        private static List<Point> GenerateRandomPoints(int numberOfPoints, int minX, int maxX, int minY, int maxY, int minDistance)
+        private static List<Point> GenerateRandomPoints(int numberOfPoints, int minX, int maxX, int minY, int maxY,
+            int minDistance)
         {
             var points = new List<Point>();
             Random random = new Random();
@@ -113,7 +133,8 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 bool valid = true;
                 foreach (Point existingPoint in points)
                 {
-                    int distanceSquared = (x - existingPoint.X) * (x - existingPoint.X) + (y - existingPoint.Y) * (y - existingPoint.Y);
+                    int distanceSquared = (x - existingPoint.X) * (x - existingPoint.X) +
+                                          (y - existingPoint.Y) * (y - existingPoint.Y);
                     if (distanceSquared < minDistance * minDistance)
                     {
                         valid = false;

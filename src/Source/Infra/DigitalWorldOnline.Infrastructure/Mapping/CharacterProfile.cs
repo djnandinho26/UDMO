@@ -60,35 +60,38 @@ namespace DigitalWorldOnline.Infrastructure.Mapping
 
             CreateMap<CharacterProgressModel, CharacterProgressDTO>()
                 .ReverseMap();
-            
+
             CreateMap<InProgressQuestModel, InProgressQuestDTO>()
                 .ReverseMap();
 
             CreateMap<CharacterActiveEvolutionModel, CharacterActiveEvolutionDTO>()
                 .ReverseMap();
-            
+
             CreateMap<CharacterDigimonArchiveModel, CharacterDigimonArchiveDTO>()
                 .ReverseMap();
-            
+
             CreateMap<CharacterDigimonArchiveItemModel, CharacterDigimonArchiveItemDTO>()
                 .ReverseMap();
 
             CreateMap<CharacterArenaPointsModel, CharacterArenaPointsDTO>()
-              .ReverseMap();
-       
+                .ReverseMap();
+
             CreateMap<CharacterArenaDailyPointsModel, CharacterArenaDailyPointsDTO>()
-               .ForMember(dest => dest.Id, x => x.Ignore())
-               .ReverseMap();
+                .ForMember(dest => dest.Id, x => x.Ignore())
+                .ReverseMap();
 
             CreateMap<CharacterTamerSkillModel, CharacterTamerSkillDTO>()
                 .ForMember(dest => dest.Id, x => x.Ignore())
-               .ReverseMap();
+                .ReverseMap();
 
             CreateMap<CharacterEncyclopediaModel, CharacterEncyclopediaDTO>()
-              .ReverseMap();
+                .ReverseMap();
 
             CreateMap<CharacterEncyclopediaEvolutionsModel, CharacterEncyclopediaEvolutionsDTO>()
-              .ReverseMap();
+                .ReverseMap();
+
+            CreateMap<CharacterEncyclopediaEvolutionsDTO, CharacterEncyclopediaEvolutionsModel>()
+                .ReverseMap();
         }
     }
 }

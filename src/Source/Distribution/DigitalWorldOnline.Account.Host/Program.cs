@@ -38,7 +38,12 @@ namespace DigitalWorldOnline.Account
             Console.WriteLine(((Exception)e.ExceptionObject).InnerException);
             if (e.IsTerminating)
             {
-                Console.WriteLine($"{e.ExceptionObject.ToString()}");
+                var message = "";
+                if (e.ExceptionObject is Exception exception) 
+                {
+                    message =  exception.Message;
+                }
+                Console.WriteLine($"{message}");
                 Console.WriteLine("Terminating by unhandled exception...");
             }
             else

@@ -3,8 +3,8 @@ using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Models;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Config;
+using DigitalWorldOnline.Commons.Models.Config.Events;
 using DigitalWorldOnline.Commons.Models.Map;
-
 
 namespace DigitalWorldOnline.GameHost.EventsServer
 {
@@ -74,6 +74,40 @@ namespace DigitalWorldOnline.GameHost.EventsServer
         }
 
         /// <summary>
+        /// Gets the map latest mobs.
+        /// </summary>
+        /// <returns>The mobs collection</returns>
+        private async Task<List<EventMobConfigModel>> GetEventMapMobs(GameMap map, CancellationToken token)
+        {
+            var mobList = new List<EventMobConfigModel>();
+
+            var mobs = map.EventMobs;
+
+            if (!mobs.Any())
+                return mobList;
+
+            var id = 1;
+            while (mobList.Count < MobAmount)
+            {
+                mobs.ForEach(mob =>
+                {
+                    var newMob = (EventMobConfigModel)mob.Clone();
+
+                    var location = _randomPoints.First(x => x.Free);
+                    location.UsePoint();
+
+                    newMob.SetLocation((short)map.MapId, location.X, location.Y);
+                    newMob.SetId(id);
+                    id++;
+
+                    mobList.Add(newMob);
+                });
+            }
+
+            return mobList;
+        }
+
+        /// <summary>
         /// Runs the target map operations.
         /// </summary>
         /// <param name="map">the target map</param>
@@ -85,7 +119,9 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 if (!map.Initialized)
                 {
                     var mobs = await GetMapMobs(map, token);
+                    var eventMobs = await GetEventMapMobs(map, token);
                     map.RequestMobsUpdate(mobs);
+                    map.RequestMobsUpdate(eventMobs);
                     map.UpdateMobsList();
                 }
 
@@ -109,8 +145,8 @@ namespace DigitalWorldOnline.GameHost.EventsServer
         public Task AddClient(GameClient client)
         {
             var map = Maps
-                    .FirstOrDefault(x => x.Initialized &&
-                                         x.MapId == client.Tamer.Location.MapId);
+                .FirstOrDefault(x => x.Initialized &&
+                                     x.MapId == client.Tamer.Location.MapId);
 
             client.SetLoading();
 
@@ -241,8 +277,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
         public MobConfigModel? GetMobByHandler(short mapId, int handler)
         {
-            return Maps.
-                FirstOrDefault(x => x.MapId == mapId)?
+            return Maps.FirstOrDefault(x => x.MapId == mapId)?
                 .Mobs
                 .FirstOrDefault(x => x.GeneralHandler == handler);
         }
@@ -256,7 +291,8 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             var originX = location.X;
             var originY = location.Y;
 
-            return GetTargetMobs(targetMap.Mobs.Where(x => x.Alive).ToList(), originX, originY, range).DistinctBy(x => x.Id).ToList();
+            return GetTargetMobs(targetMap.Mobs.Where(x => x.Alive).ToList(), originX, originY, range)
+                .DistinctBy(x => x.Id).ToList();
         }
 
         public List<MobConfigModel> GetMobsNearbyTargetMob(short mapId, int handler, int range)

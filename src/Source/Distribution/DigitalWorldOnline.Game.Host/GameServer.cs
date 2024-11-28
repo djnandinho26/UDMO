@@ -1,10 +1,14 @@
 ﻿using AutoMapper;
+using DigitalWorldOnline.Application;
+using DigitalWorldOnline.Application.Separar.Commands.Create;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.Interfaces;
+using DigitalWorldOnline.Commons.Models.Asset;
 using DigitalWorldOnline.Commons.Models.Character;
+using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Packets.AuthenticationServer;
 using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
@@ -12,6 +16,7 @@ using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -27,9 +32,11 @@ namespace DigitalWorldOnline.Game
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
         private readonly ISender _sender;
+        private readonly AssetsLoader _assets;
         private readonly MapServer _mapServer;
         private readonly PvpServer _pvpServer;
         private readonly DungeonsServer _dungeonsServer;
+        private readonly EventServer _eventServer;
         private readonly PartyManager _partyManager;
 
         private const int OnConnectEventHandshakeHandler = 65535;
@@ -40,9 +47,11 @@ namespace DigitalWorldOnline.Game
             ILogger logger,
             IMapper mapper,
             ISender sender,
+            AssetsLoader assets,
             MapServer mapServer,
             PvpServer pvpServer,
             DungeonsServer dungeonsServer,
+            EventServer eventServer,
             PartyManager partyManager)
         {
             OnConnect += OnConnectEvent;
@@ -55,9 +64,11 @@ namespace DigitalWorldOnline.Game
             _logger = logger;
             _mapper = mapper;
             _sender = sender;
+            _assets = assets;
             _mapServer = mapServer;
             _pvpServer = pvpServer;
             _dungeonsServer = dungeonsServer;
+            _eventServer = eventServer;
             _partyManager = partyManager;
         }
 
@@ -427,13 +438,14 @@ namespace DigitalWorldOnline.Game
             _hostApplicationLifetime.ApplicationStopping.Register(OnStopping);
             _hostApplicationLifetime.ApplicationStopped.Register(OnStopped);
 
+            Task.Run(CheckAllDigimonEvolutions);
             Task.Run(() => _mapServer.StartAsync(cancellationToken));
             Task.Run(() => _mapServer.LoadAllMaps(cancellationToken));
             //Task.Run(() => _mapServer.CallDiscordWarnings("Server Online", "13ff00", "1307467492888805476", "1280948869739450438"));
             Task.Run(() => _pvpServer.StartAsync(cancellationToken));
             Task.Run(() => _dungeonsServer.StartAsync(cancellationToken));
             Task.Run(() => _sender.Send(new UpdateCharacterFriendsCommand(null, false)));
-            //Task.Run(() => _eventServer.StartAsync(cancellationToken));
+            Task.Run(() => _eventServer.StartAsync(cancellationToken));
 
             return Task.CompletedTask;
         }
@@ -492,6 +504,146 @@ namespace DigitalWorldOnline.Game
         private void OnStopped()
         {
             _logger.Information($"{GetType().Name} stopped.");
+        }
+
+        private async Task<Task> CheckAllDigimonEvolutions()
+        {
+            List<DigimonModel> Digimons =
+                _mapper.Map<List<DigimonModel>>(await _sender.Send(new GetAllCharactersDigimonQuery()));
+
+            int digimonCount = 0;
+            int encyclopediaCount = 0;
+            int encyclopediaEvolutionCount = 0;
+            Digimons.ForEach(async void (digimon) =>
+            {
+                try
+                {
+                    var digimonEvolutionInfo =
+                        _mapper.Map<EvolutionAssetModel>(
+                            await _sender.Send(new DigimonEvolutionAssetsByTypeQuery(digimon.BaseType)));
+                    if (digimonEvolutionInfo == null)
+                    {
+                        _logger.Warning($"EvolutionInfo is null for digimon {digimon.BaseType}.");
+                        return;
+                    }
+
+                    if (digimonEvolutionInfo != null && digimon.Character.Encyclopedia != null)
+                    {
+                        var encyclopediaExists =
+                            digimon.Character.Encyclopedia.Exists(x => x.DigimonEvolutionId == digimonEvolutionInfo.Id);
+
+                        foreach (var evolutionLine in digimonEvolutionInfo.Lines)
+                        {
+                            if (!digimon.Evolutions.Exists(x => x.Type == evolutionLine.Type))
+                            {
+                                digimonCount++;
+                                digimon.Evolutions.Add(new DigimonEvolutionModel(evolutionLine.Type));
+                            }
+                        }
+
+                        // Check if encyclopedia exists
+                        if (!encyclopediaExists)
+                        {
+                            encyclopediaCount++;
+                            var encyclopedia = CharacterEncyclopediaModel.Create(digimon.Character.Id,
+                                digimonEvolutionInfo.Id, digimon.Level, digimon.Size, digimon.Digiclone.ATLevel,
+                                digimon.Digiclone.BLLevel, digimon.Digiclone.CTLevel, digimon.Digiclone.EVLevel,
+                                digimon.Digiclone.HPLevel,
+                                digimon.Evolutions.Count(x => Convert.ToBoolean(x.Unlocked)) ==
+                                digimon.Evolutions.Count,
+                                false);
+
+                            digimon.Evolutions?.ForEach(x =>
+                            {
+                                encyclopediaEvolutionCount++;
+                                var evolutionLine = digimonEvolutionInfo.Lines.FirstOrDefault(y => y.Type == x.Type);
+                                byte slotLevel = 0;
+
+                                if (evolutionLine != null)
+                                {
+                                    slotLevel = evolutionLine.SlotLevel;
+                                }
+
+                                var encyclopediaEvo =
+                                    CharacterEncyclopediaEvolutionsModel.Create(x.Type, slotLevel,
+                                        Convert.ToBoolean(x.Unlocked));
+                                _logger.Debug(
+                                    $"{encyclopediaEvo.Id}, {encyclopediaEvo.DigimonBaseType}, {encyclopediaEvo.SlotLevel}, {encyclopediaEvo.IsUnlocked}");
+
+                                encyclopedia.Evolutions.Add(encyclopediaEvo);
+                            });
+
+
+                            var encyclopediaAdded =
+                                await _sender.Send(new CreateCharacterEncyclopediaCommand(encyclopedia));
+                            digimon.Character.Encyclopedia.Add(encyclopediaAdded);
+                        }
+                        else
+                        {
+                            digimon?.Evolutions?.ForEach(async void (evolution) =>
+                            {
+                                try
+                                {
+                                    var evolutionLine =
+                                        digimonEvolutionInfo.Lines.FirstOrDefault(y => y.Type == evolution.Type);
+                                    byte slotLevel = 0;
+
+                                    if (evolutionLine != null)
+                                    {
+                                        slotLevel = evolutionLine.SlotLevel;
+                                    }
+
+                                    if (!digimon.Character.Encyclopedia.Exists(x =>
+                                            x.DigimonEvolutionId == digimonEvolutionInfo?.Id &&
+                                            x.Evolutions.Exists(evo => evo.DigimonBaseType == evolution.Type)))
+                                    {
+                                        encyclopediaEvolutionCount++;
+                                        var encyclopediaEvo =
+                                            CharacterEncyclopediaEvolutionsModel.Create(evolution.Type, slotLevel,
+                                                Convert.ToBoolean(evolution.Unlocked));
+
+                                        _logger.Debug(
+                                            $"{encyclopediaEvo.Id}, {encyclopediaEvo.DigimonBaseType}, {encyclopediaEvo.SlotLevel}, {encyclopediaEvo.IsUnlocked}");
+
+                                        digimon.Character.Encyclopedia
+                                            .First(x => x.DigimonEvolutionId == digimonEvolutionInfo?.Id)
+                                            ?.Evolutions.Add(encyclopediaEvo);
+
+                                        var lockedEncyclopediaCount = digimon.Character.Encyclopedia
+                                            .First(x => x.DigimonEvolutionId == digimonEvolutionInfo?.Id)
+                                            .Evolutions.Count(x => x.IsUnlocked == false);
+
+                                        if (lockedEncyclopediaCount <= 0)
+                                        {
+                                            digimon.Character.Encyclopedia
+                                                .First(x => x.DigimonEvolutionId == digimonEvolutionInfo?.Id)
+                                                .SetRewardAllowed();
+                                            digimon.Character.Encyclopedia
+                                                .First(x => x.DigimonEvolutionId == digimonEvolutionInfo?.Id)
+                                                .SetRewardReceived(false);
+                                            await _sender.Send(new UpdateCharacterEncyclopediaCommand(
+                                                digimon.Character.Encyclopedia.First(x =>
+                                                    x.DigimonEvolutionId == digimonEvolutionInfo?.Id)));
+                                        }
+                                    }
+                                }
+                                catch (Exception e)
+                                {
+                                    _logger.Information($"Error: {e.Message}");
+                                    _logger.Information($"Error: {e.StackTrace}");
+                                }
+                            });
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    _logger.Information($"Error total: {e.Message}");
+                    _logger.Information($"Error total: {e.StackTrace}");
+                }
+            });
+            _logger.Information($"Added new information to all characters, Digimon count: {digimonCount}, Encyclopedia count: {encyclopediaCount}, Encyclopedia evolution count: {encyclopediaEvolutionCount}");
+            return Task.CompletedTask;
         }
     }
 }
