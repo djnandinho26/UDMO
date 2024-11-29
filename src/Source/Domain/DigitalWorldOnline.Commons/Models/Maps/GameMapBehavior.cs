@@ -237,13 +237,13 @@ namespace DigitalWorldOnline.Commons.Models.Map
                     tamer.UpdateState(CharacterStateEnum.Connected);
             }
 
-            Mobs.ForEach(mob =>
+            Mobs?.ForEach(mob =>
             {
                 if (NeedNewHandler(mob))
                     SetMobHandler(mob);
             });
 
-            Drops.ForEach(drop =>
+            Drops?.ForEach(drop =>
             {
                 if (NeedNewHandler(drop))
                     SetDropHandler(drop);
