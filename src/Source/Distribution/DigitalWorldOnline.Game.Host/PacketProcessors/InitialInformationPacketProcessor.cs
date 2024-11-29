@@ -162,7 +162,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 character.UpdateState(CharacterStateEnum.Loading);
                 client.SetCharacter(character);
                 client.SetSentOnceDataSent(character.InitialPacketSentOnceSent);
-                character.SetGenericHandler(character.Partner.GeneralHandler);
 
                 var party = _partyManager.FindParty(client.TamerId);
 
@@ -203,7 +202,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     await _mapServer.AddClient(client);
                     _logger.Information(
-                        $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
+                        $"Adding character {character.Name}({character.Id}) to map server as map config is null map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
                 }
                 else
                 {
@@ -211,7 +210,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     {
                         await _dungeonsServer.AddClient(client);
                         _logger.Information(
-                            $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
+                            $"Adding character {character.Name}({character.Id}) to dungeon map server line 212 {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                     }
                     else
                     {
@@ -220,29 +219,30 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             case MapTypeEnum.Dungeon:
                                 await _dungeonsServer.AddClient(client);
                                 _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
+                                    $"Adding character {character.Name}({character.Id}) to dungeon map server line 223 {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                                 break;
                             case MapTypeEnum.Pvp:
                                 await _pvpServer.AddClient(client);
                                 _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
+                                    $"Adding character {character.Name}({character.Id}) to pvp map server line 226 {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                                 break;
                             case MapTypeEnum.Event:
-                                await _dungeonsServer.AddClient(client);
+                                await _eventServer.AddClient(client);
                                 _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
+                                    $"Adding character {character.Name}({character.Id}) to event map server line 233 {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                                 break;
                             case MapTypeEnum.Default:
                             default:
                                 await _mapServer.AddClient(client);
                                 _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
+                                    $"Adding character {character.Name}({character.Id}) to normal map server line 237 {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
                                 break;
                         }
                     }
                 }
 
                 while (client.Loading) await Task.Delay(1000);
+                character.SetGenericHandler(character.Partner.GeneralHandler);
 
                 if (!client.DungeonMap)
                 {
