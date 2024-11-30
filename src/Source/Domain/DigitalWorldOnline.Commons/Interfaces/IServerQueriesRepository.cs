@@ -45,7 +45,7 @@ namespace DigitalWorldOnline.Commons.Interfaces
 
         Task<List<EvolutionAssetDTO>> GetDigimonEvolutionAssetsAsync();
 
-        Task<EvolutionAssetDTO> GetDigimonEvolutionAssetsByTypeAsync(int type);
+        Task<EvolutionAssetDTO?> GetDigimonEvolutionAssetsByTypeAsync(int type);
 
         Task<IList<ChatMessageDTO>> GetAllChatMessagesAsync();
 

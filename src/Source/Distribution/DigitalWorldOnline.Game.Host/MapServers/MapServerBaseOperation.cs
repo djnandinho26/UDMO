@@ -310,7 +310,7 @@ namespace DigitalWorldOnline.GameHost
                             if (stopWatch.ElapsedMilliseconds >= timeLimit)
                             {
                                 _logger.Warning(
-                                    $"A instancia do mapa {client.Tamer.Location.MapId} CH {_loadChannel} não foi iniciada, abortando processo...");
+                                    $"The map instance {client.Tamer.Location.MapId} CH {_loadChannel} has not been started, aborting process...");
                                 //stopWatch.Stop();
                                 break;
                             }
@@ -552,7 +552,7 @@ namespace DigitalWorldOnline.GameHost
                 .DistinctBy(x => x.Id).ToList();
         }
 
-        public List<MobConfigModel> GetMobsNearbyPartnerbyHandler(Location location, int handler, int range,
+        public List<MobConfigModel> GetMobsNearbyPartnerByHandler(Location location, int handler, int range,
             long tamerId)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));

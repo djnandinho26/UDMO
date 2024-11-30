@@ -170,12 +170,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _logger.Debug($"Sending tamer XAI resources packet for character {client.TamerId}...");
                 client.Send(new TamerXaiResourcesPacket(client.Tamer.XGauge, client.Tamer.XCrystals));
             }
-
-            _logger.Debug($"Sending tamer relations packet for character {client.TamerId}...");
-
+            
             if (!client.SentOnceDataSent)
             {
-                _logger.Information($"Sending tamer relations packet for character {client.TamerId}...");
+                _logger.Debug($"Sending tamer relations packet for character {client.TamerId}...");
                 client.Send(new TamerRelationsPacket(client.Tamer.Friends, client.Tamer.Foes));
                 await _sender.Send(new UpdateCharacterInitialPacketSentOnceSentCommand(client.TamerId, true));
 
@@ -257,7 +255,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             await _sender.Send(new UpdateCharacterFriendsCommand(client.Tamer, true));
             client.Tamer.Friended.ToList().ForEach(friend =>
             {
-                _logger.Information($"Sending friend connection packet for character {friend.CharacterId}...");
+                // _logger.Information($"Sending friend connection packet for character {friend.CharacterId}...");
                 _mapServer.BroadcastForUniqueTamer(friend.CharacterId,
                     new FriendConnectPacket(client.Tamer.Name).Serialize());
                 _dungeonServer.BroadcastForUniqueTamer(friend.CharacterId,

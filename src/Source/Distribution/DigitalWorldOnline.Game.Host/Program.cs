@@ -40,11 +40,18 @@ namespace DigitalWorldOnline.Game
         {
             Console.WriteLine(((Exception)e.ExceptionObject).InnerException);
             if (e.IsTerminating)
+            {
+                var message = "";
+                if (e.ExceptionObject is Exception exception)
+                {
+                    message = exception.Message;
+                }
+
+                Console.WriteLine($"{message}");
                 Console.WriteLine("Terminating by unhandled exception...");
+            }
             else
                 Console.WriteLine("Received unhandled exception.");
-
-            Console.ReadLine();
         }
 
         public static IHost CreateHostBuilder(string[] args)

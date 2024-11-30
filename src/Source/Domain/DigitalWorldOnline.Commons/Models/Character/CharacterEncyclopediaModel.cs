@@ -62,7 +62,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// <summary>
         /// Character encyclopedia evolutions
         /// </summary>
-        public List<CharacterEncyclopediaEvolutionsModel> Evolutions { get; private set; }
+        public List<CharacterEncyclopediaEvolutionsModel>? Evolutions { get; private set; }
 
         public CharacterEncyclopediaModel()
         {

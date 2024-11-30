@@ -162,6 +162,22 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .SingleOrDefaultAsync(x => x.Id == digimonId);
         }
 
+        public async Task<List<DigimonDTO>> GetAllDigimonsAsync()
+        {
+            return await _context.Digimon
+                .AsNoTracking()
+                .Include(x => x.Character)
+                .ThenInclude(y => y.Encyclopedia)
+                .ThenInclude(y => y.Evolutions)
+                .Include(x => x.Digiclone)
+                .Include(x => x.AttributeExperience)
+                .Include(x => x.Evolutions)
+                .ThenInclude(y => y.Skills)
+                .Include(x => x.BuffList)
+                .ThenInclude(x => x.Buffs)
+                .ToListAsync();
+        }
+
         public async Task<IList<CharacterDTO>> GetCharactersByAccountIdAsync(long accountId)
         {
             // TODO: verify the need for improvement in response time
@@ -220,7 +236,6 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
         {
             // TODO: verify the need for improvement in response time
             var characters = await _context.CharacterEncyclopedia
-                .AsSplitQuery()
                 .AsNoTracking()
                 .Include(x => x.Evolutions)
                 .Include(x => x.EvolutionAsset)
