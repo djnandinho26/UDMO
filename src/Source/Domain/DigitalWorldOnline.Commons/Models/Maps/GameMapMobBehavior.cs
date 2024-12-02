@@ -803,6 +803,17 @@ namespace DigitalWorldOnline.Commons.Models.Map
             }
         }
 
+        public void AddMobSumon(SummonMobModel mob)
+        {
+            if (NeedNewHandler(mob))
+                SetMobHandler(mob);
+
+            mob.SetInitialLocation();
+            mob.UpdateCurrentHp(mob.HPValue);
+
+            SummonMobs.Add(mob);
+        }
+
         // ---------------------------------------------------------------------------------------
 
         public void UpdateMobsList()

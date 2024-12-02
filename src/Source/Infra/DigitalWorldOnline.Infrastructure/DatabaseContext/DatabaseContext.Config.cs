@@ -23,7 +23,8 @@ namespace DigitalWorldOnline.Infrastructure
         public DbSet<HatchConfigDTO> HatchConfig { get; set; }
         public DbSet<FruitConfigDTO> FruitConfig { get; set; }
         public DbSet<SummonDTO> SummonsConfig { get; set; }
-        
+        public DbSet<SummonMobDTO> SummonsMobConfig { get; set; }
+
         public DbSet<EventConfigDTO> EventConfig { get; set; }
         
         public DbSet<EventMapsConfigDTO> EventMapsConfig { get; set; }

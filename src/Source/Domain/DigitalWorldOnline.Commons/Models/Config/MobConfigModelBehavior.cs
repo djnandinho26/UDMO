@@ -283,115 +283,115 @@ namespace DigitalWorldOnline.Commons.Models.Config
             switch (CurrentAction)
             {
                 case MobActionEnum.Wait:
-                {
-                    if (InBattle)
                     {
-                        if (SkillTime && !CheckSkill && IsPossibleSkill)
+                        if (InBattle)
                         {
-                            CurrentAction = MobActionEnum.UseAttackSkill;
+                            if (SkillTime && !CheckSkill && IsPossibleSkill)
+                            {
+                                CurrentAction = MobActionEnum.UseAttackSkill;
+                            }
+                            else
+                            {
+                                CurrentAction = MobActionEnum.Attack;
+                            }
                         }
-                        else
+                        else if (Dead)
                         {
-                            CurrentAction = MobActionEnum.Attack;
+                            CurrentAction = MobActionEnum.Reward;
+                        }
+                        else if (DateTime.Now > NextWalkTime)
+                        {
+                            CurrentAction = MobActionEnum.Walk;
                         }
                     }
-                    else if (Dead)
-                    {
-                        CurrentAction = MobActionEnum.Reward;
-                    }
-                    else if (DateTime.Now > NextWalkTime)
-                    {
-                        CurrentAction = MobActionEnum.Walk;
-                    }
-                }
                     break;
 
                 case MobActionEnum.Reward:
-                {
-                    if (Coliseum)
                     {
-                        CurrentAction = MobActionEnum.Destroy;
+                        if (Coliseum)
+                        {
+                            CurrentAction = MobActionEnum.Destroy;
+                        }
+                        else
+                        {
+                            CurrentAction = MobActionEnum.Respawn;
+                            LastActionTime = DateTime.Now.AddSeconds(3 + RespawnInterval);
+                        }
                     }
-                    else
-                    {
-                        CurrentAction = MobActionEnum.Respawn;
-                        LastActionTime = DateTime.Now.AddSeconds(3 + RespawnInterval);
-                    }
-                }
                     break;
 
                 case MobActionEnum.Walk:
-                {
-                    if (InBattle)
                     {
-                        CurrentAction = MobActionEnum.Attack;
+                        if (InBattle)
+                        {
+                            CurrentAction = MobActionEnum.Attack;
+                        }
+                        else if (Dead)
+                        {
+                            CurrentAction = MobActionEnum.Reward;
+                            LastActionTime = DateTime.Now;
+                        }
+                        else
+                        {
+                            CurrentAction = MobActionEnum.Wait;
+                        }
                     }
-                    else if (Dead)
-                    {
-                        CurrentAction = MobActionEnum.Reward;
-                        LastActionTime = DateTime.Now;
-                    }
-                    else
-                    {
-                        CurrentAction = MobActionEnum.Wait;
-                    }
-                }
                     break;
 
                 case MobActionEnum.Attack:
-                {
-                    if (_giveUp)
                     {
-                        CurrentAction = MobActionEnum.GiveUp;
+                        if (_giveUp)
+                        {
+                            CurrentAction = MobActionEnum.GiveUp;
+                        }
+                        else if (Dead)
+                        {
+                            CurrentAction = MobActionEnum.Reward;
+                        }
+                        else if (InBattle && !TargetAlive && TargetTamers.Count <= 1)
+                        {
+                            CurrentAction = MobActionEnum.GiveUp;
+                        }
                     }
-                    else if (Dead)
-                    {
-                        CurrentAction = MobActionEnum.Reward;
-                    }
-                    else if (InBattle && !TargetAlive && TargetTamers.Count <= 1)
-                    {
-                        CurrentAction = MobActionEnum.GiveUp;
-                    }
-                }
                     break;
 
                 case MobActionEnum.UseAttackSkill:
-                {
-                    if (_giveUp)
                     {
-                        CurrentAction = MobActionEnum.GiveUp;
+                        if (_giveUp)
+                        {
+                            CurrentAction = MobActionEnum.GiveUp;
+                        }
+                        else if (Dead)
+                        {
+                            CurrentAction = MobActionEnum.Reward;
+                        }
+                        else if (InBattle && !TargetAlive && TargetTamers.Count <= 1)
+                        {
+                            CurrentAction = MobActionEnum.GiveUp;
+                        }
                     }
-                    else if (Dead)
-                    {
-                        CurrentAction = MobActionEnum.Reward;
-                    }
-                    else if (InBattle && !TargetAlive && TargetTamers.Count <= 1)
-                    {
-                        CurrentAction = MobActionEnum.GiveUp;
-                    }
-                }
                     break;
 
                 case MobActionEnum.GiveUp:
-                {
-                    if (Dead)
                     {
-                        CurrentAction = MobActionEnum.Reward;
-                        LastActionTime = DateTime.Now;
+                        if (Dead)
+                        {
+                            CurrentAction = MobActionEnum.Reward;
+                            LastActionTime = DateTime.Now;
+                        }
+                        else
+                        {
+                            CurrentAction = MobActionEnum.Walk;
+                            LastActionTime = DateTime.Now.AddSeconds(6);
+                        }
                     }
-                    else
-                    {
-                        CurrentAction = MobActionEnum.Walk;
-                        LastActionTime = DateTime.Now.AddSeconds(6);
-                    }
-                }
                     break;
 
                 case MobActionEnum.Respawn:
-                {
-                    CurrentAction = MobActionEnum.Wait;
-                    LastActionTime = DateTime.Now;
-                }
+                    {
+                        CurrentAction = MobActionEnum.Wait;
+                        LastActionTime = DateTime.Now;
+                    }
                     break;
             }
         }
@@ -577,5 +577,6 @@ namespace DigitalWorldOnline.Commons.Models.Config
             DeathTime = deathTime;
             ResurrectionTime = resurrectionTime;
         }
+
     }
 }

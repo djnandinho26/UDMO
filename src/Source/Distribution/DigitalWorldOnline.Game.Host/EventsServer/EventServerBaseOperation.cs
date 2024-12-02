@@ -167,7 +167,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                             .FirstOrDefault(x => x.Initialized &&
                                                  x.MapId == client.Tamer.Location.MapId);
 
-                        _logger.Warning($"Waiting map {client.Tamer.Location.MapId} initialization.");
+                        _logger.Warning($"Waiting event map {client.Tamer.Location.MapId} initialization.");
                     }
 
                     client.Tamer.MobsInView.Clear();
@@ -237,6 +237,14 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             var map = Maps.FirstOrDefault(x => x.Clients.Any(gameClient => gameClient.TamerId == sourceId));
 
             map?.BroadcastForTamerViewsAndSelf(sourceId, packet);
+        }
+
+        public void BroadcastForTamerViewsAndSelf(GameClient client, byte[] packet)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient =>
+                gameClient.TamerId == client.TamerId && gameClient.Tamer.Channel == client.Tamer.Channel));
+
+            map?.BroadcastForTamerViewsAndSelf(client.TamerId, packet);
         }
 
         public void AddMapDrop(Drop drop)

@@ -10,11 +10,11 @@ using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
-using DigitalWorldOnline.Commons.Models;
 using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Asset;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.Character;
+using DigitalWorldOnline.Commons.Models.Config;
 using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Models.Summon;
 using DigitalWorldOnline.Commons.Packets.Chat;
@@ -26,12 +26,11 @@ using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Commons.Writers;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 
 namespace DigitalWorldOnline.Game
 {
@@ -47,6 +46,7 @@ namespace DigitalWorldOnline.Game
         private readonly AssetsLoader _assets;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
         private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
         private readonly ISender _sender;
@@ -60,6 +60,7 @@ namespace DigitalWorldOnline.Game
             AssetsLoader assets,
             MapServer mapServer,
             DungeonsServer dungeonsServer,
+            EventServer eventServer,
             PvpServer pvpServer,
             ILogger logger,
             ISender sender,
@@ -72,6 +73,7 @@ namespace DigitalWorldOnline.Game
             _assets = assets;
             _mapServer = mapServer;
             _dungeonServer = dungeonsServer;
+            _eventServer = eventServer;
             _pvpServer = pvpServer;
             _logger = logger;
             _sender = sender;
@@ -182,7 +184,7 @@ namespace DigitalWorldOnline.Game
 
                         client.Tamer.AddDigimon(newDigimon);
 
-                        client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), newDigimon.Slot)); 
+                        client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), newDigimon.Slot));
 
                         var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
 
@@ -909,6 +911,8 @@ namespace DigitalWorldOnline.Game
 
                                                 var result = _expManager.ReceiveMaxDigimonExperience(client.Partner);
 
+                                                var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
                                                 if (result.Success)
                                                 {
                                                     client.Send(new ReceiveExpPacket(0, 0, client.Tamer.CurrentExperience, client.Tamer.Partner.GeneralHandler, 0, 0, client.Tamer.Partner.CurrentExperience, 0));
@@ -917,17 +921,45 @@ namespace DigitalWorldOnline.Game
                                                     {
                                                         client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Partner.CurrentType, client.Partner.Level, client.Partner.Size));
 
-                                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new LevelUpPacket(client.Tamer.Partner.GeneralHandler, client.Tamer.Partner.Level).Serialize());
+                                                        switch (mapConfig.Type)
+                                                        {
+                                                            case MapTypeEnum.Dungeon:
+                                                                _dungeonServer.BroadcastForTamerViewsAndSelf(client, new LevelUpPacket(client.Tamer.Partner.GeneralHandler, client.Tamer.Partner.Level).Serialize());
+                                                                break;
+                                                            case MapTypeEnum.Event:
+                                                                _eventServer.BroadcastForTamerViewsAndSelf(client, new LevelUpPacket(client.Tamer.Partner.GeneralHandler, client.Tamer.Partner.Level).Serialize());
+                                                                break;
+                                                            case MapTypeEnum.Pvp:
+                                                                _pvpServer.BroadcastForTamerViewsAndSelf(client, new LevelUpPacket(client.Tamer.Partner.GeneralHandler, client.Tamer.Partner.Level).Serialize());
+                                                                break;
+                                                            default:
+                                                                _mapServer.BroadcastForTamerViewsAndSelf(client, new LevelUpPacket(client.Tamer.Partner.GeneralHandler, client.Tamer.Partner.Level).Serialize());
+                                                                break;
+                                                        }
 
                                                         client.Partner.FullHeal();
 
                                                         client.Send(new UpdateStatusPacket(client.Tamer));
 
-                                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                                                        switch (mapConfig.Type)
+                                                        {
+                                                            case MapTypeEnum.Dungeon:
+                                                                _dungeonServer.BroadcastForTamerViewsAndSelf(client, new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                                                                break;
+                                                            case MapTypeEnum.Event:
+                                                                _eventServer.BroadcastForTamerViewsAndSelf(client, new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                                                                break;
+                                                            case MapTypeEnum.Pvp:
+                                                                _pvpServer.BroadcastForTamerViewsAndSelf(client, new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                                                                break;
+                                                            default:
+                                                                _mapServer.BroadcastForTamerViewsAndSelf(client, new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                                                                break;
+                                                        }
+
                                                     }
 
                                                     await _sender.Send(new UpdateDigimonExperienceCommand(client.Partner));
-
                                                 }
                                                 else
                                                 {
@@ -1125,11 +1157,27 @@ namespace DigitalWorldOnline.Game
                             break;
                         }
 
+                        var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
                         _logger.Debug($"Updating tamer state...");
                         client.Tamer.UpdateState(CharacterStateEnum.Loading);
                         await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
 
-                        _mapServer.RemoveClient(client);
+                        switch (mapConfig.Type)
+                        {
+                            case MapTypeEnum.Dungeon:
+                                _dungeonServer.RemoveClient(client);
+                                break;
+                            case MapTypeEnum.Event:
+                                _eventServer.RemoveClient(client);
+                                break;
+                            case MapTypeEnum.Pvp:
+                                _pvpServer.RemoveClient(client);
+                                break;
+                            default:
+                                _mapServer.RemoveClient(client);
+                                break;
+                        }
 
                         client.SetGameQuit(false);
                         client.Tamer.UpdateSlots();
@@ -1630,15 +1678,28 @@ namespace DigitalWorldOnline.Game
 
                         if (command[1].ToLower() == "on")
                         {
-                            if (client.Tamer.GodMode)
+                            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
+                            switch (mapConfig.Type)
                             {
-                                client.Send(new SystemMessagePacket($"You are already in god mode."));
+                                case MapTypeEnum.Pvp:
+                                    client.Tamer.SetGodMode(false);
+                                    break;
+                                default:
+                                    {
+                                        if (client.Tamer.GodMode)
+                                        {
+                                            client.Send(new SystemMessagePacket($"You are already in god mode."));
+                                        }
+                                        else
+                                        {
+                                            client.Tamer.SetGodMode(true);
+                                            client.Send(new SystemMessagePacket($"God mode enabled."));
+                                        }
+                                    }
+                                    break;
                             }
-                            else
-                            {
-                                client.Tamer.SetGodMode(true);
-                                client.Send(new SystemMessagePacket($"God mode enabled."));
-                            }
+
                         }
                         else
                         {
@@ -1763,6 +1824,76 @@ namespace DigitalWorldOnline.Game
                     }
                     break;
 
+                case "su":
+                    {
+                        var regex = @"^su\s\d+(\s\d+)?$";
+                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+
+                        if (!match.Success)
+                        {
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !summon MobId"));
+                            break;
+                        }
+
+                        var mobType = int.Parse(command[1].ToLower());
+
+                        var MobInfo = _assets.SummonMobInfo.FirstOrDefault(x => x.Type == mobType);
+
+                        if (MobInfo != null)
+                        {
+                            var mob = (SummonMobModel)MobInfo.Clone();
+
+                            _logger.Information($"mob {mob.Id} : {mob.Type} : {mob.Name} being summoned !!");
+
+                            try
+                            {
+                                int radius = 500;
+                                var random = new Random();
+
+                                int xOffset = random.Next(-radius, radius + 1);
+                                int yOffset = random.Next(-radius, radius + 1);
+
+                                int bossX = client.Tamer.Location.X + xOffset;
+                                int bossY = client.Tamer.Location.Y + yOffset;
+
+                                //var map = _mapServer.Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == client.TamerId));
+
+                                //var mobId = mob.Id;
+
+                                //mob.SetId(mobId);
+
+                                if (mob?.Location?.X != 0 && mob?.Location?.Y != 0)
+                                {
+                                    bossX = mob.Location.X;
+                                    bossY = mob.Location.Y;
+
+                                    mob.SetLocation(client.Tamer.Location.MapId, bossX, bossY);
+                                }
+                                else
+                                {
+                                    mob.SetLocation(client.Tamer.Location.MapId, bossX, bossY);
+                                }
+
+                                mob.SetDuration();
+                                mob.SetTargetSummonHandle(client.Tamer.GeneralHandler);
+
+                                _mapServer.AddSummonMob(client.Tamer.Location.MapId, mob, client.TamerId);
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.Error($"{ex.Message}");
+                            }
+
+                            _logger.Information($"mob {mob.Type} : {mob.Name} spawned !!");
+                        }
+                        else
+                        {
+                            client.Send(new SystemMessagePacket($"Invalid Mob Type !!"));
+                        }
+
+                    }
+                    break;
+
                 case "summon":
                     {
                         var regex = @"(summon\s\d\s\d){1}|(summon\s\d){1}";
@@ -1774,9 +1905,9 @@ namespace DigitalWorldOnline.Game
                             break;
                         }
 
-                        var MobId = int.Parse(command[1].ToLower());
+                        var mobId = int.Parse(command[1].ToLower());
 
-                        var SummonInfo = _assets.SummonInfo.FirstOrDefault(x => x.ItemId == MobId);
+                        var SummonInfo = _assets.SummonInfo.FirstOrDefault(x => x.ItemId == 27100);
 
                         if (SummonInfo != null)
                         {
@@ -2588,10 +2719,21 @@ namespace DigitalWorldOnline.Game
                                 break;
                             }
 
-                            if (client.DungeonMap)
-                                _dungeonServer.RemoveClient(client);
-                            else
-                                _mapServer.RemoveClient(client);
+                            switch (mapConfig.Type)
+                            {
+                                case MapTypeEnum.Dungeon:
+                                    _dungeonServer.RemoveClient(client);
+                                    break;
+                                case MapTypeEnum.Event:
+                                    _eventServer.RemoveClient(client);
+                                    break;
+                                case MapTypeEnum.Pvp:
+                                    _pvpServer.RemoveClient(client);
+                                    break;
+                                case MapTypeEnum.Default:
+                                    _mapServer.RemoveClient(client);
+                                    break;
+                            }
 
                             var destination = waypoints.Regions.First();
 

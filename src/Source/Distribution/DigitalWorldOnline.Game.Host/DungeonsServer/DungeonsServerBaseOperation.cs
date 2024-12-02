@@ -429,7 +429,7 @@ namespace DigitalWorldOnline.GameHost
                                 return;
                             }
 
-                            _logger.Warning($"Waiting map {client.Tamer.Location.MapId} initialization.");
+                            _logger.Warning($"Waiting Dungeon map {client.Tamer.Location.MapId} initialization.");
                             await Task.Delay(1000);
                         }
                     }
@@ -456,7 +456,7 @@ namespace DigitalWorldOnline.GameHost
 
                                 map = Maps.FirstOrDefault(x => x.Initialized && x.DungeonId == client.Tamer.Id);
 
-                                _logger.Warning($"Waiting map {client.Tamer.Location.MapId} initialization.");
+                                _logger.Warning($"Waiting Dungeon map {client.Tamer.Location.MapId} initialization.");
                             }
 
                             client.Tamer.MobsInView.Clear();
@@ -569,6 +569,14 @@ namespace DigitalWorldOnline.GameHost
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == sourceId));
 
             map?.BroadcastForTamerViewsAndSelf(sourceId, packet);
+        }
+
+        public void BroadcastForTamerViewsAndSelf(GameClient client, byte[] packet)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient =>
+                gameClient.TamerId == client.TamerId && gameClient.Tamer.Channel == client.Tamer.Channel));
+
+            map?.BroadcastForTamerViewsAndSelf(client.TamerId, packet);
         }
 
         public void BroadcastForTamerViews(long sourceId, byte[] packet)

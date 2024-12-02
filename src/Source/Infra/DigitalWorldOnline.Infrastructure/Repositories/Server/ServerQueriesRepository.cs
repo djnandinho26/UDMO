@@ -602,6 +602,18 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Server
                 .ToListAsync();
         }
 
+        public async Task<List<SummonMobDTO>> GetSummonMobAssetsAsync()
+        {
+            return await _context.SummonsMobConfig.AsNoTracking()
+                .Include(x => x.Location)
+                .Include(x => x.DropReward)
+                    .ThenInclude(dr => dr.Drops)
+                .Include(x => x.DropReward)
+                    .ThenInclude(dr => dr.BitsDrop)
+                .Include(x => x.ExpReward)
+                .ToListAsync();
+        }
+
         public async Task<List<NpcColiseumAssetDTO>> GetNpcColiseumAssetsAsync()
         {
             return await _context.NpcColiseum.AsNoTracking()

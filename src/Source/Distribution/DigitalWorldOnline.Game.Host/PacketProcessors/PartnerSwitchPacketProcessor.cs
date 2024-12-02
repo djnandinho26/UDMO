@@ -1,12 +1,15 @@
 ﻿using DigitalWorldOnline.Application;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
+using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Serilog;
 
@@ -21,17 +24,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly AssetsLoader _assets;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
         private readonly ISender _sender;
 
         public PartnerSwitchPacketProcessor(PartyManager partyManager, StatusManager statusManager, AssetsLoader assets,
-            MapServer mapServer, DungeonsServer dungeonServer, ILogger logger, ISender sender)
+            MapServer mapServer, DungeonsServer dungeonServer, EventServer eventServer, PvpServer pvpServer, ILogger logger, ISender sender)
         {
             _partyManager = partyManager;
             _statusManager = statusManager;
             _assets = assets;
             _mapServer = mapServer;
             _dungeonServer = dungeonServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _logger = logger;
             _sender = sender;
         }
@@ -50,9 +57,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             client.Tamer.RemovePartnerPassiveBuff();
             await _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
 
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
             if (client.DungeonMap)
             {
-                _dungeonServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Partner, newPartner);
+                //_dungeonServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Partner, newPartner);
+                _dungeonServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
             }
             else
             {
@@ -61,22 +71,16 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
 
             client.Tamer.SwitchPartner(slot);
+
             client.Partner.UpdateCurrentType(client.Partner.BaseType);
             client.Partner.SetTamer(client.Tamer);
             client.Partner.NewLocation(client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y);
 
-            client.Tamer.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(client.Tamer.Partner.CurrentType));
-
-            client.Tamer.Partner.SetBaseStatus(
-                _statusManager.GetDigimonBaseStatus(
-                    client.Tamer.Partner.CurrentType,
-                    client.Tamer.Partner.Level,
-                    client.Tamer.Partner.Size
-                )
-            );
-
+            client.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(client.Tamer.Partner.CurrentType));
+            client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Tamer.Partner.CurrentType, client.Tamer.Partner.Level, client.Tamer.Partner.Size));
             client.Partner.SetSealStatus(_assets.SealInfo);
 
+            // Battle Tag
             if (client.Tamer.InBattle)
             {
                 var battleTagItem = client.Tamer.Inventory.FindItemBySection(16400);
@@ -94,15 +98,20 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
                     x.SkillCode == buff.SkillId && buff.BuffInfo == null || x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
 
-            if (client.DungeonMap)
+            switch (mapConfig.Type)
             {
-                _dungeonServer.BroadcastForTamerViewsAndSelf(
-                    client.TamerId, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
-            }
-            else
-            {
-                //_mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
-                _mapServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                case MapTypeEnum.Dungeon:
+                    _dungeonServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                    break;
+                case MapTypeEnum.Event:
+                    _eventServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                    break;
+                case MapTypeEnum.Pvp:
+                    _pvpServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                    break;
+                case MapTypeEnum.Default:
+                    _mapServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                    break;
             }
 
             if (client.Tamer.Partner.BuffList.Buffs.Any())

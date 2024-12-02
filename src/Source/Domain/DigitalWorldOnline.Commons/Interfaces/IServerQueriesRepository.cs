@@ -141,6 +141,7 @@ namespace DigitalWorldOnline.Commons.Interfaces
         Task<List<TimeRewardAssetDTO>> GetTimeRewardAssetsAsync();
         Task<List<TimeRewardDTO>> GetTimeRewardEventsAsync();
         Task<List<SummonDTO>> GetSummonAssetsAsync();
+        Task<List<SummonMobDTO>> GetSummonMobAssetsAsync();
         Task<List<NpcColiseumAssetDTO>> GetNpcColiseumAssetsAsync();
         Task<ArenaRankingDTO> GetArenaRankingAsync(ArenaRankingEnum arenaRankingEnum);
         Task<List<ArenaRankingDailyItemRewardsDTO>> GetArenaRankingDailyItemRewardsAsync();

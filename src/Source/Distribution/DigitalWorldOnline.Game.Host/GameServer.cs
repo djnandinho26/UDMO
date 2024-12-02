@@ -442,11 +442,11 @@ namespace DigitalWorldOnline.Game
             Task.Run(() => _mapServer.StartAsync(cancellationToken));
             Task.Run(() => _mapServer.LoadAllMaps(cancellationToken));
             //Task.Run(() => _mapServer.CallDiscordWarnings("Server Online", "13ff00", "1307467492888805476", "1280948869739450438"));
-            Task.Run(() => _pvpServer.StartAsync(cancellationToken));
             Task.Run(() => _dungeonsServer.StartAsync(cancellationToken));
-            Task.Run(() => _sender.Send(new UpdateCharacterFriendsCommand(null, false)));
+            Task.Run(() => _pvpServer.StartAsync(cancellationToken));
             Task.Run(() => _eventServer.StartAsync(cancellationToken));
-
+            Task.Run(() => _sender.Send(new UpdateCharacterFriendsCommand(null, false)));
+            
             return Task.CompletedTask;
         }
 
@@ -487,8 +487,7 @@ namespace DigitalWorldOnline.Game
 
                 _logger.Information($"Made all friends offline {GetType().Name}...");
 
-                _ = _mapServer.CallDiscordWarnings("Server Offline", "fc0303", "1307467492888805476",
-                    "1280948869739450438");
+                //_ = _mapServer.CallDiscordWarnings("Server Offline", "fc0303", "1307467492888805476", "1280948869739450438");
                 Shutdown();
                 return;
             }
@@ -642,7 +641,7 @@ namespace DigitalWorldOnline.Game
                     _logger.Information($"Error total: {e.StackTrace}");
                 }
             });
-            _logger.Information($"Added new information to all characters, Digimon count: {digimonCount}, Encyclopedia count: {encyclopediaCount}, Encyclopedia evolution count: {encyclopediaEvolutionCount}");
+            _logger.Debug($"Added new information to all characters, Digimon count: {digimonCount}, Encyclopedia count: {encyclopediaCount}, Encyclopedia evolution count: {encyclopediaEvolutionCount}");
             return Task.CompletedTask;
         }
     }

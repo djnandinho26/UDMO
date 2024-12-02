@@ -305,7 +305,8 @@ namespace DigitalWorldOnline.GameHost
                             _logger.Warning(
                                 $"Waiting map {client.Tamer.Location.MapId} CH {_loadChannel} initialization.");
 
-                            if (map == null) SearchNewMaps(client);
+                            if (map == null)
+                                await SearchNewMaps(client);
 
                             if (stopWatch.ElapsedMilliseconds >= timeLimit)
                             {
@@ -350,6 +351,7 @@ namespace DigitalWorldOnline.GameHost
                     client.Tamer.Partner.Location.Y
                 ).Serialize()
             );
+
             map?.RemoveClient(client);
         }
 
@@ -499,6 +501,13 @@ namespace DigitalWorldOnline.GameHost
         }
 
         // ----------------------------------------------------------------------------
+
+        public void AddSummonMob(short mapId, SummonMobModel summon, long tamerId)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
+
+            map?.AddMobSumon(summon);
+        }
 
         public void AddSummonMobs(short mapId, SummonMobModel summon, long tamerId)
         {

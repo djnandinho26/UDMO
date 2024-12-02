@@ -76,16 +76,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             try
             {
-                CharacterModel? character =
-                    _mapper.Map<CharacterModel>(
-                        await _sender.Send(new CharacterByIdQuery(account.LastPlayedCharacter)));
+                CharacterModel? character = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterByIdQuery(account.LastPlayedCharacter)));
 
-                _logger.Information(
-                    $"Search character with id {account.LastPlayedCharacter} for account {account.Id}...");
+                _logger.Information($"Search character with id {account.LastPlayedCharacter} for account {account.Id}...");
 
                 if (character == null || character.Partner == null)
                 {
-                    _logger.Information($"Invalid character information for tamer id {account.LastPlayedCharacter}.");
+                    _logger.Error($"Invalid character information for tamer id {account.LastPlayedCharacter}.");
                     return;
                 }
 
@@ -96,19 +93,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     digimon.SetTamer(character);
 
                     digimon.SetBaseInfo(_statusManager.GetDigimonBaseInfo(digimon.CurrentType));
-
-                    digimon.SetBaseStatus(
-                        _statusManager.GetDigimonBaseStatus(digimon.CurrentType, digimon.Level, digimon.Size));
-
+                    digimon.SetBaseStatus(_statusManager.GetDigimonBaseStatus(digimon.CurrentType, digimon.Level, digimon.Size));
                     digimon.SetTitleStatus(_statusManager.GetTitleStatus(character.CurrentTitle));
-
                     digimon.SetSealStatus(_assets.SealInfo);
                 }
 
                 var tamerLevelStatus = _statusManager.GetTamerLevelStatus(character.Model, character.Level);
 
                 character.SetBaseStatus(_statusManager.GetTamerBaseStatus(character.Model));
-
                 character.SetLevelStatus(tamerLevelStatus);
 
                 character.NewViewLocation(character.Location.X, character.Location.Y);
@@ -143,8 +135,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else
                 {
-                    var channels =
-                        (Dictionary<byte, byte>)await _sender.Send(new ChannelsByMapIdQuery(character.Location.MapId));
+                    var channels = (Dictionary<byte, byte>)await _sender.Send(new ChannelsByMapIdQuery(character.Location.MapId));
                     byte? channel = GetTargetChannel(character.Channel, channels);
 
                     if (channel == null)
@@ -161,7 +152,53 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 character.UpdateState(CharacterStateEnum.Loading);
                 client.SetCharacter(character);
+
                 client.SetSentOnceDataSent(character.InitialPacketSentOnceSent);
+               
+                _logger.Debug($"Updating character state...");
+                await _sender.Send(new UpdateCharacterStateCommand(character.Id, CharacterStateEnum.Loading));
+
+                var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
+                if (mapConfig == null)
+                {
+                    _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Default Map)");
+                    await _mapServer.AddClient(client);
+                }
+                else
+                {
+                    if (client.DungeonMap)
+                    {
+                        _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Dungeon Map)");
+                        await _dungeonsServer.AddClient(client);
+                    }
+                    else
+                    {
+                        switch (mapConfig.Type)
+                        {
+                            case MapTypeEnum.Dungeon:
+                                _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Dungeon Map)");
+                                await _dungeonsServer.AddClient(client);
+                                break;
+                            case MapTypeEnum.Pvp:
+                                _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (PVP Map)");
+                                await _pvpServer.AddClient(client);
+                                break;
+                            case MapTypeEnum.Event:
+                                _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Event Map)");
+                                await _eventServer.AddClient(client);
+                                break;
+                            case MapTypeEnum.Default:
+                            default:
+                                await _mapServer.AddClient(client);
+                                _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Normal Map)");
+                                break;
+                        }
+                    }
+                }
+
+                while (client.Loading) await Task.Delay(1000);
+
                 character.SetGenericHandler(character.Partner.GeneralHandler);
 
                 var party = _partyManager.FindParty(client.TamerId);
@@ -170,9 +207,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     party.UpdateMember(party[client.TamerId], character);
 
-                    var firstMemberLocation =
-                        party.Members.Values.FirstOrDefault(x => x.Location.MapId == client.Tamer.Location.MapId);
-                    
+                    var firstMemberLocation = party.Members.Values.FirstOrDefault(x => x.Location.MapId == client.Tamer.Location.MapId);
+
                     if (firstMemberLocation != null)
                     {
                         character.SetCurrentChannel(firstMemberLocation.Channel);
@@ -195,54 +231,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             ));
                     }
                 }
-
-                _logger.Debug($"Updating character state...");
-                await _sender.Send(new UpdateCharacterStateCommand(character.Id, CharacterStateEnum.Loading));
-                var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
-                if (mapConfig == null)
-                {
-                    await _mapServer.AddClient(client);
-                    _logger.Information(
-                        $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
-                }
-                else
-                {
-                    if (client.DungeonMap)
-                    {
-                        await _dungeonsServer.AddClient(client);
-                        _logger.Information(
-                            $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
-                    }
-                    else
-                    {
-                        switch (mapConfig.Type)
-                        {
-                            case MapTypeEnum.Dungeon:
-                                await _dungeonsServer.AddClient(client);
-                                _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
-                                break;
-                            case MapTypeEnum.Pvp:
-                                await _pvpServer.AddClient(client);
-                                _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
-                                break;
-                            case MapTypeEnum.Event:
-                                await _dungeonsServer.AddClient(client);
-                                _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
-                                break;
-                            case MapTypeEnum.Default:
-                            default:
-                                await _mapServer.AddClient(client);
-                                _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
-                                break;
-                        }
-                    }
-                }
-
-                while (client.Loading) await Task.Delay(1000);
 
                 if (!client.DungeonMap)
                 {
@@ -272,8 +260,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             catch (Exception ex)
             {
                 _logger.Error(
-                    $"[{account.LastPlayedCharacter}] An error occurred: {ex.Message}, Line: {ex.Source.ToString()}, Stacktrace: {ex.StackTrace.ToString()}",
-                    ex);
+                    $"[{account.LastPlayedCharacter}] An error occurred: {ex.Message}, Line: {ex.Source.ToString()}, Stacktrace: {ex.StackTrace.ToString()}", ex);
                 client.Disconnect();
             }
         }
