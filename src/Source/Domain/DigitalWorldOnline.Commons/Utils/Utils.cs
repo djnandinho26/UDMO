@@ -511,7 +511,8 @@ namespace DigitalWorldOnline.Commons.Utils
             else if (mapId == 1)
             {
                 return 3; // Event area
-            }else if (mapId == 20)
+            }
+            else if (mapId == 20)
             {
                 return 1; // Event area
             }

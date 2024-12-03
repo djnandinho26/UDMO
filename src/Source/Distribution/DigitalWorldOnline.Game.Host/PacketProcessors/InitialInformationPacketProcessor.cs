@@ -155,38 +155,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 client.SetSentOnceDataSent(character.InitialPacketSentOnceSent);
 
-                var party = _partyManager.FindParty(client.TamerId);
-
-                if (party != null)
-                {
-                    party.UpdateMember(party[client.TamerId], character);
-
-                    var firstMemberLocation =
-                        party.Members.Values.FirstOrDefault(x => x.Location.MapId == client.Tamer.Location.MapId);
-                    
-                    if (firstMemberLocation != null)
-                    {
-                        character.SetCurrentChannel(firstMemberLocation.Channel);
-                        client.Tamer.SetCurrentChannel(firstMemberLocation.Channel);
-                    }
-
-                    foreach (var target in party.Members.Values.Where(x => x.Id != client.TamerId))
-                    {
-                        var targetClient = _mapServer.FindClientByTamerId(target.Id);
-                        if (targetClient == null) targetClient = _dungeonsServer.FindClientByTamerId(target.Id);
-
-                        if (targetClient == null) continue;
-
-                        KeyValuePair<byte, CharacterModel> partyMember =
-                            party.Members.FirstOrDefault(x => x.Value.Id == client.TamerId);
-                        targetClient.Send(
-                            UtilitiesFunctions.GroupPackets(
-                                new PartyMemberWarpGatePacket(partyMember, targetClient.Tamer).Serialize(),
-                                new PartyMemberMovimentationPacket(partyMember).Serialize()
-                            ));
-                    }
-                }
-
                 _logger.Debug($"Updating character state...");
                 await _sender.Send(new UpdateCharacterStateCommand(character.Id, CharacterStateEnum.Loading));
 
@@ -196,8 +164,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Default Map)");
                     await _mapServer.AddClient(client);
-                    _logger.Information(
-                        $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
                 }
                 else
                 {
@@ -205,8 +171,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     {
                         _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Dungeon Map)");
                         await _dungeonsServer.AddClient(client);
-                        _logger.Information(
-                            $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                     }
                     else
                     {
@@ -215,25 +179,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             case MapTypeEnum.Dungeon:
                                 _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Dungeon Map)");
                                 await _dungeonsServer.AddClient(client);
-                                _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                                 break;
                             case MapTypeEnum.Pvp:
                                 _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (PVP Map)");
                                 await _pvpServer.AddClient(client);
-                                _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                                 break;
                             case MapTypeEnum.Event:
+                                _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Event Map)");
                                 await _dungeonsServer.AddClient(client);
-                                _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler}...");
                                 break;
                             case MapTypeEnum.Default:
                             default:
+                                _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Normal Map)");
                                 await _mapServer.AddClient(client);
-                                _logger.Information(
-                                    $"Adding character {character.Name}({character.Id}) to map {character.Location.MapId} {character.GeneralHandler} - {character.Partner.GeneralHandler} on Channel {character.Channel}...");
                                 break;
                         }
                     }
@@ -302,8 +260,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             catch (Exception ex)
             {
-                _logger.Error(
-                    $"[{account.LastPlayedCharacter}] An error occurred: {ex.Message}, Line: {ex.Source.ToString()}, Stacktrace: {ex.StackTrace.ToString()}", ex);
+                _logger.Error($"[{account.LastPlayedCharacter}] An error occurred:\n {ex.Message}, Line: {ex.Source.ToString()}, Stacktrace: {ex.StackTrace.ToString()}", ex);
                 client.Disconnect();
             }
         }

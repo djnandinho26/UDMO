@@ -508,6 +508,8 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             map?.BroadcastForTargetTamers(map.TamersView[sourceId], packet);
         }
 
+        // ------------------------------------------------------------------------------------------------------------
+
         public void BroadcastForTamerViewsAndSelf(long sourceId, byte[] packet)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == sourceId));
@@ -515,12 +517,22 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             map?.BroadcastForTamerViewsAndSelf(sourceId, packet);
         }
 
-        public void AddMapDrop(Drop drop)
+        public void BroadcastForTamerViewsAndSelf(GameClient client, byte[] packet)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient =>
                 gameClient.TamerId == client.TamerId && gameClient.Tamer.Channel == client.Tamer.Channel));
 
-            map?.BroadcastForTamerViewOnly(client.TamerId, packet);
+            map?.BroadcastForTamerViewsAndSelf(client.TamerId, packet);
+        }
+
+        // ------------------------------------------------------------------------------------------------------------
+
+        public void AddMapDrop(Drop drop, long sourceId, byte[] packet)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient =>
+                gameClient.TamerId == gameClient.TamerId && gameClient.Tamer.Channel == gameClient.Tamer.Channel));
+
+            map?.BroadcastForTamerViewOnly(sourceId, packet);
         }
 
         public void AddMapDrop(Drop drop, long tamerId)
