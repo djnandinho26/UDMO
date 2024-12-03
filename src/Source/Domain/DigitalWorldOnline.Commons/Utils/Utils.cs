@@ -10,7 +10,7 @@ namespace DigitalWorldOnline.Commons.Utils
     {
         public static List<short> DungeonMapIds = new List<short>()
         {
-            13, 17, 20, 50, 51, 89, 210, 211, 212, 213, 214, 215, 252, 255, 270, 1110, 1111, 1112, 1304, 1308, 1310,
+            13, 17, 50, 51, 89, 210, 211, 212, 213, 214, 215, 252, 255, 270, 1110, 1111, 1112, 1304, 1308, 1310,
             1311, 1403, 1404, 1406,
             1500, 1501, 1502, 1600, 1601, 1602, 1603, 1604, 1605, 1606, 1607, 1608, 1609, 1610, 1611, 1612, 1613, 1614,
             1615, 1701, 1702, 1703, 1704, 1705, 1706, 1809, 1810, 1911, 2001, 2002
@@ -507,6 +507,13 @@ namespace DigitalWorldOnline.Commons.Utils
             else if (mapId == 1703)
             {
                 return 1703; // Royal Base
+            }
+            else if (mapId == 1)
+            {
+                return 3; // Event area
+            }else if (mapId == 20)
+            {
+                return 1; // Event area
             }
             else
             {
