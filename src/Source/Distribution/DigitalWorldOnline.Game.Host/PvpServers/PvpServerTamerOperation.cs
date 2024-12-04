@@ -38,7 +38,8 @@ namespace DigitalWorldOnline.GameHost
 
                 ShowOrHideTamer(map, tamer);
 
-                PvpMapBuff();
+                //RemoveMapBuff(client);
+                //PvpMapBuff(client);
 
                 if (client.Tamer.GodMode)
                     client.Tamer.SetGodMode(false);
@@ -46,9 +47,9 @@ namespace DigitalWorldOnline.GameHost
                 if (tamer.TargetMobs.Count > 0)
                     PartnerAutoAttackMob(tamer);
 
-                if (tamer.TargetPartner != null)
+                if (tamer.TargetPartner != null || tamer.TargetPartners.Count > 0)
                     PartnerAutoAttackPlayer(tamer);
-                
+
                 tamer.AutoRegen();
                 tamer.ActiveEvolutionReduction();
 
@@ -255,68 +256,63 @@ namespace DigitalWorldOnline.GameHost
 
         // ---------------------------------------------------------------------------------------------------
 
-        private async void PvpMapBuff()
+        private async void RemoveMapBuff(GameClient client)
         {
-            var currentMap = Maps.FirstOrDefault(gameMap => gameMap.Clients.Any() && gameMap.MapId == 1);
+            var buff1 = _assets.BuffInfo.FirstOrDefault(x => x.BuffId == 40327);
+            var buff2 = _assets.BuffInfo.FirstOrDefault(x => x.BuffId == 40350);
 
-            if (currentMap != null)
+            if (buff1 != null)
             {
-                var clients = currentMap.Clients;
+                var characterBuff1 = client.Tamer.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == buff1.BuffId);
 
-                var targetItem = _assets.ItemInfo.FirstOrDefault(itemAssetModel => itemAssetModel.ItemId == 71552); // ItemId of buff
-
-                if (targetItem != null)
+                if (characterBuff1 != null)
                 {
-                    var buff = _assets.BuffInfo.FirstOrDefault(buffInfoAssetModel =>
-                        buffInfoAssetModel.SkillCode == targetItem.SkillCode || buffInfoAssetModel.DigimonSkillCode == targetItem.SkillCode);
+                    client.Tamer.BuffList.Buffs.Remove(characterBuff1);
 
-                    if (buff != null)
-                    {
-                        foreach (var client in clients)
-                        {
-                            //var duration = UtilitiesFunctions.RemainingTimeSeconds(targetItem.TimeInSeconds);
-                            var duration = 0;
-
-                            if (buff.SkillCode > 0)
-                            {
-                                if (client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buff.BuffId))
-                                {
-                                    break;
-                                }
-
-                                var newCharacterBuff = CharacterBuffModel.Create(buff.BuffId, buff.SkillId, 0, (int)duration);
-                                newCharacterBuff.SetBuffInfo(buff);
-
-                                client.Tamer.BuffList.Buffs.Add(newCharacterBuff);
-
-                                client.Send(new UpdateStatusPacket(client.Tamer));
-                                client.Send(new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration).Serialize());
-
-                                await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
-                            }
-
-                            if (buff.DigimonSkillCode > 0)
-                            {
-                                if (client.Partner.BuffList.Buffs.Any(x => x.BuffId == buff.BuffId))
-                                {
-                                    break;
-                                }
-
-                                var newDigimonBuff = DigimonBuffModel.Create(buff.BuffId, buff.SkillId, 0, (int)duration);
-                                newDigimonBuff.SetBuffInfo(buff);
-
-                                client.Partner.BuffList.Buffs.Add(newDigimonBuff);
-
-                                client.Send(new UpdateStatusPacket(client.Tamer));
-                                client.Send(new AddBuffPacket(client.Partner.GeneralHandler, buff, (short)0, duration).Serialize());
-
-                                await _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
-                            }
-
-                        }
-                    }
+                    client.Send(new UpdateStatusPacket(client.Tamer));
+                    client.Send(new RemoveBuffPacket(client.Tamer.GeneralHandler, buff1.BuffId).Serialize());
                 }
             }
+
+            if (buff2 != null)
+            {
+                var characterBuff2 = client.Tamer.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == buff2.BuffId);
+
+                if (characterBuff2 != null)
+                {
+                    client.Tamer.BuffList.Buffs.Remove(characterBuff2);
+
+                    client.Send(new UpdateStatusPacket(client.Tamer));
+                    client.Send(new RemoveBuffPacket(client.Tamer.GeneralHandler, buff2.BuffId).Serialize());
+                }
+            }
+
+            await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+        }
+
+        private async void PvpMapBuff(GameClient client)
+        {
+            var buff = _assets.BuffInfo.Where(x => x.BuffId == 40345).ToList();
+
+            if (buff != null)
+            {
+                buff.ForEach(buffAsset =>
+                {
+                    if (!client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buffAsset.BuffId))
+                    {
+                        var newCharacterBuff = CharacterBuffModel.Create(buffAsset.BuffId, buffAsset.SkillId, 2592000, 0);
+
+                        newCharacterBuff.SetBuffInfo(buffAsset);
+
+                        client.Tamer.BuffList.Buffs.Add(newCharacterBuff);
+
+                        BroadcastForTamerViewsAndSelf(client.TamerId, new AddBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0).Serialize());
+                    }
+                });
+
+                await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+            }
+
         }
 
         // ---------------------------------------------------------------------------------------------------

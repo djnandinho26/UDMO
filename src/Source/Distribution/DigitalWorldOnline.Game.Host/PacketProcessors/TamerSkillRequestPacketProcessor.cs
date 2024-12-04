@@ -46,7 +46,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             int SkillId = packet.ReadInt();
 
-            _logger.Information($"SkillId: {SkillId}");
+            _logger.Debug($"SkillId: {SkillId}");
 
             var tamerSkill = _assets.TamerSkills.FirstOrDefault(x => x.SkillId == SkillId);
 

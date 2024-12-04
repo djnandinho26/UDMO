@@ -2693,9 +2693,7 @@ namespace DigitalWorldOnline.Game
 
                         if (!match.Success)
                         {
-                            client.Send(
-                                new SystemMessagePacket(
-                                    $"Unknown command. Check the available commands on the Admin Portal."));
+                            client.Send(new SystemMessagePacket($"Unknown command. Check the available commands on the Admin Portal."));
                             break;
                         }
 

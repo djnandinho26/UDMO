@@ -42,6 +42,8 @@ namespace DigitalWorldOnline.GameHost
                     continue;
 
                 CheckLocationDebuff(client);
+                //MapBuff(client);
+
                 GetInViewMobs(map, tamer);
                 GetInViewMobs(map, tamer, true);
 
@@ -54,12 +56,9 @@ namespace DigitalWorldOnline.GameHost
                 if (tamer.TargetSummonMobs.Count > 0)
                     PartnerAutoAttackSummon(tamer);
 
-                /*if (tamer.TargetPartner != null)
-                {
-                    if (tamer.PvpMap && tamer.TargetPartner.Character.PvpMap)
-                        PartnerAutoAttackPlayer(tamer);
-                }*/
-
+                if (tamer.TargetPartner != null && client.PvpMap)
+                    PartnerAutoAttackPlayer(tamer);
+                
                 CheckTimeReward(client);
 
                 if (client.Tamer.AttendanceReward.LastRewardDate.Day < DateTime.Now.Day)
@@ -261,7 +260,7 @@ namespace DigitalWorldOnline.GameHost
 
                     _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
                     _sender.Send(new UpdateItemsCommand(client.Tamer.Warehouse));
-                    
+
                     if (client.Tamer.AccountWarehouse != null)
                     {
                         _sender.Send(new UpdateItemsCommand(client.Tamer.AccountWarehouse));
@@ -584,6 +583,45 @@ namespace DigitalWorldOnline.GameHost
                         _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
                     }*/
                 }
+
+                // Verifica Buff do PvpMap
+                var buff1 = client.Tamer.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == 40345);
+
+                if (buff1 != null)
+                {
+                    client.Tamer.BuffList.Buffs.Remove(buff1);
+
+                    client.Send(new UpdateStatusPacket(client.Tamer));
+                    client.Send(new RemoveBuffPacket(client.Tamer.GeneralHandler, buff1.BuffId).Serialize());
+                }
+
+                _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+
+            }
+
+        }
+
+        private async void MapBuff(GameClient client)
+        {
+            var buff = _assets.BuffInfo.Where(x => x.BuffId == 40327 || x.BuffId == 40350).ToList();
+
+            if (buff != null)
+            {
+                buff.ForEach(buffAsset =>
+                {
+                    if (!client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buffAsset.BuffId))
+                    {
+                        var newCharacterBuff = CharacterBuffModel.Create(buffAsset.BuffId, buffAsset.SkillId, 2592000, 0);
+
+                        newCharacterBuff.SetBuffInfo(buffAsset);
+
+                        client.Tamer.BuffList.Buffs.Add(newCharacterBuff);
+
+                        BroadcastForTamerViewsAndSelf(client.TamerId, new AddBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0).Serialize());
+                    }
+                });
+
+                await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
             }
         }
 
@@ -1398,95 +1436,95 @@ namespace DigitalWorldOnline.GameHost
             switch (client.Tamer.TimeReward.RewardIndex)
             {
                 case TimeRewardIndexEnum.First:
-                {
-                    var GetPrizes = _assets.TimeRewardAssets
-                        .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.First).ToList();
-
-                    GetPrizes.ForEach(drop =>
                     {
-                        reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
-                        reward.ItemId = drop.ItemId;
-                        reward.Amount = drop.ItemCount;
+                        var GetPrizes = _assets.TimeRewardAssets
+                            .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.First).ToList();
 
-                        if (reward.IsTemporary)
-                            reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
-
-                        if (client.Tamer.Inventory.AddItem(reward))
+                        GetPrizes.ForEach(drop =>
                         {
-                            client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
-                            _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                        }
-                    });
-                }
+                            reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
+                            reward.ItemId = drop.ItemId;
+                            reward.Amount = drop.ItemCount;
+
+                            if (reward.IsTemporary)
+                                reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
+
+                            if (client.Tamer.Inventory.AddItem(reward))
+                            {
+                                client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
+                                _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                            }
+                        });
+                    }
                     break;
 
                 case TimeRewardIndexEnum.Second:
-                {
-                    var GetPrizes = _assets.TimeRewardAssets
-                        .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.Second).ToList();
-
-                    GetPrizes.ForEach(drop =>
                     {
-                        reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
-                        reward.ItemId = drop.ItemId;
-                        reward.Amount = drop.ItemCount;
+                        var GetPrizes = _assets.TimeRewardAssets
+                            .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.Second).ToList();
 
-                        if (reward.IsTemporary)
-                            reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
-
-                        if (client.Tamer.Inventory.AddItem(reward))
+                        GetPrizes.ForEach(drop =>
                         {
-                            client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
-                            _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                        }
-                    });
-                }
+                            reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
+                            reward.ItemId = drop.ItemId;
+                            reward.Amount = drop.ItemCount;
+
+                            if (reward.IsTemporary)
+                                reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
+
+                            if (client.Tamer.Inventory.AddItem(reward))
+                            {
+                                client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
+                                _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                            }
+                        });
+                    }
                     break;
 
                 case TimeRewardIndexEnum.Third:
-                {
-                    var GetPrizes = _assets.TimeRewardAssets
-                        .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.Third).ToList();
-
-                    GetPrizes.ForEach(drop =>
                     {
-                        reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
-                        reward.ItemId = drop.ItemId;
-                        reward.Amount = drop.ItemCount;
+                        var GetPrizes = _assets.TimeRewardAssets
+                            .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.Third).ToList();
 
-                        if (reward.IsTemporary)
-                            reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
-
-                        if (client.Tamer.Inventory.AddItem(reward))
+                        GetPrizes.ForEach(drop =>
                         {
-                            client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
-                            _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                        }
-                    });
-                }
+                            reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
+                            reward.ItemId = drop.ItemId;
+                            reward.Amount = drop.ItemCount;
+
+                            if (reward.IsTemporary)
+                                reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
+
+                            if (client.Tamer.Inventory.AddItem(reward))
+                            {
+                                client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
+                                _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                            }
+                        });
+                    }
                     break;
 
                 case TimeRewardIndexEnum.Fourth:
-                {
-                    var GetPrizes = _assets.TimeRewardAssets
-                        .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.Fourth).ToList();
-
-                    GetPrizes.ForEach(drop =>
                     {
-                        reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
-                        reward.ItemId = drop.ItemId;
-                        reward.Amount = drop.ItemCount;
+                        var GetPrizes = _assets.TimeRewardAssets
+                            .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.Fourth).ToList();
 
-                        if (reward.IsTemporary)
-                            reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
-
-                        if (client.Tamer.Inventory.AddItem(reward))
+                        GetPrizes.ForEach(drop =>
                         {
-                            client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
-                            _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                        }
-                    });
-                }
+                            reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
+                            reward.ItemId = drop.ItemId;
+                            reward.Amount = drop.ItemCount;
+
+                            if (reward.IsTemporary)
+                                reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
+
+                            if (client.Tamer.Inventory.AddItem(reward))
+                            {
+                                client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
+                                _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                            }
+                        });
+                    }
                     break;
 
                 default:

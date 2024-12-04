@@ -76,6 +76,8 @@ namespace DigitalWorldOnline.Commons.Entities
 
         public bool DungeonMap => UtilitiesFunctions.DungeonMapIds.Contains(Tamer?.Location.MapId ?? 0);
 
+        public bool PvpMap => UtilitiesFunctions.PvpMapIds.Contains(Tamer?.Location.MapId ?? 0);
+
         public bool SentOnceDataSent { get; private set; }
 
         private const int BufferSize = 16 * 1024;
