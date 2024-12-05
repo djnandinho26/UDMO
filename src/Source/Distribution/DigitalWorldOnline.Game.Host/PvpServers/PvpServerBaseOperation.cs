@@ -374,13 +374,21 @@ namespace DigitalWorldOnline.GameHost
             return map?.PlayersAttacking(partnerId) ?? false;
         }
 
+        // ----------------------------------------------------------------------------------------------------------------------------
+
         public DigimonModel? GetEnemyByHandler(short mapId, int handler)
         {
-            return Maps.FirstOrDefault(x => x.MapId == mapId)?
-                .ConnectedTamers
-                .Select(x => x.Partner)
-                .FirstOrDefault(x => x.GeneralHandler == handler);
+            return Maps.FirstOrDefault(x => x.MapId == mapId)?.ConnectedTamers
+                .Select(x => x.Partner).FirstOrDefault(x => x.GeneralHandler == handler);
         }
+
+        public DigimonModel? GetEnemyByHandler(short mapId, int handler, long tamerId)
+        {
+            return Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId))?.ConnectedTamers
+                .Select(x => x.Partner).FirstOrDefault(x => x.GeneralHandler == handler);
+        }
+
+        // ----------------------------------------------------------------------------------------------------------------------------
 
         public List<MobConfigModel> GetMobsNearbyPartner(Location location, int range)
         {

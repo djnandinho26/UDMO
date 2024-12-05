@@ -10,6 +10,7 @@ using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Serilog;
 
@@ -24,17 +25,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly AssetsLoader _assets;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ISender _sender;
         private readonly ILogger _logger;
 
         public PartnerEvolutionPacketProcessor(PartyManager partyManager, StatusManager statusManager, AssetsLoader assets,
-            MapServer mapServer, DungeonsServer dungeonServer, ISender sender, ILogger logger)
+            MapServer mapServer, DungeonsServer dungeonServer, EventServer eventServer, PvpServer pvpServer, ISender sender, ILogger logger)
         {
             _partyManager = partyManager;
             _statusManager = statusManager;
             _assets = assets;
             _mapServer = mapServer;
             _dungeonServer = dungeonServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _sender = sender;
             _logger = logger;
         }
@@ -116,6 +121,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
                         new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
                 }
+                else if (client.PvpMap)
+                {
+                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                        new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
+                }
                 else
                 {
                     _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
@@ -128,7 +138,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             await _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
 
             // ---------------------------------------
-            // _logger.Information($"Evolving....");
+
             DigimonEvolutionEffectEnum evoEffect;
 
             if (evoStage == 8)
@@ -494,9 +504,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     ).Serialize()
                 );
             }
+            else if (client.PvpMap)
+            {
+                if (client.Tamer.Riding)
+                {
+                    client.Tamer.StopRideMode();
+
+                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new RideModeStopPacket(client.Tamer.GeneralHandler, client.Partner.GeneralHandler).Serialize());
+                }
+
+                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                    new DigimonEvolutionSucessPacket(client.Tamer.GeneralHandler, client.Partner.GeneralHandler, client.Partner.CurrentType, evoEffect).Serialize());
+            }
             else
             {
-                // _logger.Information($"Check if riding");
                 if (client.Tamer.Riding)
                 {
                     client.Tamer.StopRideMode();
@@ -508,16 +530,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         new RideModeStopPacket(client.Tamer.GeneralHandler, client.Partner.GeneralHandler).Serialize());
                 }
 
-                // _logger.Information($"evo success");
-
-                _mapServer.BroadcastForTamerViewsAndSelf(client,
-                    new DigimonEvolutionSucessPacket(
-                        client.Tamer.GeneralHandler,
-                        client.Partner.GeneralHandler,
-                        client.Partner.CurrentType,
-                        evoEffect
-                    ).Serialize()
-                );
+                _mapServer.BroadcastForTamerViewsAndSelf(client, new DigimonEvolutionSucessPacket(
+                        client.Tamer.GeneralHandler, client.Partner.GeneralHandler, client.Partner.CurrentType, evoEffect).Serialize());
             }
 
             UpdateSkillCooldown(client);
@@ -528,8 +542,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var currentMaxDs = client.Partner.DS;
 
             client.Tamer.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(client.Tamer.Partner.CurrentType));
-            client.Tamer.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Tamer.Partner.CurrentType,
-                client.Tamer.Partner.Level, client.Tamer.Partner.Size));
+            client.Tamer.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Tamer.Partner.CurrentType, client.Tamer.Partner.Level, client.Tamer.Partner.Size));
 
             client.Partner.SetSealStatus(_assets.SealInfo);
             client.Tamer.SetPartnerPassiveBuff();
@@ -539,29 +552,29 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             else
                 client.Partner.AdjustHpAndDs(currentHp, currentMaxHp, currentDs, currentMaxDs);
 
-            var currentTitleBuff =
-                _assets.AchievementAssets.FirstOrDefault(x => x.QuestId == client.Tamer.CurrentTitle && x.BuffId > 0);
+            var currentTitleBuff = _assets.AchievementAssets.FirstOrDefault(x => x.QuestId == client.Tamer.CurrentTitle && x.BuffId > 0);
 
             if (currentTitleBuff != null)
             {
-                foreach (var buff in client.Tamer.Partner.BuffList.ActiveBuffs.Where(x =>
-                             x.BuffId != currentTitleBuff.BuffId))
-                    buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
-                        x.SkillCode == buff.SkillId && buff.BuffInfo == null ||
+                foreach (var buff in client.Tamer.Partner.BuffList.ActiveBuffs.Where(x => x.BuffId != currentTitleBuff.BuffId))
+                    buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x => x.SkillCode == buff.SkillId && buff.BuffInfo == null ||
                         x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
 
                 if (client.Tamer.Partner.BuffList.TamerBaseSkill() != null)
                 {
-                    var buffToApply = client.Tamer.Partner.BuffList.Buffs
-                        .Where(x => x.Duration == 0 && x.BuffId != currentTitleBuff.BuffId)
-                        .ToList();
-
+                    var buffToApply = client.Tamer.Partner.BuffList.Buffs.Where(x => x.Duration == 0 && x.BuffId != currentTitleBuff.BuffId).ToList();
 
                     buffToApply.ForEach(digimonBuffModel =>
                     {
                         if (client.DungeonMap)
                         {
                             _dungeonServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
+                                    digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
+                        }
+                        else if (client.PvpMap)
+                        {
+                            _pvpServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
                                 new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
                                     digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
                         }
@@ -590,6 +603,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (client.DungeonMap)
                         {
                             _dungeonServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
+                                    digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
+                        }
+                        else if (client.PvpMap)
+                        {
+                            _pvpServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
                                 new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
                                     digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
                         }

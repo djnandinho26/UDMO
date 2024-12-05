@@ -1,4 +1,5 @@
-﻿using DigitalWorldOnline.Application;
+﻿using Microsoft.Extensions.Configuration;
+using DigitalWorldOnline.Application;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
@@ -11,8 +12,8 @@ using DigitalWorldOnline.Commons.Models.Summon;
 using DigitalWorldOnline.Commons.Packets.GameServer.Combat;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
-using Microsoft.Extensions.Configuration;
 using Serilog;
 using static DigitalWorldOnline.Commons.Packets.GameServer.AddBuffPacket;
 
@@ -25,15 +26,20 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly AssetsLoader _assets;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
         private readonly ISender _sender;
         private readonly IConfiguration _configuration;
 
-        public PartnerSkillPacketProcessor(AssetsLoader assets, MapServer mapServer, DungeonsServer dungeonServer, ILogger logger, ISender sender, IConfiguration configuration)
+        public PartnerSkillPacketProcessor(AssetsLoader assets, MapServer mapServer, DungeonsServer dungeonServer, EventServer eventServer, PvpServer pvpServer,
+            ILogger logger, ISender sender, IConfiguration configuration)
         {
             _assets = assets;
             _mapServer = mapServer;
             _dungeonServer = dungeonServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _logger = logger;
             _sender = sender;
             _configuration = configuration;
@@ -61,7 +67,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var targetSummonMobs = new List<SummonMobModel>();
             SkillTypeEnum skillType;
 
-            var targetPartner = _mapServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
+            /*var targetPartner = _mapServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
             if (targetPartner != null)
             {
@@ -70,54 +76,42 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     client.Partner.StopAutoAttack();
 
                     client.Send(new SetCombatOffPacket(client.Partner.GeneralHandler).Serialize());
-                    //client.Send(new SystemMessagePacket($"Tamer {targetPartner.Name} is not with PVP on"));
                 }
-            }
+            }*/
 
-            if (client.Tamer.PvpMap && targetPartner.Character.PvpMap && targetPartner != null)
+            if (client.PvpMap)
             {
-                _logger.Verbose($"Character {client.Tamer.Name} Used a skill {skill.SkillId} in a Player {targetPartner?.Id} - {targetPartner?.Name}.");
+                var pvpPartner = _pvpServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
-                var finalDmg = CalculateDamageOrHealPlayer(client, targetPartner, skill, _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == skill.SkillId), skillSlot) / 15;
+                if (pvpPartner != null)
+                {
+                    client.Partner.StopAutoAttack();
+                    client.Send(new SetCombatOffPacket(client.Partner.GeneralHandler).Serialize());
+                }
+
+                _logger.Debug($"Character {client.Tamer.Name} Used a skill {skill.SkillId} in a Player {pvpPartner?.Id} - {pvpPartner?.Name}.");
+
+                var finalDmg = CalculateDamageOrHealPlayer(client, pvpPartner, skill, _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == skill.SkillId), skillSlot) / 15;
 
                 if (finalDmg <= 0) finalDmg = 1;
-                if (finalDmg > targetPartner.CurrentHp) finalDmg = targetPartner.CurrentHp;
+                if (finalDmg > pvpPartner.CurrentHp) finalDmg = pvpPartner.CurrentHp;
 
-                var newHp = targetPartner.ReceiveDamage(finalDmg);
+                var newHp = pvpPartner.ReceiveDamage(finalDmg);
 
                 if (newHp > 0)
                 {
-                    _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in a Player {targetPartner?.Id} - {targetPartner?.Name}.");
+                    _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in a Player {pvpPartner?.Id} - {pvpPartner?.Name}.");
 
-                    _mapServer.BroadcastForTamerViewsAndSelf(
-                        client.TamerId,
-                        new CastSkillPacket(
-                            skillSlot,
-                            attackerHandler,
-                            targetHandler).Serialize());
-
-                    _mapServer.BroadcastForTamerViewsAndSelf(
-                        client.TamerId,
-                        new SkillHitPacket(
-                            attackerHandler,
-                            targetPartner.GeneralHandler,
-                            skillSlot,
-                            finalDmg,
-                            targetPartner.HpRate
-                            ).Serialize());
+                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new CastSkillPacket(skillSlot, attackerHandler, targetHandler).Serialize());
+                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                        new SkillHitPacket(attackerHandler, pvpPartner.GeneralHandler, skillSlot, finalDmg, pvpPartner.HpRate).Serialize());
                 }
                 else
                 {
-                    _logger.Verbose($"Partner {client.Partner.Id} killed mob {targetPartner?.Id} - {targetPartner?.Name} with {finalDmg} skill {skill.Id} damage.");
+                    _logger.Verbose($"Partner {client.Partner.Id} killed mob {pvpPartner?.Id} - {pvpPartner?.Name} with {finalDmg} skill {skill.Id} damage.");
 
-                    _mapServer.BroadcastForTamerViewsAndSelf(
-                        client.TamerId,
-                        new KillOnSkillPacket(
-                            attackerHandler,
-                            targetPartner.GeneralHandler,
-                            skillSlot,
-                            finalDmg
-                            ).Serialize());
+                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new KillOnSkillPacket(
+                            attackerHandler, pvpPartner.GeneralHandler, skillSlot,finalDmg).Serialize());
 
                 }
             }
@@ -984,6 +978,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 }
             }
+
             return Task.CompletedTask;
         }
 

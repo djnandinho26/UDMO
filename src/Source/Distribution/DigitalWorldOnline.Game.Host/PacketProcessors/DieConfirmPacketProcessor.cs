@@ -27,25 +27,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         private readonly PartyManager _partyManager;
         private readonly MapServer _mapServer;
+        private readonly DungeonsServer _dungeonServer;
+        private readonly PvpServer _pvpServer;
         private readonly ISender _sender;
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
-        private readonly DungeonsServer _dungeonServer;
-
-        public DieConfirmPacketProcessor(
-            PartyManager partyManager,
-            MapServer mapServer,
-            ISender sender,
-            IMapper mapper,
-            IConfiguration configuration,
-            DungeonsServer dungeonsServer)
+        
+        public DieConfirmPacketProcessor(PartyManager partyManager, MapServer mapServer, DungeonsServer dungeonsServer, PvpServer pvpServer,
+            ISender sender, IMapper mapper, IConfiguration configuration)
         {
             _partyManager = partyManager;
             _mapServer = mapServer;
+            _dungeonServer = dungeonsServer;
+            _pvpServer = pvpServer;
             _sender = sender;
             _mapper = mapper;
             _configuration = configuration;
-            _dungeonServer = dungeonsServer;
         }
 
         public async Task Process(GameClient client, byte[] packetData)
@@ -104,11 +101,31 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         client.Tamer.Location.Y)
                     .Serialize());
             }
+            else if (client.PvpMap)
+            {
+                var destiny = _mapper.Map<MapRegionListAssetModel>(await _sender.Send(new MapRegionListAssetsByMapIdQuery(client.Tamer.Location.MapId)));
+                var region = destiny?.Regions.FirstOrDefault();
+
+                if (region != null)
+                {
+                    client.Tamer.NewLocation(region.X, region.Y);
+                    await _sender.Send(new UpdateCharacterLocationCommand(client.Tamer.Location));
+
+                    client.Tamer.Partner.NewLocation(region.X, region.Y);
+                    await _sender.Send(new UpdateDigimonLocationCommand(client.Tamer.Partner.Location));
+                }
+
+                client.Tamer.UpdateState(CharacterStateEnum.Loading);
+                await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
+
+                _pvpServer.RemoveClient(client);
+
+                client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
+                        client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y).Serialize());
+            }
             else
             {
-                var destiny =
-                    _mapper.Map<MapRegionListAssetModel>(
-                        await _sender.Send(new MapRegionListAssetsByMapIdQuery(client.Tamer.Location.MapId)));
+                var destiny = _mapper.Map<MapRegionListAssetModel>(await _sender.Send(new MapRegionListAssetsByMapIdQuery(client.Tamer.Location.MapId)));
                 var region = destiny?.Regions.FirstOrDefault();
 
                 if (region != null)

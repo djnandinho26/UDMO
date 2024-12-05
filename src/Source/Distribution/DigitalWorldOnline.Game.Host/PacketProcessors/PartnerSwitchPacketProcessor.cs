@@ -66,8 +66,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             else
             {
-                //_mapServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Partner, newPartner);
                 _mapServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                //_eventServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
             }
 
             client.Tamer.SwitchPartner(slot);

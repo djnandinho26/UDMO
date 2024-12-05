@@ -717,8 +717,7 @@ namespace DigitalWorldOnline.GameHost
                 .FirstOrDefault(x => x.GeneralHandler == handler);
         }
 
-        public async Task CallDiscord(string message, GameClient tamer, string coloured, string local,
-            string Channel = "1307444107836264608", bool custom = false)
+        public async Task CallDiscord(string message, GameClient tamer, string coloured, string local, string Channel = "1307444107836264608", bool custom = false)
         {
             var myChannel = Channel;
             var myToken = "2MTI4MTkwODExODMyNjA4NzY5MA.GeMDxn.tgxtNg8htbIEPcSJ0Hx3zIa0OvhY5LPFWSDYXw";

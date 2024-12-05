@@ -58,9 +58,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         else
                         {
                             _logger.Debug($"Tamer says \"{message}\" to NormalChat.");
-                            await _mapServer.CallDiscord(message, client, "00ff05", "C");
-                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
-                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+
+                            if (client.PvpMap)
+                            {
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                            }
+                            else if (client.DungeonMap)
+                            {
+                                //await _dungeonServer.CallDiscord(message, client, "00ff05", "C");
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                            }
+                            else
+                            {
+                                await _mapServer.CallDiscord(message, client, "00ff05", "C");
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                            }
+
                             await _sender.Send(new CreateChatMessageCommand(ChatMessageModel.Create(client.TamerId, message)));
                         }
                     }
@@ -69,7 +82,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 case AccountAccessLevelEnum.Blocked:
                     break;
 
-                //TODO: split
                 case AccountAccessLevelEnum.Moderator:
                 case AccountAccessLevelEnum.GameMasterOne:
                 case AccountAccessLevelEnum.GameMasterTwo:
@@ -84,18 +96,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         else
                         {
                             _logger.Debug($"Tamer says \"{message}\" to NormalChat.");
-                            await _mapServer.CallDiscord(message, client, "6b00ff", "STAFF");
 
                             if (client.DungeonMap)
                             {
                                 _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
                                     new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
                             }
+                            else if (client.PvpMap)
+                            {
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                            }
                             else
                             {
+                                await _mapServer.CallDiscord(message, client, "6b00ff", "STAFF");
                                 _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
                                     new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
-
                             }
 
                             await _sender.Send(new CreateChatMessageCommand(ChatMessageModel.Create(client.TamerId, message)));

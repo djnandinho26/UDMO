@@ -39,16 +39,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var newX = packet.ReadInt();
             var newY = packet.ReadInt();
             var newZ = packet.ReadFloat();
-            if (client.Tamer.PvpMap)
+
+            if (client.PvpMap)
             {
-                if (client.Tamer.PreviousCondition == ConditionEnum.Ride &&
-                    client.Tamer.CurrentCondition == ConditionEnum.Away)
+                if (client.Tamer.PreviousCondition == ConditionEnum.Ride && client.Tamer.CurrentCondition == ConditionEnum.Away)
                 {
                     client.Tamer.ResetAfkNotifications();
                     client.Tamer.UpdateCurrentCondition(ConditionEnum.Ride);
-                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                        new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition)
-                            .Serialize());
+
+                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
                 }
 
                 if (client.Tamer.Riding)
@@ -56,9 +55,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     client.Tamer.NewLocation(newX, newY, newZ);
                     client.Tamer.Partner.NewLocation(newX, newY, newZ);
 
-                    _mapServer.BroadcastForTargetTamers(client.TamerId, new TamerWalkPacket(client.Tamer).Serialize());
-                    _mapServer.BroadcastForTargetTamers(client.TamerId,
-                        new DigimonWalkPacket(client.Tamer.Partner).Serialize());
+                    _pvpServer.BroadcastForTargetTamers(client.TamerId, new TamerWalkPacket(client.Tamer).Serialize());
+                    _pvpServer.BroadcastForTargetTamers(client.TamerId, new DigimonWalkPacket(client.Tamer.Partner).Serialize());
                 }
                 else
                 {
@@ -66,35 +64,32 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     {
                         client.Tamer.ResetAfkNotifications();
                         client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
-                        _mapServer.BroadcastForTargetTamers(client.TamerId,
-                            new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition)
-                                .Serialize());
+
+                        _pvpServer.BroadcastForTargetTamers(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
                     }
 
                     if (handler >= short.MaxValue)
                     {
                         client.Tamer.NewLocation(newX, newY, newZ);
-                        _mapServer.BroadcastForTargetTamers(client.TamerId,
-                            new TamerWalkPacket(client.Tamer).Serialize());
+
+                        _pvpServer.BroadcastForTargetTamers(client.TamerId, new TamerWalkPacket(client.Tamer).Serialize());
                     }
                     else
                     {
                         client.Tamer.Partner.NewLocation(newX, newY, newZ);
-                        _mapServer.BroadcastForTargetTamers(client.TamerId,
-                            new DigimonWalkPacket(client.Tamer.Partner).Serialize());
+
+                        _pvpServer.BroadcastForTargetTamers(client.TamerId, new DigimonWalkPacket(client.Tamer.Partner).Serialize());
                     }
                 }
             }
             else if (client.DungeonMap)
             {
-                if (client.Tamer.PreviousCondition == ConditionEnum.Ride &&
-                    client.Tamer.CurrentCondition == ConditionEnum.Away)
+                if (client.Tamer.PreviousCondition == ConditionEnum.Ride && client.Tamer.CurrentCondition == ConditionEnum.Away)
                 {
                     client.Tamer.ResetAfkNotifications();
                     client.Tamer.UpdateCurrentCondition(ConditionEnum.Ride);
-                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                        new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition)
-                            .Serialize());
+
+                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
                 }
 
                 if (client.Tamer.Riding)
@@ -102,10 +97,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     client.Tamer.NewLocation(newX, newY, newZ);
                     client.Tamer.Partner.NewLocation(newX, newY, newZ);
 
-                    _dungeonServer.BroadcastForTargetTamers(client.TamerId,
-                        new TamerWalkPacket(client.Tamer).Serialize());
-                    _dungeonServer.BroadcastForTargetTamers(client.TamerId,
-                        new DigimonWalkPacket(client.Tamer.Partner).Serialize());
+                    _dungeonServer.BroadcastForTargetTamers(client.TamerId, new TamerWalkPacket(client.Tamer).Serialize());
+                    _dungeonServer.BroadcastForTargetTamers(client.TamerId, new DigimonWalkPacket(client.Tamer.Partner).Serialize());
                 }
                 else
                 {
@@ -113,22 +106,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     {
                         client.Tamer.ResetAfkNotifications();
                         client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
-                        _dungeonServer.BroadcastForTargetTamers(client.TamerId,
-                            new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition)
-                                .Serialize());
+
+                        _dungeonServer.BroadcastForTargetTamers(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
                     }
 
                     if (handler >= short.MaxValue)
                     {
                         client.Tamer.NewLocation(newX, newY, newZ);
-                        _dungeonServer.BroadcastForTargetTamers(client.TamerId,
-                            new TamerWalkPacket(client.Tamer).Serialize());
+
+                        _dungeonServer.BroadcastForTargetTamers(client.TamerId, new TamerWalkPacket(client.Tamer).Serialize());
                     }
                     else
                     {
                         client.Tamer.Partner.NewLocation(newX, newY, newZ);
-                        _dungeonServer.BroadcastForTargetTamers(client.TamerId,
-                            new DigimonWalkPacket(client.Tamer.Partner).Serialize());
+
+                        _dungeonServer.BroadcastForTargetTamers(client.TamerId, new DigimonWalkPacket(client.Tamer.Partner).Serialize());
                     }
                 }
 
@@ -144,14 +136,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             else
             {
-                if (client.Tamer.PreviousCondition == ConditionEnum.Ride &&
-                    client.Tamer.CurrentCondition == ConditionEnum.Away)
+                if (client.Tamer.PreviousCondition == ConditionEnum.Ride && client.Tamer.CurrentCondition == ConditionEnum.Away)
                 {
                     client.Tamer.ResetAfkNotifications();
                     client.Tamer.UpdateCurrentCondition(ConditionEnum.Ride);
-                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                        new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition)
-                            .Serialize());
+
+                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
                 }
 
                 if (client.Tamer.Riding)
@@ -160,8 +150,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     client.Tamer.Partner.NewLocation(newX, newY, newZ);
 
                     _mapServer.BroadcastForTargetTamers(client.TamerId, new TamerWalkPacket(client.Tamer).Serialize());
-                    _mapServer.BroadcastForTargetTamers(client.TamerId,
-                        new DigimonWalkPacket(client.Tamer.Partner).Serialize());
+                    _mapServer.BroadcastForTargetTamers(client.TamerId, new DigimonWalkPacket(client.Tamer.Partner).Serialize());
                 }
                 else
                 {
@@ -169,22 +158,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     {
                         client.Tamer.ResetAfkNotifications();
                         client.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
-                        _mapServer.BroadcastForTargetTamers(client.TamerId,
-                            new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition)
-                                .Serialize());
+
+                        _mapServer.BroadcastForTargetTamers(client.TamerId, new SyncConditionPacket(client.Tamer.GeneralHandler, client.Tamer.CurrentCondition).Serialize());
                     }
 
                     if (handler >= short.MaxValue)
                     {
                         client.Tamer.NewLocation(newX, newY, newZ);
-                        _mapServer.BroadcastForTargetTamers(client.TamerId,
-                            new TamerWalkPacket(client.Tamer).Serialize());
+
+                        _mapServer.BroadcastForTargetTamers(client.TamerId, new TamerWalkPacket(client.Tamer).Serialize());
                     }
                     else
                     {
                         client.Tamer.Partner.NewLocation(newX, newY, newZ);
-                        _mapServer.BroadcastForTargetTamers(client.TamerId,
-                            new DigimonWalkPacket(client.Tamer.Partner).Serialize());
+
+                        _mapServer.BroadcastForTargetTamers(client.TamerId, new DigimonWalkPacket(client.Tamer.Partner).Serialize());
                     }
                 }
 
@@ -197,8 +185,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     party.Members.Values.Where(x => x.Id != client.TamerId).ToList()
                         .ForEach(member =>
                         {
-                            _mapServer.BroadcastForUniqueTamer(member.Id,
-                                new PartyMemberMovimentationPacket(party[client.TamerId]).Serialize());
+                            _mapServer.BroadcastForUniqueTamer(member.Id, new PartyMemberMovimentationPacket(party[client.TamerId]).Serialize());
                         });
                 }
 
