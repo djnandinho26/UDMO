@@ -41,7 +41,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             // ---------------------------------------
 
-            var targetPartner = _mapServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
+            /*var targetPartner = _mapServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
             if (targetPartner != null)
             {
@@ -51,7 +51,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     client.Partner.StopAutoAttack();
                     client.Send(new SetCombatOffPacket(client.Partner.GeneralHandler).Serialize());
                 }
-            }
+            }*/
 
             // ---------------------------------------
 
@@ -64,6 +64,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (DateTime.Now < client.Partner.LastHitTime.AddMilliseconds(client.Partner.AS))
                     client.Partner.StartAutoAttack();
+
+                _logger.Information($"Attacking Player");
 
                 if (pvpTarget.Alive)
                 {

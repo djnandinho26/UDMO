@@ -320,6 +320,12 @@ namespace DigitalWorldOnline.GameHost
             map?.BroadcastForUniqueTamer(tamerId, packet);
         }
 
+        public void BroadcastForMapAllChannels(short mapId, byte[] packet)
+        {
+            var maps = Maps.Where(x => x.Clients.Exists(gameClient => gameClient.Tamer.Location.MapId == mapId)).SelectMany(map => map.Clients);
+            maps.ToList().ForEach(client => { client.Send(packet); });
+        }
+
         public GameClient? FindClientByTamerId(long tamerId)
         {
             return Maps.SelectMany(map => map.Clients).FirstOrDefault(client => client.TamerId == tamerId);

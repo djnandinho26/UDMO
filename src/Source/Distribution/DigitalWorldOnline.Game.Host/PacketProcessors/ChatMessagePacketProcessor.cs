@@ -1,11 +1,14 @@
 ﻿using DigitalWorldOnline.Application.Separar.Commands.Create;
+using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Chat;
 using DigitalWorldOnline.Commons.Packets.Chat;
+using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.GameHost;
 using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
@@ -46,6 +49,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             string message = packet.ReadString();
 
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
             switch (client.AccessLevel)
             {
                 case AccountAccessLevelEnum.Default:
@@ -59,19 +64,26 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         {
                             _logger.Debug($"Tamer says \"{message}\" to NormalChat.");
 
-                            if (client.PvpMap)
+                            switch (mapConfig?.Type)
                             {
-                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
-                            }
-                            else if (client.DungeonMap)
-                            {
-                                //await _dungeonServer.CallDiscord(message, client, "00ff05", "C");
-                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
-                            }
-                            else
-                            {
-                                await _mapServer.CallDiscord(message, client, "00ff05", "C");
-                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                case MapTypeEnum.Dungeon:
+                                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                    break;
+
+                                case MapTypeEnum.Event:
+                                    _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                    break;
+
+                                case MapTypeEnum.Pvp:
+                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                    break;
+
+                                default:
+                                    {
+                                        await _mapServer.CallDiscord(message, client, "00ff05", "C");
+                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                    }
+                                    break;
                             }
 
                             await _sender.Send(new CreateChatMessageCommand(ChatMessageModel.Create(client.TamerId, message)));
@@ -97,21 +109,32 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         {
                             _logger.Debug($"Tamer says \"{message}\" to NormalChat.");
 
-                            if (client.DungeonMap)
+                            switch (mapConfig?.Type)
                             {
-                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
-                            }
-                            else if (client.PvpMap)
-                            {
-                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
-                            }
-                            else
-                            {
-                                await _mapServer.CallDiscord(message, client, "6b00ff", "STAFF");
-                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                case MapTypeEnum.Dungeon:
+                                    {
+                                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                    }
+                                    break;
+
+                                case MapTypeEnum.Event:
+                                    {
+                                        _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                    }
+                                    break;
+
+                                case MapTypeEnum.Pvp:
+                                    {
+                                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                    }
+                                    break;
+
+                                default:
+                                    {
+                                        await _mapServer.CallDiscord(message, client, "6b00ff", "STAFF");
+                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new ChatMessagePacket(message, ChatTypeEnum.Normal, client.Tamer.GeneralHandler).Serialize());
+                                    }
+                                    break;
                             }
 
                             await _sender.Send(new CreateChatMessageCommand(ChatMessageModel.Create(client.TamerId, message)));
