@@ -2409,9 +2409,10 @@ namespace DigitalWorldOnline.Game
                             if (server.Register != null)
                                 await _sender.Send(new UpdateServerCommand(server.Register.Id, server.Register.Name,
                                     server.Register.Experience, true));
-
+                            
+                           
                             Task task = Task.Run(async () =>
-                            {
+                            { 
                                 Thread.Sleep(60000);
                                 var packetWriter = new PacketWriter();
                                 packetWriter.Type(1006);
@@ -2433,19 +2434,9 @@ namespace DigitalWorldOnline.Game
                                 _dungeonServer.BroadcastGlobal(packetWriter.Serialize());
 
                                 Thread.Sleep(20000);
-                                packetWriter = new PacketWriter();
-                                packetWriter.Type(1006);
-                                packetWriter.WriteByte(10);
-                                packetWriter.WriteByte(1);
-                                packetWriter.WriteString("Server shutdown for maintenance in 10s");
-                                packetWriter.WriteByte(0);
-                                _mapServer.BroadcastGlobal(packetWriter.Serialize());
-                                _dungeonServer.BroadcastGlobal(packetWriter.Serialize());
-
-                                Thread.Sleep(5000);
                                 for (int i = 10; i >= 0; i--)
                                 {
-                                    Thread.Sleep(1300);
+                                    Thread.Sleep(1000);
                                     packetWriter = new PacketWriter();
                                     packetWriter.Type(1006);
                                     packetWriter.WriteByte(10);
