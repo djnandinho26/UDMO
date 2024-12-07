@@ -13,6 +13,7 @@ using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Serilog;
 
@@ -25,25 +26,24 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly StatusManager _statusManager;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly AssetsLoader _assets;
         private readonly ILogger _logger;
         private readonly ISender _sender;
 
-        public HatchFinishPacketProcessor(
-            StatusManager statusManager,
-            MapServer mapServer,
-            AssetsLoader assets,
-            ILogger logger,
-            ISender sender,
-            DungeonsServer dungeonsServer
-        )
+        public HatchFinishPacketProcessor(StatusManager statusManager, AssetsLoader assets,
+            MapServer mapServer, DungeonsServer dungeonsServer, EventServer eventServer, PvpServer pvpServer,
+            ILogger logger, ISender sender)
         {
             _statusManager = statusManager;
-            _mapServer = mapServer;
             _assets = assets;
+            _mapServer = mapServer;
+            _dungeonServer = dungeonsServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _logger = logger;
             _sender = sender;
-            _dungeonServer = dungeonsServer;
         }
 
         public async Task Process(GameClient client, byte[] packetData)
@@ -54,6 +54,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var digiName = packet.ReadString();
 
             var hatchInfo = _assets.Hatchs.FirstOrDefault(x => x.ItemId == client.Tamer.Incubator.EggId);
+
             if (hatchInfo == null)
             {
                 _logger.Warning($"Unknown hatch info for egg {client.Tamer.Incubator.EggId}.");
@@ -123,10 +124,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             if (client.Tamer.Incubator.PerfectSize(newDigimon.HatchGrade, newDigimon.Size))
             {
-                _mapServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name,
-                    newDigimon.BaseType, newDigimon.Size).Serialize());
-                _dungeonServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name,
-                    newDigimon.BaseType, newDigimon.Size).Serialize());
+                _mapServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name, newDigimon.BaseType, newDigimon.Size).Serialize());
+                _dungeonServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name, newDigimon.BaseType, newDigimon.Size).Serialize());
+                _eventServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name, newDigimon.BaseType, newDigimon.Size).Serialize());
             }
 
             client.Tamer.Incubator.RemoveEgg();

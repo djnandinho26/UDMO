@@ -186,7 +186,7 @@ namespace DigitalWorldOnline.GameHost
                 var tasks = new List<Task>
                 {
                     Task.Run(() => TamerOperation(map)),
-                    //Task.Run(() => MonsterOperation(map)),
+                    Task.Run(() => MonsterOperation(map)),
                     //Task.Run(() => DropsOperation(map))
                 };
 
@@ -392,6 +392,18 @@ namespace DigitalWorldOnline.GameHost
         {
             return Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId))?.ConnectedTamers
                 .Select(x => x.Partner).FirstOrDefault(x => x.GeneralHandler == handler);
+        }
+
+        // ----------------------------------------------------------------------------------------------------------------------------
+
+        public MobConfigModel? GetMobByHandler(short mapId, int handler, long tamerId)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
+
+            if (map == null)
+                return null;
+
+            return map.Mobs.FirstOrDefault(x => x.GeneralHandler == handler);
         }
 
         // ----------------------------------------------------------------------------------------------------------------------------

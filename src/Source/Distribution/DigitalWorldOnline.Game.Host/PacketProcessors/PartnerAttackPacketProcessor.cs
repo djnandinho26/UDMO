@@ -57,133 +57,179 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             if (client.PvpMap)
             {
+                _logger.Debug($"Partner Attack on pvp server");
+
                 var pvpTarget = _pvpServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
-                if (pvpTarget == null || client.Partner == null)
-                    return Task.CompletedTask;
-
-                if (DateTime.Now < client.Partner.LastHitTime.AddMilliseconds(client.Partner.AS))
-                    client.Partner.StartAutoAttack();
-
-                _logger.Information($"Attacking Player");
-
-                if (pvpTarget.Alive)
+                if (pvpTarget == null)
                 {
-                    if (client.Partner.IsAttacking)
+                    var targetMob = _pvpServer.GetMobByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
+
+                    if (targetMob == null || client.Partner == null)
+                        return Task.CompletedTask;
+
+                    if (DateTime.Now < client.Partner.LastHitTime.AddMilliseconds(client.Partner.AS))
+                        client.Partner.StartAutoAttack();
+
+                    _logger.Debug($"Verifying if Mob is alive to attack !!");
+
+                    if (targetMob.Alive)
                     {
-                        if (client.Tamer.TargetMob?.GeneralHandler != pvpTarget.GeneralHandler)
+                        if (client.Partner.IsAttacking)
                         {
-                            _logger.Verbose($"Character {client.Tamer.Id} switched target to partner {pvpTarget.Id} - {pvpTarget.Name}.");
-                            client.Tamer.SetHidden(false);
-                            client.Tamer.UpdateTarget(pvpTarget);
-                            client.Partner.StartAutoAttack();
+                            if (client.Tamer.TargetMob?.GeneralHandler != targetMob.GeneralHandler)
+                            {
+                                _logger.Verbose($"Character {client.Tamer.Id} switched target to {targetMob.Id} - {targetMob.Name}.");
+                                client.Tamer.SetHidden(false);
+                                client.Tamer.UpdateTarget(targetMob);
+                                client.Partner.StartAutoAttack();
+                            }
+                        }
+                        else
+                        {
+
                         }
                     }
                     else
                     {
-                        if (DateTime.Now < client.Partner.LastHitTime.AddMilliseconds(client.Partner.AS))
+                        if (!_pvpServer.MobsAttacking(client.Tamer.Location.MapId, client.TamerId))
                         {
-                            client.Partner.StartAutoAttack();
-                            return Task.CompletedTask;
+                            client.Tamer.StopBattle();
+                            client.Partner.StopAutoAttack();
+
+                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOffPacket(attackerHandler).Serialize());
                         }
-
-                        if (!client.Tamer.InBattle)
-                        {
-                            _logger.Verbose($"Character {client.Tamer.Id} engaged partner {pvpTarget.Id} - {pvpTarget.Name}.");
-                            client.Tamer.SetHidden(false);
-
-                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(attackerHandler).Serialize());
-                            client.Tamer.StartBattle(pvpTarget);
-                        }
-                        else
-                        {
-                            _logger.Verbose($"Character {client.Tamer.Id} switched to partner {pvpTarget.Id} - {pvpTarget.Name}.");
-                            client.Tamer.SetHidden(false);
-                            client.Tamer.UpdateTarget(pvpTarget);
-                        }
-
-                        if (!pvpTarget.Character.InBattle)
-                        {
-                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(targetHandler).Serialize());
-                        }
-
-                        pvpTarget.Character.StartBattle(client.Partner);
-
-                        client.Tamer.Partner.StartAutoAttack();
-
-                        var missed = false;
-
-                        if (missed)
-                        {
-                            _logger.Verbose($"Partner {client.Tamer.Partner.Id} missed hit on {client.Tamer.TargetPartner.Id} - {client.Tamer.TargetPartner.Name}.");
-                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new MissHitPacket(attackerHandler, targetHandler).Serialize());
-                        }
-                        else
-                        {
-                            #region Hit Damage
-
-                            var critBonusMultiplier = 0.00;
-                            var blocked = false;
-                            var finalDmg = CalculateFinalDamage(client, pvpTarget, out critBonusMultiplier, out blocked);
-
-                            if (finalDmg != 0 && !client.Tamer.GodMode)
-                            {
-                                finalDmg = DebuffReductionDamage(client, finalDmg);
-                            }
-
-                            #endregion
-
-                            #region Take Damage
-
-                            if (finalDmg <= 0) finalDmg = 1;
-
-                            var newHp = pvpTarget.ReceiveDamage(finalDmg);
-
-                            var hitType = blocked ? 2 : critBonusMultiplier > 0 ? 1 : 0;
-
-                            if (newHp > 0)
-                            {
-                                _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} to partner {pvpTarget?.Id} - {pvpTarget?.Name}.");
-
-                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new HitPacket(attackerHandler, targetHandler, finalDmg,
-                                        pvpTarget.HP, newHp, hitType).Serialize());
-                            }
-                            else
-                            {
-                                _logger.Verbose($"Partner {client.Partner.Id} killed partner {pvpTarget?.Id} - {pvpTarget?.Name} with {finalDmg} damage.");
-
-                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new KillOnHitPacket(attackerHandler, targetHandler, finalDmg, hitType).Serialize());
-
-                                pvpTarget.Character.Die();
-
-                                if (!_pvpServer.EnemiesAttacking(client.Tamer.Location.MapId, client.Partner.Id, client.TamerId))
-                                {
-                                    client.Tamer.StopBattle();
-
-                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOffPacket(attackerHandler).Serialize());
-                                }
-                            }
-
-                            #endregion
-
-                            client.Partner.StartAutoAttack();
-                        }
-
-                        client.Tamer.Partner.UpdateLastHitTime();
                     }
+
                 }
                 else
                 {
-                    if (!_pvpServer.EnemiesAttacking(client.Tamer.Location.MapId, client.Partner.Id, client.TamerId))
-                    {
-                        client.Tamer.StopBattle();
+                    if (client.Partner == null)
+                        return Task.CompletedTask;
 
-                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOffPacket(attackerHandler).Serialize());
+                    if (DateTime.Now < client.Partner.LastHitTime.AddMilliseconds(client.Partner.AS))
+                        client.Partner.StartAutoAttack();
+
+                    _logger.Information($"Verifying if Player is alive to attack !!");
+
+                    if (pvpTarget.Alive)
+                    {
+                        if (client.Partner.IsAttacking)
+                        {
+                            if (client.Tamer.TargetMob?.GeneralHandler != pvpTarget.GeneralHandler)
+                            {
+                                _logger.Verbose($"Character {client.Tamer.Id} switched target to partner {pvpTarget.Id} - {pvpTarget.Name}.");
+                                client.Tamer.SetHidden(false);
+                                client.Tamer.UpdateTarget(pvpTarget);
+                                client.Partner.StartAutoAttack();
+                            }
+                        }
+                        else
+                        {
+                            if (DateTime.Now < client.Partner.LastHitTime.AddMilliseconds(client.Partner.AS))
+                            {
+                                client.Partner.StartAutoAttack();
+                                return Task.CompletedTask;
+                            }
+
+                            if (!client.Tamer.InBattle)
+                            {
+                                _logger.Verbose($"Character {client.Tamer.Id} engaged partner {pvpTarget.Id} - {pvpTarget.Name}.");
+                                client.Tamer.SetHidden(false);
+
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(attackerHandler).Serialize());
+                                client.Tamer.StartBattle(pvpTarget);
+                            }
+                            else
+                            {
+                                _logger.Verbose($"Character {client.Tamer.Id} switched to partner {pvpTarget.Id} - {pvpTarget.Name}.");
+                                client.Tamer.SetHidden(false);
+                                client.Tamer.UpdateTarget(pvpTarget);
+                            }
+
+                            if (!pvpTarget.Character.InBattle)
+                            {
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(targetHandler).Serialize());
+                            }
+
+                            pvpTarget.Character.StartBattle(client.Partner);
+
+                            client.Tamer.Partner.StartAutoAttack();
+
+                            var missed = false;
+
+                            if (missed)
+                            {
+                                _logger.Verbose($"Partner {client.Tamer.Partner.Id} missed hit on {client.Tamer.TargetPartner.Id} - {client.Tamer.TargetPartner.Name}.");
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new MissHitPacket(attackerHandler, targetHandler).Serialize());
+                            }
+                            else
+                            {
+                                #region Hit Damage
+
+                                var critBonusMultiplier = 0.00;
+                                var blocked = false;
+                                var finalDmg = CalculateFinalDamage(client, pvpTarget, out critBonusMultiplier, out blocked);
+
+                                if (finalDmg != 0 && !client.Tamer.GodMode)
+                                {
+                                    finalDmg = DebuffReductionDamage(client, finalDmg);
+                                }
+
+                                #endregion
+
+                                #region Take Damage
+
+                                if (finalDmg <= 0) finalDmg = 1;
+
+                                var newHp = pvpTarget.ReceiveDamage(finalDmg);
+
+                                var hitType = blocked ? 2 : critBonusMultiplier > 0 ? 1 : 0;
+
+                                if (newHp > 0)
+                                {
+                                    _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} to partner {pvpTarget?.Id} - {pvpTarget?.Name}.");
+
+                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new HitPacket(attackerHandler, targetHandler, finalDmg,
+                                            pvpTarget.HP, newHp, hitType).Serialize());
+                                }
+                                else
+                                {
+                                    _logger.Verbose($"Partner {client.Partner.Id} killed partner {pvpTarget?.Id} - {pvpTarget?.Name} with {finalDmg} damage.");
+
+                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new KillOnHitPacket(attackerHandler, targetHandler, finalDmg, hitType).Serialize());
+
+                                    pvpTarget.Character.Die();
+
+                                    if (!_pvpServer.EnemiesAttacking(client.Tamer.Location.MapId, client.Partner.Id, client.TamerId))
+                                    {
+                                        client.Tamer.StopBattle();
+
+                                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOffPacket(attackerHandler).Serialize());
+                                    }
+                                }
+
+                                #endregion
+
+                                client.Partner.StartAutoAttack();
+                            }
+
+                            client.Tamer.Partner.UpdateLastHitTime();
+                        }
+                    }
+                    else
+                    {
+                        if (!_pvpServer.EnemiesAttacking(client.Tamer.Location.MapId, client.Partner.Id, client.TamerId))
+                        {
+                            client.Tamer.StopBattle();
+
+                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOffPacket(attackerHandler).Serialize());
+                        }
                     }
                 }
-            
+
             }
             else if (client.DungeonMap)
             {
@@ -931,9 +977,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             int finalDamage =  (int)Math.Max(1, Math.Floor(baseDamage + critBonusMultiplier + levelBonus +
                 (baseDamage * attributeMultiplier) + (baseDamage * elementMultiplier)));
 
-            Console.WriteLine($"BaseDamage: {baseDamage} | critBonusMultiplier: {critBonusMultiplier} | LevelBonus: {levelBonus}");
-            Console.WriteLine($"Attribute: {baseDamage * attributeMultiplier} | Element: {baseDamage * elementMultiplier}");
-            Console.WriteLine($"FinalDamage: {finalDamage}");
+            //Console.WriteLine($"BaseDamage: {baseDamage} | critBonusMultiplier: {critBonusMultiplier} | LevelBonus: {levelBonus}");
+            //Console.WriteLine($"Attribute: {baseDamage * attributeMultiplier} | Element: {baseDamage * elementMultiplier}");
+            //Console.WriteLine($"FinalDamage: {finalDamage}");
 
             return finalDamage;
         }
