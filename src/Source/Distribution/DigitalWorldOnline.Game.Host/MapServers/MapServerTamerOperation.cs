@@ -56,7 +56,7 @@ namespace DigitalWorldOnline.GameHost
                 if (tamer.TargetSummonMobs.Count > 0)
                     PartnerAutoAttackSummon(tamer);
 
-                if (tamer.TargetPartner != null && client.PvpMap)
+                if (tamer.TargetPartners.Count > 0 && client.PvpMap)
                     PartnerAutoAttackPlayer(tamer);
                 
                 CheckTimeReward(client);
@@ -764,17 +764,17 @@ namespace DigitalWorldOnline.GameHost
 
                 if (!tamer.InBattle)
                 {
-                    _logger.Verbose(
-                        $"Character {tamer.Id} engaged partner {tamer.TargetPartner.Id} - {tamer.TargetPartner.Name}.");
-                    BroadcastForTamerViewsAndSelf(tamer.Id,
-                        new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
+                    _logger.Verbose($"Character {tamer.Id} engaged partner {tamer.TargetPartner.Id} - {tamer.TargetPartner.Name}.");
+
+                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
+
                     tamer.StartBattle(tamer.TargetPartner);
                 }
 
                 if (!tamer.TargetPartner.Character.InBattle)
                 {
-                    BroadcastForTamerViewsAndSelf(tamer.Id,
-                        new SetCombatOnPacket(tamer.TargetPartner.Character.GeneralHandler).Serialize());
+                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.TargetPartner.Character.GeneralHandler).Serialize());
+
                     tamer.TargetPartner.Character.StartBattle(tamer.Partner);
                 }
 

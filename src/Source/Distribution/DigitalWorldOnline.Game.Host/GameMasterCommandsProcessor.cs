@@ -2673,7 +2673,9 @@ namespace DigitalWorldOnline.Game
                         var loc = client.Tamer.Location;
                         var ch = client.Tamer.Channel;
 
-                        client.Send(new SystemMessagePacket($"Map: {loc.MapId} X: {loc.X} Y: {loc.Y} Ch: {ch}"));
+                        var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(loc.MapId));
+
+                        client.Send(new SystemMessagePacket($"Map {loc.MapId} Ch {ch} (X: {loc.X}, Y: {loc.Y})\nServer: {mapConfig.Type}"));
                     }
                     break;
 
@@ -2782,8 +2784,9 @@ namespace DigitalWorldOnline.Game
 
                         var targetClient = _mapServer.FindClientByTamerName(TamerName);
                         var targetClientD = _dungeonServer.FindClientByTamerName(TamerName);
+                        var targetClientP = _pvpServer.FindClientByTamerName(TamerName);
 
-                        if (targetClient == null && targetClientD == null)
+                        if (targetClient == null && targetClientD == null && targetClientP == null)
                         {
                             client.Send(new SystemMessagePacket($"Player {TamerName} not found!"));
                             break;
@@ -2795,6 +2798,20 @@ namespace DigitalWorldOnline.Game
                             break;
                         }
 
+                        var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
+                        switch (mapConfig.Type)
+                        {
+                            case MapTypeEnum.Dungeon:
+                                break;
+                            case MapTypeEnum.Event:
+                                break;
+                            case MapTypeEnum.Pvp:
+                                break;
+                            default:
+                                break;
+                        }
+
                         var map = _mapServer.Maps.FirstOrDefault(x =>
                             x.Clients.Exists(gameClient => gameClient.Tamer.Name == TamerName));
 
@@ -2802,6 +2819,8 @@ namespace DigitalWorldOnline.Game
                         {
                             if (client.DungeonMap)
                                 _dungeonServer.RemoveClient(client);
+                            else if (client.PvpMap)
+                                _pvpServer.RemoveClient(client);
                             else
                                 _mapServer.RemoveClient(client);
 
@@ -2854,6 +2873,8 @@ namespace DigitalWorldOnline.Game
 
                             if (client.DungeonMap)
                                 _dungeonServer.RemoveClient(client);
+                            else if (client.PvpMap)
+                                _pvpServer.RemoveClient(client);
                             else
                                 _mapServer.RemoveClient(client);
 
@@ -2929,6 +2950,8 @@ namespace DigitalWorldOnline.Game
 
                         if (TargetSummon.DungeonMap)
                             _dungeonServer.RemoveClient(TargetSummon);
+                        else if (TargetSummon.PvpMap)
+                            _pvpServer.RemoveClient(TargetSummon);
                         else
                             _mapServer.RemoveClient(TargetSummon);
 
@@ -2939,13 +2962,11 @@ namespace DigitalWorldOnline.Game
                         await _sender.Send(new UpdateDigimonLocationCommand(TargetSummon.Tamer.Partner.Location));
 
                         TargetSummon.Tamer.UpdateState(CharacterStateEnum.Loading);
-                        await _sender.Send(
-                            new UpdateCharacterStateCommand(TargetSummon.TamerId, CharacterStateEnum.Loading));
+                        await _sender.Send(new UpdateCharacterStateCommand(TargetSummon.TamerId, CharacterStateEnum.Loading));
 
                         TargetSummon.SetGameQuit(false);
 
-                        TargetSummon.Send(new MapSwapPacket(_configuration[GamerServerPublic],
-                            _configuration[GameServerPort],
+                        TargetSummon.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
                             client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y));
 
                         var party = _partyManager.FindParty(TargetSummon.TamerId);

@@ -408,6 +408,20 @@ namespace DigitalWorldOnline.GameHost
 
         // ----------------------------------------------------------------------------------------------------------------------------
 
+        public List<MobConfigModel> GetMobsNearbyPartner(Location location, int range, long tamerId)
+        {
+            var targetMap = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
+
+            if (targetMap == null)
+                return new List<MobConfigModel>();
+
+            var originX = location.X;
+            var originY = location.Y;
+
+            return GetTargetMobs(targetMap.Mobs.Where(x => x.Alive).ToList(), originX, originY, range)
+                .DistinctBy(x => x.Id).ToList();
+        }
+
         public List<MobConfigModel> GetMobsNearbyPartner(Location location, int range)
         {
             var targetMap = Maps.FirstOrDefault(x => x.MapId == location.MapId);
@@ -439,6 +453,30 @@ namespace DigitalWorldOnline.GameHost
             targetMobs.Add(originMob);
 
             targetMobs.AddRange(GetTargetMobs(targetMap.Mobs.Where(x => x.Alive).ToList(), originX, originY, range));
+
+            return targetMobs.DistinctBy(x => x.Id).ToList();
+        }
+
+        public List<MobConfigModel> GetMobsNearbyTargetMob(short mapId, int handler, int range, long tamerId)
+        {
+            var targetMap = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
+
+            if (targetMap == null)
+                return new List<MobConfigModel>();
+
+            var originMob = targetMap.Mobs.FirstOrDefault(x => x.GeneralHandler == handler);
+
+            if (originMob == null)
+                return new List<MobConfigModel>();
+
+            var originX = originMob.CurrentLocation.X;
+            var originY = originMob.CurrentLocation.Y;
+
+            var targetMobs = new List<MobConfigModel>();
+            targetMobs.Add(originMob);
+
+            targetMobs.AddRange(GetTargetMobs(targetMap.Mobs.Where(x => x.Alive).ToList(), originX, originY,
+                range / 5));
 
             return targetMobs.DistinctBy(x => x.Id).ToList();
         }

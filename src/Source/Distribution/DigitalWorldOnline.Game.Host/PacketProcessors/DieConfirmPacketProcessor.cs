@@ -51,14 +51,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 client.Tamer.Die();
 
-                GameParty? party = _partyManager.FindParty(client.TamerId);
+                var party = _partyManager.FindParty(client.TamerId);
 
                 var map = UtilitiesFunctions.MapGroup(client.Tamer.Location.MapId);
+
                 bool shouldReviveInSameMap = false;
+
                 if (party != null && party.Members.Values.Count(x =>
-                        x.Id != client.TamerId && x.Location.MapId == client.Tamer.Location.MapId &&
-                        x.Channel == client.Tamer.Channel) > 0
-                   )
+                        x.Id != client.TamerId && x.Location.MapId == client.Tamer.Location.MapId && x.Channel == client.Tamer.Channel) > 0)
                 {
                     map = client.Tamer.Location.MapId;
                     shouldReviveInSameMap = true;
@@ -84,8 +84,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Tamer.Partner.NewLocation(map, destination.X, destination.Y);
                 await _sender.Send(new UpdateDigimonLocationCommand(client.Tamer.Partner.Location));
 
+                // -- RELOAD -----------------------------------------------------------------
+
+                client.Tamer.UpdateState(CharacterStateEnum.Loading);
+                await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
+
                 if (shouldReviveInSameMap)
                 {
+                    _dungeonServer.RemoveClient(client);
+
                     client.SetGameQuit(false);
                 }
                 else
@@ -93,13 +100,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     _dungeonServer.RemoveClient(client);
                 }
 
-                client.Send(new MapSwapPacket(
-                        _configuration[GamerServerPublic],
-                        _configuration[GameServerPort],
-                        client.Tamer.Location.MapId,
-                        client.Tamer.Location.X,
-                        client.Tamer.Location.Y)
-                    .Serialize());
+                client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
+                        client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y).Serialize());
             }
             else if (client.PvpMap)
             {
@@ -142,13 +144,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 _mapServer.RemoveClient(client);
 
-                client.Send(new MapSwapPacket(
-                        _configuration[GamerServerPublic],
-                        _configuration[GameServerPort],
-                        client.Tamer.Location.MapId,
-                        client.Tamer.Location.X,
-                        client.Tamer.Location.Y)
-                    .Serialize());
+                client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
+                        client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y).Serialize());
             }
         }
     }

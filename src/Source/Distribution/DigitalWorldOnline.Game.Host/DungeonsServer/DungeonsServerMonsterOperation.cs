@@ -879,7 +879,10 @@ namespace DigitalWorldOnline.GameHost
 
         private void DropReward(GameMap map, MobConfigModel mob)
         {
+            _logger.Debug($"Getting normal mob reward");
+
             var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == mob.TargetTamer?.Id);
+
             if (targetClient == null)
                 return;
 
@@ -1139,6 +1142,8 @@ namespace DigitalWorldOnline.GameHost
 
         private void RaidReward(GameMap map, MobConfigModel mob)
         {
+            _logger.Debug($"Getting Raid mob reward");
+
             var raidResult = mob.RaidDamage.Where(x => x.Key > 0).DistinctBy(x => x.Key);
             var keyValuePairs = raidResult.ToList();
 
@@ -1152,8 +1157,7 @@ namespace DigitalWorldOnline.GameHost
 
             foreach (var raidTamer in keyValuePairs.OrderByDescending(x => x.Value))
             {
-                _logger.Verbose(
-                    $"Character {raidTamer.Key} rank {i} on raid {mob.Id} - {mob.Name} with damage {raidTamer.Value}.");
+                _logger.Verbose($"Character {raidTamer.Key} rank {i} on raid {mob.Id} - {mob.Name} with damage {raidTamer.Value}.");
 
                 var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == raidTamer.Key);
 
@@ -1165,9 +1169,11 @@ namespace DigitalWorldOnline.GameHost
                     writer.WriteInt(raidTamer.Value);
                 }
 
+                // BITS DROP ---------------------------------------------
+
                 var bitsReward = mob.DropReward.BitsDrop;
-                if (targetClient != null && bitsReward != null &&
-                    bitsReward.Chance >= UtilitiesFunctions.RandomDouble())
+
+                if (targetClient != null && bitsReward != null && bitsReward.Chance >= UtilitiesFunctions.RandomDouble())
                 {
                     var drop = _dropManager.CreateBitDrop(
                         targetClient.Tamer.Id,
@@ -1181,6 +1187,8 @@ namespace DigitalWorldOnline.GameHost
 
                     map.DropsToAdd.Add(drop);
                 }
+
+                // ITEM DROP ---------------------------------------------
 
                 var raidRewards = mob.DropReward.Drops;
                 raidRewards.RemoveAll(x => _assets.QuestItemList.Contains(x.ItemId));

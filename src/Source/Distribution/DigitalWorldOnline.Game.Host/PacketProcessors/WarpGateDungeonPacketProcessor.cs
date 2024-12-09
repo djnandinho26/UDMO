@@ -74,6 +74,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(mapId));
                 var waypoints = await _sender.Send(new MapRegionListAssetsByMapIdQuery(mapId));
+
                 if (mapConfig == null || waypoints == null || !waypoints.Regions.Any())
                 {
                     client.Send(new SystemMessagePacket($"Map information not found for {mapId}"));
@@ -215,7 +216,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 _dungeonServer.RemoveClient(client);
                 _mapServer.RemoveClient(client);
-
 
                 client.SetGameQuit(false);
 

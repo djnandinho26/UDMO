@@ -67,53 +67,433 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var targetSummonMobs = new List<SummonMobModel>();
             SkillTypeEnum skillType;
 
-            /*var targetPartner = _mapServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
-
-            if (targetPartner != null)
+            if (_pvpServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId) != null)
             {
-                if (targetPartner.Character.PvpMap == false)
-                {
-                    client.Partner.StopAutoAttack();
+                var areaOfEffect = skill.SkillInfo.AreaOfEffect;
+                var range = skill.SkillInfo.Range;
+                var targetType = skill.SkillInfo.Target;
 
-                    client.Send(new SetCombatOffPacket(client.Partner.GeneralHandler).Serialize());
-                }
-            }*/
-
-            if (client.PvpMap)
-            {
                 var pvpPartner = _pvpServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
-                if (pvpPartner != null)
+                if (pvpPartner == null)
                 {
-                    client.Partner.StopAutoAttack();
-                    client.Send(new SetCombatOffPacket(client.Partner.GeneralHandler).Serialize());
-                }
+                    var mobTarget = _pvpServer.GetMobByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
-                _logger.Debug($"Character {client.Tamer.Name} Used a skill {skill.SkillId} in a Player {pvpPartner?.Id} - {pvpPartner?.Name}.");
+                    if (mobTarget == null || client.Partner == null)
+                        return Task.CompletedTask;
 
-                var finalDmg = CalculateDamageOrHealPlayer(client, pvpPartner, skill, _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == skill.SkillId), skillSlot) / 15;
+                    var targetMobs = new List<MobConfigModel>();
 
-                if (finalDmg <= 0) finalDmg = 1;
-                if (finalDmg > pvpPartner.CurrentHp) finalDmg = pvpPartner.CurrentHp;
+                    if (areaOfEffect > 0)
+                    {
+                        skillType = SkillTypeEnum.TargetArea;
 
-                var newHp = pvpPartner.ReceiveDamage(finalDmg);
+                        var targets = new List<MobConfigModel>();
 
-                if (newHp > 0)
-                {
-                    _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in a Player {pvpPartner?.Id} - {pvpPartner?.Name}.");
+                        if (targetType == 17)   // Mobs around partner
+                        {
+                            targets = _pvpServer.GetMobsNearbyPartner(client.Partner.Location, areaOfEffect, client.TamerId);
+                        }
+                        else if (targetType == 18)   // Mobs around mob
+                        {
+                            targets = _pvpServer.GetMobsNearbyTargetMob(client.Partner.Location.MapId, targetHandler, areaOfEffect, client.TamerId);
+                        }
 
-                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new CastSkillPacket(skillSlot, attackerHandler, targetHandler).Serialize());
-                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                        new SkillHitPacket(attackerHandler, pvpPartner.GeneralHandler, skillSlot, finalDmg, pvpPartner.HpRate).Serialize());
+                        targetMobs.AddRange(targets);
+                    }
+                    else
+                    {
+                        skillType = SkillTypeEnum.Single;
+
+                        var mob = _pvpServer.GetMobByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
+
+                        if (mob == null)
+                            return Task.CompletedTask;
+
+                        targetMobs.Add(mob);
+                    }
+
+                    if (targetMobs.Any())
+                    {
+                        if (skillType == SkillTypeEnum.Single && !targetMobs.First().Alive)
+                            return Task.CompletedTask;
+
+                        client.Partner.ReceiveDamage(skill.SkillInfo.HPUsage);
+                        client.Partner.UseDs(skill.SkillInfo.DSUsage);
+
+                        var castingTime = (int)Math.Round((float)skill.SkillInfo.CastingTime);
+                        if (castingTime <= 0) castingTime = 2000;
+
+                        client.Partner.SetEndCasting(castingTime);
+
+                        targetMobs.ForEach(targetMob =>
+                        {
+                            _logger.Verbose($"Character {client.Tamer.Id} engaged {targetMob.Id} - {targetMob.Name} with skill {skill.SkillId}.");
+                        });
+
+                        if (!client.Tamer.InBattle)
+                        {
+                            client.Tamer.SetHidden(false);
+                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(attackerHandler).Serialize());
+                            client.Tamer.StartBattleWithSkill(targetMobs, skillType);
+                        }
+                        else
+                        {
+                            client.Tamer.SetHidden(false);
+                            client.Tamer.UpdateTargetWithSkill(targetMobs, skillType);
+                        }
+
+                        if (skillType != SkillTypeEnum.Single)
+                        {
+                            var finalDmg = 0;
+
+                            finalDmg = client.Tamer.GodMode ? targetMobs.First().CurrentHP : AoeDamage(client, targetMobs.First(), skill, skillSlot, _configuration);
+
+                            targetMobs.ForEach(targetMob =>
+                            {
+                                if (finalDmg != 0)
+                                {
+                                    finalDmg = DebuffReductionDamage(client, finalDmg);
+                                }
+
+                                if (finalDmg <= 0) finalDmg = 1;
+                                if (finalDmg > targetMob.CurrentHP) finalDmg = targetMob.CurrentHP;
+
+                                if (!targetMob.InBattle)
+                                {
+                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(targetHandler).Serialize());
+                                    targetMob.StartBattle(client.Tamer);
+                                }
+                                else
+                                {
+                                    targetMob.AddTarget(client.Tamer);
+                                }
+
+                                var newHp = targetMob.ReceiveDamage(finalDmg, client.TamerId);
+
+                                if (newHp > 0)
+                                {
+                                    _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in mob {targetMob?.Id} - {targetMob?.Name}.");
+                                }
+                                else
+                                {
+                                    _logger.Verbose($"Partner {client.Partner.Id} killed mob {targetMob?.Id} - {targetMob?.Name} with {finalDmg} skill {skill.Id} damage.");
+                                    targetMob?.Die();
+                                }
+                            });
+
+                            _pvpServer.BroadcastForTamerViewsAndSelf(
+                                client.TamerId,
+                                new CastSkillPacket(
+                                    skillSlot,
+                                    attackerHandler,
+                                    targetHandler
+                                ).Serialize()
+                            );
+
+                            _pvpServer.BroadcastForTamerViewsAndSelf(
+                                client.TamerId,
+                                new AreaSkillPacket(
+                                    attackerHandler,
+                                    client.Partner.HpRate,
+                                    targetMobs,
+                                    skillSlot,
+                                    finalDmg
+                                ).Serialize()
+                            );
+                        }
+                        else
+                        {
+                            var targetMob = targetMobs.First();
+
+                            if (!targetMob.InBattle)
+                            {
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(targetHandler).Serialize());
+                                targetMob.StartBattle(client.Tamer);
+                            }
+                            else
+                            {
+                                targetMob.AddTarget(client.Tamer);
+                            }
+
+                            var finalDmg = client.Tamer.GodMode ? targetMob.CurrentHP : CalculateDamageOrHeal(client, targetMob, skill, _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == skill.SkillId), skillSlot);
+
+                            if (finalDmg != 0 && !client.Tamer.GodMode)
+                            {
+                                finalDmg = DebuffReductionDamage(client, finalDmg);
+                            }
+
+                            if (finalDmg <= 0) finalDmg = 1;
+                            if (finalDmg > targetMob.CurrentHP) finalDmg = targetMob.CurrentHP;
+
+                            var newHp = targetMob.ReceiveDamage(finalDmg, client.TamerId);
+
+                            if (newHp > 0)
+                            {
+                                _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in mob {targetMob?.Id} - {targetMob?.Name}.");
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(
+                                    client.TamerId,
+                                    new CastSkillPacket(
+                                        skillSlot,
+                                        attackerHandler,
+                                        targetHandler).Serialize());
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(
+                                    client.TamerId,
+                                    new SkillHitPacket(
+                                        attackerHandler,
+                                        targetMob.GeneralHandler,
+                                        skillSlot,
+                                        finalDmg,
+                                        targetMob.CurrentHpRate
+                                        ).Serialize());
+
+
+                            }
+                            else
+                            {
+                                _logger.Verbose($"Partner {client.Partner.Id} killed mob {targetMob?.Id} - {targetMob?.Name} with {finalDmg} skill {skill.Id} damage.");
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(
+                                    client.TamerId,
+                                    new KillOnSkillPacket(
+                                        attackerHandler,
+                                        targetMob.GeneralHandler,
+                                        skillSlot,
+                                        finalDmg
+                                        ).Serialize());
+
+                                targetMob?.Die();
+                            }
+                        }
+
+                        if (!_pvpServer.MobsAttacking(client.Tamer.Location.MapId, client.TamerId))
+                        {
+                            client.Tamer.StopBattle();
+
+                            SendBattleOffTask(client, attackerHandler, true);
+                        }
+
+                        var evolution = client.Tamer.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Tamer.Partner.CurrentType);
+
+                        if (evolution != null && skill.SkillInfo.Cooldown / 1000 > 20)
+                        {
+                            evolution.Skills[skillSlot].SetCooldown(skill.SkillInfo.Cooldown / 1000);
+                            _sender.Send(new UpdateEvolutionCommand(evolution));
+                        }
+                    }
+
                 }
                 else
                 {
-                    _logger.Verbose($"Partner {client.Partner.Id} killed mob {pvpPartner?.Id} - {pvpPartner?.Name} with {finalDmg} skill {skill.Id} damage.");
+                    if (client.Partner == null)
+                        return Task.CompletedTask;
 
-                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new KillOnSkillPacket(
-                            attackerHandler, pvpPartner.GeneralHandler, skillSlot,finalDmg).Serialize());
+                    var targetMobs = new List<MobConfigModel>();
+
+                    if (areaOfEffect > 0)
+                    {
+                        skillType = SkillTypeEnum.TargetArea;
+
+                        var targets = new List<MobConfigModel>();
+
+                        if (targetType == 17)   // Mobs around partner
+                        {
+                            targets = _pvpServer.GetMobsNearbyPartner(client.Partner.Location, areaOfEffect, client.TamerId);
+                        }
+                        else if (targetType == 18)   // Mobs around mob
+                        {
+                            targets = _pvpServer.GetMobsNearbyTargetMob(client.Partner.Location.MapId, targetHandler, areaOfEffect, client.TamerId);
+                        }
+
+                        targetMobs.AddRange(targets);
+                    }
+                    else
+                    {
+                        skillType = SkillTypeEnum.Single;
+
+                        var mob = _pvpServer.GetMobByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
+
+                        if (mob == null)
+                            return Task.CompletedTask;
+
+                        targetMobs.Add(mob);
+                    }
+
+                    if (targetMobs.Any())
+                    {
+                        if (skillType == SkillTypeEnum.Single && !targetMobs.First().Alive)
+                            return Task.CompletedTask;
+
+                        client.Partner.ReceiveDamage(skill.SkillInfo.HPUsage);
+                        client.Partner.UseDs(skill.SkillInfo.DSUsage);
+
+                        var castingTime = (int)Math.Round((float)skill.SkillInfo.CastingTime);
+                        if (castingTime <= 0) castingTime = 2000;
+
+                        client.Partner.SetEndCasting(castingTime);
+
+                        targetMobs.ForEach(targetMob =>
+                        {
+                            _logger.Verbose($"Character {client.Tamer.Id} engaged {targetMob.Id} - {targetMob.Name} with skill {skill.SkillId}.");
+                        });
+
+                        if (!client.Tamer.InBattle)
+                        {
+                            client.Tamer.SetHidden(false);
+                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(attackerHandler).Serialize());
+                            client.Tamer.StartBattleWithSkill(targetMobs, skillType);
+                        }
+                        else
+                        {
+                            client.Tamer.SetHidden(false);
+                            client.Tamer.UpdateTargetWithSkill(targetMobs, skillType);
+                        }
+
+                        if (skillType != SkillTypeEnum.Single)
+                        {
+                            var finalDmg = 0;
+
+                            finalDmg = client.Tamer.GodMode ? targetMobs.First().CurrentHP : AoeDamage(client, targetMobs.First(), skill, skillSlot, _configuration);
+
+                            targetMobs.ForEach(targetMob =>
+                            {
+                                if (finalDmg != 0)
+                                {
+                                    finalDmg = DebuffReductionDamage(client, finalDmg);
+                                }
+
+                                if (finalDmg <= 0) finalDmg = 1;
+                                if (finalDmg > targetMob.CurrentHP) finalDmg = targetMob.CurrentHP;
+
+                                if (!targetMob.InBattle)
+                                {
+                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(targetHandler).Serialize());
+                                    targetMob.StartBattle(client.Tamer);
+                                }
+                                else
+                                {
+                                    targetMob.AddTarget(client.Tamer);
+                                }
+
+                                var newHp = targetMob.ReceiveDamage(finalDmg, client.TamerId);
+
+                                if (newHp > 0)
+                                {
+                                    _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in mob {targetMob?.Id} - {targetMob?.Name}.");
+                                }
+                                else
+                                {
+                                    _logger.Verbose($"Partner {client.Partner.Id} killed mob {targetMob?.Id} - {targetMob?.Name} with {finalDmg} skill {skill.Id} damage.");
+                                    targetMob?.Die();
+                                }
+                            });
+
+                            _pvpServer.BroadcastForTamerViewsAndSelf(
+                                client.TamerId,
+                                new CastSkillPacket(
+                                    skillSlot,
+                                    attackerHandler,
+                                    targetHandler
+                                ).Serialize()
+                            );
+
+                            _pvpServer.BroadcastForTamerViewsAndSelf(
+                                client.TamerId,
+                                new AreaSkillPacket(
+                                    attackerHandler,
+                                    client.Partner.HpRate,
+                                    targetMobs,
+                                    skillSlot,
+                                    finalDmg
+                                ).Serialize()
+                            );
+                        }
+                        else
+                        {
+                            var targetMob = targetMobs.First();
+
+                            if (!targetMob.InBattle)
+                            {
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(targetHandler).Serialize());
+                                targetMob.StartBattle(client.Tamer);
+                            }
+                            else
+                            {
+                                targetMob.AddTarget(client.Tamer);
+                            }
+
+                            var finalDmg = client.Tamer.GodMode ? targetMob.CurrentHP : CalculateDamageOrHeal(client, targetMob, skill, _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == skill.SkillId), skillSlot);
+
+                            if (finalDmg != 0 && !client.Tamer.GodMode)
+                            {
+                                finalDmg = DebuffReductionDamage(client, finalDmg);
+                            }
+
+                            if (finalDmg <= 0) finalDmg = 1;
+                            if (finalDmg > targetMob.CurrentHP) finalDmg = targetMob.CurrentHP;
+
+                            var newHp = targetMob.ReceiveDamage(finalDmg, client.TamerId);
+
+                            if (newHp > 0)
+                            {
+                                _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in mob {targetMob?.Id} - {targetMob?.Name}.");
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(
+                                    client.TamerId,
+                                    new CastSkillPacket(
+                                        skillSlot,
+                                        attackerHandler,
+                                        targetHandler).Serialize());
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(
+                                    client.TamerId,
+                                    new SkillHitPacket(
+                                        attackerHandler,
+                                        targetMob.GeneralHandler,
+                                        skillSlot,
+                                        finalDmg,
+                                        targetMob.CurrentHpRate
+                                        ).Serialize());
+
+
+                            }
+                            else
+                            {
+                                _logger.Verbose($"Partner {client.Partner.Id} killed mob {targetMob?.Id} - {targetMob?.Name} with {finalDmg} skill {skill.Id} damage.");
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(
+                                    client.TamerId,
+                                    new KillOnSkillPacket(
+                                        attackerHandler,
+                                        targetMob.GeneralHandler,
+                                        skillSlot,
+                                        finalDmg
+                                        ).Serialize());
+
+                                targetMob?.Die();
+                            }
+                        }
+
+                        if (!_pvpServer.MobsAttacking(client.Tamer.Location.MapId, client.TamerId))
+                        {
+                            client.Tamer.StopBattle();
+
+                            SendBattleOffTask(client, attackerHandler, true);
+                        }
+
+                        var evolution = client.Tamer.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Tamer.Partner.CurrentType);
+
+                        if (evolution != null && skill.SkillInfo.Cooldown / 1000 > 20)
+                        {
+                            evolution.Skills[skillSlot].SetCooldown(skill.SkillInfo.Cooldown / 1000);
+                            _sender.Send(new UpdateEvolutionCommand(evolution));
+                        }
+                    }
 
                 }
+
             }
             else if (client.DungeonMap)
             {
@@ -514,7 +894,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (_mapServer.GetMobByHandler(client.Tamer.Location.MapId, targetHandler, true, client.TamerId) != null)
                 {
-                    _logger.Verbose($"Using skill on Summon (Map Server)");
+                    _logger.Debug($"Using skill on Summon (Map Server)");
 
                     var targets = new List<SummonMobModel>();
 
@@ -711,6 +1091,213 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             _sender.Send(new UpdateEvolutionCommand(evolution));
                         }
                     }
+                }
+                else if (_mapServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId) != null)
+                {
+                    _logger.Debug($"Using skill on Player (Map Server)");
+
+                    var targetMobs = new List<MobConfigModel>();
+
+                    if (areaOfEffect > 0)
+                    {
+                        skillType = SkillTypeEnum.TargetArea;
+
+                        var targets = new List<MobConfigModel>();
+
+                        if (targetType == 17)   // Mobs around partner
+                        {
+                            targets = _pvpServer.GetMobsNearbyPartner(client.Partner.Location, areaOfEffect, client.TamerId);
+                        }
+                        else if (targetType == 18)   // Mobs around mob
+                        {
+                            targets = _pvpServer.GetMobsNearbyTargetMob(client.Partner.Location.MapId, targetHandler, areaOfEffect, client.TamerId);
+                        }
+
+                        targetMobs.AddRange(targets);
+                    }
+                    else
+                    {
+                        skillType = SkillTypeEnum.Single;
+
+                        var mob = _pvpServer.GetMobByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
+
+                        if (mob == null)
+                            return Task.CompletedTask;
+
+                        targetMobs.Add(mob);
+                    }
+
+                    if (targetMobs.Any())
+                    {
+                        if (skillType == SkillTypeEnum.Single && !targetMobs.First().Alive)
+                            return Task.CompletedTask;
+
+                        client.Partner.ReceiveDamage(skill.SkillInfo.HPUsage);
+                        client.Partner.UseDs(skill.SkillInfo.DSUsage);
+
+                        var castingTime = (int)Math.Round((float)skill.SkillInfo.CastingTime);
+                        if (castingTime <= 0) castingTime = 2000;
+
+                        client.Partner.SetEndCasting(castingTime);
+
+                        targetMobs.ForEach(targetMob =>
+                        {
+                            _logger.Verbose($"Character {client.Tamer.Id} engaged {targetMob.Id} - {targetMob.Name} with skill {skill.SkillId}.");
+                        });
+
+                        if (!client.Tamer.InBattle)
+                        {
+                            client.Tamer.SetHidden(false);
+                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(attackerHandler).Serialize());
+                            client.Tamer.StartBattleWithSkill(targetMobs, skillType);
+                        }
+                        else
+                        {
+                            client.Tamer.SetHidden(false);
+                            client.Tamer.UpdateTargetWithSkill(targetMobs, skillType);
+                        }
+
+                        if (skillType != SkillTypeEnum.Single)
+                        {
+                            var finalDmg = 0;
+
+                            finalDmg = client.Tamer.GodMode ? targetMobs.First().CurrentHP : AoeDamage(client, targetMobs.First(), skill, skillSlot, _configuration);
+
+                            targetMobs.ForEach(targetMob =>
+                            {
+                                if (finalDmg != 0)
+                                {
+                                    finalDmg = DebuffReductionDamage(client, finalDmg);
+                                }
+
+                                if (finalDmg <= 0) finalDmg = 1;
+                                if (finalDmg > targetMob.CurrentHP) finalDmg = targetMob.CurrentHP;
+
+                                if (!targetMob.InBattle)
+                                {
+                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(targetHandler).Serialize());
+                                    targetMob.StartBattle(client.Tamer);
+                                }
+                                else
+                                {
+                                    targetMob.AddTarget(client.Tamer);
+                                }
+
+                                var newHp = targetMob.ReceiveDamage(finalDmg, client.TamerId);
+
+                                if (newHp > 0)
+                                {
+                                    _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in mob {targetMob?.Id} - {targetMob?.Name}.");
+                                }
+                                else
+                                {
+                                    _logger.Verbose($"Partner {client.Partner.Id} killed mob {targetMob?.Id} - {targetMob?.Name} with {finalDmg} skill {skill.Id} damage.");
+                                    targetMob?.Die();
+                                }
+                            });
+
+                            _pvpServer.BroadcastForTamerViewsAndSelf(
+                                client.TamerId,
+                                new CastSkillPacket(
+                                    skillSlot,
+                                    attackerHandler,
+                                    targetHandler
+                                ).Serialize()
+                            );
+
+                            _pvpServer.BroadcastForTamerViewsAndSelf(
+                                client.TamerId,
+                                new AreaSkillPacket(
+                                    attackerHandler,
+                                    client.Partner.HpRate,
+                                    targetMobs,
+                                    skillSlot,
+                                    finalDmg
+                                ).Serialize()
+                            );
+                        }
+                        else
+                        {
+                            var targetMob = targetMobs.First();
+
+                            if (!targetMob.InBattle)
+                            {
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new SetCombatOnPacket(targetHandler).Serialize());
+                                targetMob.StartBattle(client.Tamer);
+                            }
+                            else
+                            {
+                                targetMob.AddTarget(client.Tamer);
+                            }
+
+                            var finalDmg = client.Tamer.GodMode ? targetMob.CurrentHP : CalculateDamageOrHeal(client, targetMob, skill, _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == skill.SkillId), skillSlot);
+
+                            if (finalDmg != 0 && !client.Tamer.GodMode)
+                            {
+                                finalDmg = DebuffReductionDamage(client, finalDmg);
+                            }
+
+                            if (finalDmg <= 0) finalDmg = 1;
+                            if (finalDmg > targetMob.CurrentHP) finalDmg = targetMob.CurrentHP;
+
+                            var newHp = targetMob.ReceiveDamage(finalDmg, client.TamerId);
+
+                            if (newHp > 0)
+                            {
+                                _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in mob {targetMob?.Id} - {targetMob?.Name}.");
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(
+                                    client.TamerId,
+                                    new CastSkillPacket(
+                                        skillSlot,
+                                        attackerHandler,
+                                        targetHandler).Serialize());
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(
+                                    client.TamerId,
+                                    new SkillHitPacket(
+                                        attackerHandler,
+                                        targetMob.GeneralHandler,
+                                        skillSlot,
+                                        finalDmg,
+                                        targetMob.CurrentHpRate
+                                        ).Serialize());
+
+
+                            }
+                            else
+                            {
+                                _logger.Verbose($"Partner {client.Partner.Id} killed mob {targetMob?.Id} - {targetMob?.Name} with {finalDmg} skill {skill.Id} damage.");
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(
+                                    client.TamerId,
+                                    new KillOnSkillPacket(
+                                        attackerHandler,
+                                        targetMob.GeneralHandler,
+                                        skillSlot,
+                                        finalDmg
+                                        ).Serialize());
+
+                                targetMob?.Die();
+                            }
+                        }
+
+                        if (!_pvpServer.MobsAttacking(client.Tamer.Location.MapId, client.TamerId))
+                        {
+                            client.Tamer.StopBattle();
+
+                            SendBattleOffTask(client, attackerHandler, true);
+                        }
+
+                        var evolution = client.Tamer.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Tamer.Partner.CurrentType);
+
+                        if (evolution != null && skill.SkillInfo.Cooldown / 1000 > 20)
+                        {
+                            evolution.Skills[skillSlot].SetCooldown(skill.SkillInfo.Cooldown / 1000);
+                            _sender.Send(new UpdateEvolutionCommand(evolution));
+                        }
+                    }
+
                 }
                 else
                 {

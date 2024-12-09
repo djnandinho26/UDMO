@@ -8,6 +8,7 @@ using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.MapServer;
+using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
 using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
@@ -24,6 +25,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private const string GamerServerPublic = "GameServer:PublicAddress";
         private const string GameServerPort = "GameServer:Port";
 
+        private readonly PartyManager _partyManager;
         private readonly MapServer _mapServer;
         private readonly EventServer _eventServer;
         private readonly PvpServer _pvpServer;
@@ -32,9 +34,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
 
-        public ChangeChannelSendProcessor(MapServer mapServer, EventServer eventServer, PvpServer pvpServer,
+        public ChangeChannelSendProcessor(PartyManager partyManager, MapServer mapServer, EventServer eventServer, PvpServer pvpServer,
             ILogger logger, ISender sender, IMapper mapper, IConfiguration configuration)
         {
+            _partyManager = partyManager;
             _mapServer = mapServer;
             _eventServer = eventServer;
             _pvpServer = pvpServer;
@@ -82,6 +85,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
                 client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y));
+
+            // -- PARTY VERIFICATION -----------------------------------------------------
+
+            var party = _partyManager.FindParty(client.TamerId);
+
+            if (party != null)
+            {
+                party.UpdateMember(party[client.TamerId], client.Tamer);
+
+                foreach (var target in party.Members.Values)
+                {
+                    if (target.Id != client.Tamer.Id) 
+                        _mapServer.BroadcastForTamerViewsAndSelf(client, new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+
+                }
+            }
 
         }
     }

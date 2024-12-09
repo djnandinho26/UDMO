@@ -387,6 +387,16 @@ namespace DigitalWorldOnline.Commons.Enums.PacketProcessor
         PartyConfigChange = 2309,
 
         /// <summary>
+        /// Party Disconnect
+        /// </summary>
+        PartyMemberDisconnect = 2312,
+
+        /// <summary>
+        /// Party Disconnect
+        /// </summary>
+        PartyMemberDismiss = 2317,
+
+        /// <summary>
         /// Loads the friend information.
         /// </summary>
         AddFriend = 2401,

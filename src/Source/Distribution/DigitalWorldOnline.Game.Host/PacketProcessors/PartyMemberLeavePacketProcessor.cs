@@ -24,7 +24,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private const string GamerServerPublic = "GameServer:PublicAddress";
         private const string GameServerPort = "GameServer:Port";
 
-
         private readonly PartyManager _partyManager;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
@@ -32,20 +31,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ISender _sender;
         private readonly IConfiguration _configuration;
 
-        public PartyMemberLeavePacketProcessor(PartyManager partyManager, MapServer mapServer,
-            ILogger logger, ISender sender, IConfiguration configuration,
-            DungeonsServer dungeonServer)
+        public PartyMemberLeavePacketProcessor(PartyManager partyManager, MapServer mapServer, DungeonsServer dungeonServer,
+            ILogger logger, ISender sender, IConfiguration configuration)
         {
             _partyManager = partyManager;
             _mapServer = mapServer;
+            _dungeonServer = dungeonServer;
             _logger = logger;
             _sender = sender;
             _configuration = configuration;
-            _dungeonServer = dungeonServer;
         }
 
         public async Task Process(GameClient client, byte[] packetData)
         {
+            _logger.Information($"Party Leave Packet !!");
+
             var packet = new GamePacketReader(packetData);
 
             var party = _partyManager.FindParty(client.TamerId);
@@ -59,6 +59,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     if (party.LeaderId == party[client.TamerId].Key && party.Members.Count > 2)
                     {
+                        //_logger.Information($"{client.Tamer.Name} left the party !! (Leader)");
+
                         party.RemoveMember(party[client.TamerId].Key);
 
                         var randomIndex = new Random().Next(party.Members.Count);
@@ -66,14 +68,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         party.ChangeLeader(sortedPlayer);
 
-                        _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(),
-                            new PartyLeaderChangedPacket(sortedPlayer).Serialize());
-                        _dungeonServer.BroadcastForTargetTamers(party.GetMembersIdList(),
-                            new PartyLeaderChangedPacket(sortedPlayer).Serialize());
+                        _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(sortedPlayer).Serialize());
+                        _dungeonServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(sortedPlayer).Serialize());
                     }
                     else if (party.Members.Count <= 2)
                     {
-                        //_logger.Information($"{client.Tamer.Name} left the party !!");
+                        //_logger.Information($"{client.Tamer.Name} left the party !! (else if)");
 
                         foreach (var target in party.Members.Values)
                         {
@@ -133,7 +133,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                     else
                     {
-                        //_logger.Information($"{client.Tamer.Name} left the party !!");
+                        //_logger.Information($"{client.Tamer.Name} left the party !! (else)");
 
                         var partyMember = party[client.TamerId].Value;
 

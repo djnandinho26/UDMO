@@ -545,6 +545,12 @@ namespace DigitalWorldOnline.GameHost
             return map.SummonMobs.FirstOrDefault(x => x.GeneralHandler == handler);
         }
 
+        public DigimonModel? GetEnemyByHandler(short mapId, int handler, long tamerId)
+        {
+            return Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId))?
+                .ConnectedTamers.Select(x => x.Partner).FirstOrDefault(x => x.GeneralHandler == handler);
+        }
+
         // ----------------------------------------------------------------------------
 
         public List<MobConfigModel> GetMobsNearbyPartner(Location location, int range, long tamerId)
@@ -707,14 +713,6 @@ namespace DigitalWorldOnline.GameHost
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
 
             return map?.PlayersAttacking(partnerId) ?? false;
-        }
-
-        public DigimonModel? GetEnemyByHandler(short mapId, int handler, long tamerId)
-        {
-            return Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId))?
-                .ConnectedTamers
-                .Select(x => x.Partner)
-                .FirstOrDefault(x => x.GeneralHandler == handler);
         }
 
         public async Task CallDiscord(string message, GameClient tamer, string coloured, string local, string Channel = "1307444107836264608", bool custom = false)
