@@ -15,6 +15,11 @@ namespace DigitalWorldOnline.Commons.Utils
             1615, 1701, 1702, 1703, 1704, 1705, 1706, 1809, 1810, 1911, 2001, 2002
         };
 
+        public static List<short> EventMapIds = new List<short>()
+        {
+            
+        };
+
         public static List<short> PvpMapIds = new List<short>()
         {
             9101, 10, 1

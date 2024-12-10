@@ -2744,7 +2744,7 @@ namespace DigitalWorldOnline.Game
                         }
                         catch (Exception ex)
                         {
-                            _logger.Error($"Error: {ex.Message}");
+                            _logger.Error($"TP Error:\n {ex.Message}");
                         }
 
                         var party = _partyManager.FindParty(client.TamerId);
@@ -2753,7 +2753,7 @@ namespace DigitalWorldOnline.Game
                         {
                             party.UpdateMember(party[client.TamerId], client.Tamer);
 
-                            foreach (var target in party.Members.Values)
+                            /*foreach (var target in party.Members.Values)
                             {
                                 var targetClient = _mapServer.FindClientByTamerId(target.Id);
 
@@ -2763,7 +2763,19 @@ namespace DigitalWorldOnline.Game
 
                                 if (target.Id != client.Tamer.Id)
                                     targetClient.Send(new PartyMemberWarpGatePacket(party[client.TamerId], targetClient.Tamer).Serialize());
-                            }
+                            }*/
+
+                            _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                                    new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+
+                            _dungeonServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                                new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+
+                            _eventServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                                new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+
+                            _pvpServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                                new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
                         }
                     }
                     break;
@@ -2782,47 +2794,76 @@ namespace DigitalWorldOnline.Game
                         string[] comando = message.Split(' ');
                         var TamerName = comando[1];
 
-                        var targetClient = _mapServer.FindClientByTamerName(TamerName);
-                        var targetClientD = _dungeonServer.FindClientByTamerName(TamerName);
-                        var targetClientP = _pvpServer.FindClientByTamerName(TamerName);
+                        GameClient? targetClient;
 
-                        if (targetClient == null && targetClientD == null && targetClientP == null)
+                        var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
+                        switch (mapConfig!.Type)
+                        {
+                            case MapTypeEnum.Dungeon:
+                                targetClient = _dungeonServer.FindClientByTamerName(TamerName);
+                                break;
+                            case MapTypeEnum.Event:
+                                targetClient = _eventServer.FindClientByTamerName(TamerName);
+                                break;
+                            case MapTypeEnum.Pvp:
+                                targetClient = _pvpServer.FindClientByTamerName(TamerName);
+                                break;
+                            default:
+                                targetClient = _mapServer.FindClientByTamerName(TamerName);
+                                break;
+                        }
+
+                        if (targetClient == null)
                         {
                             client.Send(new SystemMessagePacket($"Player {TamerName} not found!"));
                             break;
                         }
-
-                        if (client.Tamer.Name == TamerName)
+                        else
                         {
-                            client.Send(new SystemMessagePacket($"You can't teleport to yourself!"));
-                            break;
-                        }
-
-                        var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
-
-                        switch (mapConfig.Type)
-                        {
-                            case MapTypeEnum.Dungeon:
+                            if (client.Tamer.Name == TamerName)
+                            {
+                                client.Send(new SystemMessagePacket($"You can't teleport to yourself!"));
                                 break;
-                            case MapTypeEnum.Event:
-                                break;
-                            case MapTypeEnum.Pvp:
-                                break;
-                            default:
-                                break;
-                        }
+                            }
 
-                        var map = _mapServer.Maps.FirstOrDefault(x =>
-                            x.Clients.Exists(gameClient => gameClient.Tamer.Name == TamerName));
+                            Commons.Models.Map.GameMap? map;
 
-                        if (map != null)
-                        {
-                            if (client.DungeonMap)
-                                _dungeonServer.RemoveClient(client);
-                            else if (client.PvpMap)
-                                _pvpServer.RemoveClient(client);
-                            else
-                                _mapServer.RemoveClient(client);
+                            switch (mapConfig!.Type)
+                            {
+                                case MapTypeEnum.Dungeon:
+                                    {
+                                        map = _dungeonServer.Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == targetClient.TamerId));
+
+                                        if (map != null)
+                                            _dungeonServer.RemoveClient(client);
+                                    }
+                                    break;
+                                case MapTypeEnum.Event:
+                                    {
+                                        map = _eventServer.Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == targetClient.TamerId));
+
+                                        if (map != null)
+                                            _eventServer.RemoveClient(client);
+                                    }
+                                    break;
+                                case MapTypeEnum.Pvp:
+                                    {
+                                        map = _pvpServer.Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == targetClient.TamerId));
+
+                                        if (map != null)
+                                            _pvpServer.RemoveClient(client);
+                                    }
+                                    break;
+                                default:
+                                    {
+                                        map = _mapServer.Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.Tamer.Name == TamerName));
+
+                                        if (map != null)
+                                            _mapServer.RemoveClient(client);
+                                    }
+                                    break;
+                            }
 
                             var destination = targetClient.Tamer.Location;
 
@@ -2835,81 +2876,40 @@ namespace DigitalWorldOnline.Game
                             client.Tamer.Partner.NewLocation(destination.MapId, destination.X, destination.Y);
                             await _sender.Send(new UpdateDigimonLocationCommand(client.Tamer.Partner.Location));
 
+                            client.Tamer.SetCurrentChannel(targetClient.Tamer.Channel);
+
                             client.Tamer.UpdateState(CharacterStateEnum.Loading);
                             await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
 
                             client.SetGameQuit(false);
 
                             client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
-                                client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y).Serialize());
+                                    client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y).Serialize());
 
                             var party = _partyManager.FindParty(client.TamerId);
 
                             if (party != null)
                             {
                                 party.UpdateMember(party[client.TamerId], client.Tamer);
-                                party.Members.Values.Where(x => x.Id != client.TamerId).ToList()
-                                    .ForEach(member =>
-                                    {
-                                        _dungeonServer.BroadcastForUniqueTamer(member.Id,
-                                            new PartyMemberWarpGatePacket(party[client.TamerId], member).Serialize());
-                                    });
-                                /*foreach (var memberId in party.GetMembersIdList())
+
+                                /*party.Members.Values.Where(x => x.Id != client.TamerId).ToList().ForEach(member =>
                                 {
-                                    var targetMessage = _mapServer.FindClientByTamerId(memberId);
-                                    if (targetMessage != null) targetMessage.Send(new PartyMemberWarpGatePacket(party[client.TamerId]).Serialize());
-                                }*/
-                            }
-                        }
-                        else
-                        {
-                            _logger.Verbose($"Dungeon Map");
+                                    _dungeonServer.BroadcastForUniqueTamer(member.Id, new PartyMemberWarpGatePacket(party[client.TamerId], member).Serialize());
+                                });*/
 
-                            var mapdg = _dungeonServer.Maps.FirstOrDefault(x =>
-                                x.Clients.Exists(gameClient => gameClient.TamerId == targetClientD.TamerId));
-
-                            client.Tamer.SetTamerTP(targetClientD.TamerId);
-                            await _sender.Send(new ChangeTamerIdTPCommand(client.Tamer.Id, (int)targetClientD.TamerId));
-
-                            if (client.DungeonMap)
-                                _dungeonServer.RemoveClient(client);
-                            else if (client.PvpMap)
-                                _pvpServer.RemoveClient(client);
-                            else
-                                _mapServer.RemoveClient(client);
-
-                            var destination = targetClientD.Tamer.Location;
-
-                            client.Tamer.NewLocation(destination.MapId, destination.X, destination.Y);
-                            await _sender.Send(new UpdateCharacterLocationCommand(client.Tamer.Location));
-
-                            client.Tamer.Partner.NewLocation(destination.MapId, destination.X, destination.Y);
-                            await _sender.Send(new UpdateDigimonLocationCommand(client.Tamer.Partner.Location));
-                            client.Tamer.SetCurrentChannel(targetClientD.Tamer.Channel);
-
-                            client.Tamer.UpdateState(CharacterStateEnum.Loading);
-                            await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
-
-                            client.SetGameQuit(false);
-
-                            client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
-                                client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y).Serialize());
-
-                            var party = _partyManager.FindParty(client.TamerId);
-
-                            if (party != null)
-                            {
-                                party.UpdateMember(party[client.TamerId], client.Tamer);
+                                _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                                    new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
 
                                 _dungeonServer.BroadcastForTargetTamers(party.GetMembersIdList(),
                                     new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
 
-                                /*foreach (var memberId in party.GetMembersIdList())
-                                {
-                                    var targetMessage = _dungeonServer.FindClientByTamerId(memberId);
-                                    if (targetMessage != null) targetMessage.Send(new PartyMemberWarpGatePacket(party[client.TamerId]).Serialize());
-                                }*/
+                                _eventServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                                    new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+
+                                _pvpServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                                    new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
                             }
+
                         }
                     }
                     break;
@@ -2932,10 +2932,26 @@ namespace DigitalWorldOnline.Game
                         }
 
                         var tamerName = command[1];
-                        var TargetSummon = _mapServer.FindClientByTamerName(tamerName);
 
-                        if (TargetSummon == null)
-                            TargetSummon = _dungeonServer.FindClientByTamerName(tamerName);
+                        GameClient? TargetSummon;
+
+                        var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
+                        switch (mapConfig!.Type)
+                        {
+                            case MapTypeEnum.Dungeon:
+                                TargetSummon = _dungeonServer.FindClientByTamerName(tamerName);
+                                break;
+                            case MapTypeEnum.Event:
+                                TargetSummon = _eventServer.FindClientByTamerName(tamerName);
+                                break;
+                            case MapTypeEnum.Pvp:
+                                TargetSummon = _pvpServer.FindClientByTamerName(tamerName);
+                                break;
+                            default:
+                                TargetSummon = _mapServer.FindClientByTamerName(tamerName);
+                                break;
+                        }
 
                         if (TargetSummon == null)
                         {
@@ -2950,6 +2966,8 @@ namespace DigitalWorldOnline.Game
 
                         if (TargetSummon.DungeonMap)
                             _dungeonServer.RemoveClient(TargetSummon);
+                        else if (TargetSummon.EventMap)
+                            _eventServer.RemoveClient(TargetSummon);
                         else if (TargetSummon.PvpMap)
                             _pvpServer.RemoveClient(TargetSummon);
                         else
@@ -2979,6 +2997,12 @@ namespace DigitalWorldOnline.Game
                                 new PartyMemberWarpGatePacket(party[TargetSummon.TamerId], client.Tamer).Serialize());
 
                             _dungeonServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                                new PartyMemberWarpGatePacket(party[TargetSummon.TamerId], client.Tamer).Serialize());
+
+                            _eventServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                                new PartyMemberWarpGatePacket(party[TargetSummon.TamerId], client.Tamer).Serialize());
+
+                            _pvpServer.BroadcastForTargetTamers(party.GetMembersIdList(),
                                 new PartyMemberWarpGatePacket(party[TargetSummon.TamerId], client.Tamer).Serialize());
                         }
 

@@ -59,15 +59,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
 
-            if (client.DungeonMap)
+            switch (mapConfig!.Type)
             {
-                //_dungeonServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Partner, newPartner);
-                _dungeonServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
-            }
-            else
-            {
-                _mapServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
-                //_eventServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                case MapTypeEnum.Dungeon:
+                    _dungeonServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                    break;
+
+                case MapTypeEnum.Event:
+                    _eventServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                    break;
+
+                case MapTypeEnum.Pvp:
+                    _pvpServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                    break;
+
+                default:
+                    _mapServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                    break;
             }
 
             client.Tamer.SwitchPartner(slot);

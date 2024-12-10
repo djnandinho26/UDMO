@@ -224,6 +224,18 @@ namespace DigitalWorldOnline.GameHost
 
         // ---------------------------------------------------------------------------------------------------
 
+        public void SwapDigimonHandlers(int mapId, DigimonModel oldPartner, DigimonModel newPartner)
+        {
+            Maps.FirstOrDefault(x => x.MapId == mapId)?.SwapDigimonHandlers(oldPartner, newPartner);
+        }
+
+        public void SwapDigimonHandlers(int mapId, int channel, DigimonModel oldPartner, DigimonModel newPartner)
+        {
+            Maps.FirstOrDefault(x => x.MapId == mapId && x.Channel == channel)?.SwapDigimonHandlers(oldPartner, newPartner);
+        }
+
+        // ---------------------------------------------------------------------------------------------------
+
         private void ShowOrHideTamer(GameMap map, CharacterModel tamer)
         {
             foreach (var connectedTamer in map.ConnectedTamers.Where(x => x.Id != tamer.Id))

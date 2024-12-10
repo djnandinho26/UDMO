@@ -445,6 +445,7 @@ namespace DigitalWorldOnline.Game
             Task.Run(() => _dungeonsServer.StartAsync(cancellationToken));
             Task.Run(() => _pvpServer.StartAsync(cancellationToken));
             Task.Run(() => _eventServer.StartAsync(cancellationToken));
+
             Task.Run(() => _sender.Send(new UpdateCharacterFriendsCommand(null, false)));
             
             return Task.CompletedTask;

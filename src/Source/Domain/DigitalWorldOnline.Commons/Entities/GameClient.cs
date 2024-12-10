@@ -74,9 +74,15 @@ namespace DigitalWorldOnline.Commons.Entities
 
         //public bool PvpMap => true;
 
+        // -------------------------------------------------------------------------------------------------------
+
         public bool DungeonMap => UtilitiesFunctions.DungeonMapIds.Contains(Tamer?.Location.MapId ?? 0);
 
+        public bool EventMap => UtilitiesFunctions.EventMapIds.Contains(Tamer?.Location.MapId ?? 0);
+
         public bool PvpMap => UtilitiesFunctions.PvpMapIds.Contains(Tamer?.Location.MapId ?? 0);
+
+        // -------------------------------------------------------------------------------------------------------
 
         public bool SentOnceDataSent { get; private set; }
 
