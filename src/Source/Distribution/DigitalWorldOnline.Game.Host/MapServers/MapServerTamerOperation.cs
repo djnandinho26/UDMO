@@ -56,9 +56,12 @@ namespace DigitalWorldOnline.GameHost
                 if (tamer.TargetSummonMobs.Count > 0)
                     PartnerAutoAttackSummon(tamer);
 
-                if (tamer.TargetPartners.Count > 0 && client.PvpMap)
+                if (tamer.TargetPartner != null && client.PvpMap)
+                {
+                    _logger.Information($"Digimon Target found");
                     PartnerAutoAttackPlayer(tamer);
-                
+                }
+                    
                 CheckTimeReward(client);
 
                 if (client.Tamer.AttendanceReward.LastRewardDate.Day < DateTime.Now.Day)

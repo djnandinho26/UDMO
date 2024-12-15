@@ -186,14 +186,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     party.UpdateMember(party[client.TamerId], client.Tamer);
 
-                    foreach (var target in party.Members.Values)
+                    /*foreach (var target in party.Members.Values)
                     {
                         var targetClient = _mapServer.FindClientByTamerId(target.Id);
 
                         if (targetClient == null) continue;
 
                         if (target.Id != client.Tamer.Id) targetClient.Send(new PartyMemberWarpGatePacket(party[client.TamerId], targetClient.Tamer).Serialize());
-                    }
+                    }*/
+
+                    _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+                    _eventServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
                 }
             }
 

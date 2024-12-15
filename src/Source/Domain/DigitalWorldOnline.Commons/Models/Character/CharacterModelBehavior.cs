@@ -611,6 +611,52 @@ namespace DigitalWorldOnline.Commons.Models.Character
             return character;
         }
 
+        // -------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Engages battle with target (mob / Summon / Digimon).
+        /// </summary>
+        public void StartBattle(MobConfigModel mobConfig)
+        {
+            if (!TargetMobs.Any(x => x.Id == mobConfig.Id))
+                TargetMobs.Add(mobConfig);
+
+            if (!InBattle)
+            {
+                _targetHandler = mobConfig.GeneralHandler;
+                InBattle = true;
+            }
+        }
+
+        public void StartBattle(SummonMobModel mobConfig)
+        {
+            if (TargetSummonMobs == null)
+                TargetSummonMobs = new List<SummonMobModel>();
+
+            if (!TargetSummonMobs.Any(x => x.Id == mobConfig.Id))
+                TargetSummonMobs.Add(mobConfig);
+
+            if (!InBattle)
+            {
+                _targetHandler = mobConfig.GeneralHandler;
+                InBattle = true;
+            }
+        }
+
+        public void StartBattle(DigimonModel enemyPartner)
+        {
+            if (!TargetPartners.Any(x => x.Id == enemyPartner.Id))
+                TargetPartners.Add(enemyPartner);
+
+            if (!InBattle)
+            {
+                _targetHandler = enemyPartner.GeneralHandler;
+                InBattle = true;
+            }
+        }
+
+        // -------------------------------------------------------------------------------------------------
+
         /// <summary>
         /// Disables active battle flags.
         /// </summary>
@@ -628,10 +674,18 @@ namespace DigitalWorldOnline.Commons.Models.Character
             InBattle = false;
         }
 
+        public void StopBattleDigimon()
+        {
+            _targetHandler = 0;
+            TargetPartners.Clear();
+            InBattle = false;
+        }
+
+        // -------------------------------------------------------------------------------------------------
+
         /// <summary>
-        /// Updates the character target mob.
+        /// Updates the character target (mob / Summon / Digimon).
         /// </summary>
-        /// <param name="mobConfig">New mob target</param>
         public void UpdateTarget(MobConfigModel mobConfig)
         {
             if (!TargetMobs.Any(x => x.Id == mobConfig.Id))
@@ -648,10 +702,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
             _targetHandler = mobConfig.GeneralHandler;
         }
 
-        /// <summary>
-        /// Updates the character target partner.
-        /// </summary>
-        /// <param name="enemyPartner">New enemy target</param>
         public void UpdateTarget(DigimonModel enemyPartner)
         {
             if (!TargetPartners.Any(x => x.Id == enemyPartner.Id))
@@ -660,10 +710,11 @@ namespace DigitalWorldOnline.Commons.Models.Character
             _targetHandler = enemyPartner.GeneralHandler;
         }
 
+        // -------------------------------------------------------------------------------------------------
+
         /// <summary>
-        /// Updates the character target mob.
+        /// Updates the character target (mob / Summon) when use skill.
         /// </summary>
-        /// <param name="mobConfig">New mob target</param>
         public void UpdateTargetWithSkill(List<MobConfigModel> mobs, SkillTypeEnum skillType)
         {
             mobs.ForEach(mob =>
@@ -698,6 +749,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
             }
         }
 
+        // -------------------------------------------------------------------------------------------------
+
         /// <summary>
         /// Enter partner ride mode.
         /// </summary>
@@ -724,52 +777,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
             ResetAfkNotifications();
         }
 
-        /// <summary>
-        /// Engages battle with target mob.
-        /// </summary>
-        /// <param name="mobConfig">Target mob</param>
-        public void StartBattle(MobConfigModel mobConfig)
-        {
-            if (!TargetMobs.Any(x => x.Id == mobConfig.Id))
-                TargetMobs.Add(mobConfig);
-
-            if (!InBattle)
-            {
-                _targetHandler = mobConfig.GeneralHandler;
-                InBattle = true;
-            }
-        }
-
-        public void StartBattle(SummonMobModel mobConfig)
-        {
-            if (TargetSummonMobs == null)
-                TargetSummonMobs = new List<SummonMobModel>();
-
-            if (!TargetSummonMobs.Any(x => x.Id == mobConfig.Id))
-                TargetSummonMobs.Add(mobConfig);
-
-            if (!InBattle)
-            {
-                _targetHandler = mobConfig.GeneralHandler;
-                InBattle = true;
-            }
-        }
-
-        /// <summary>
-        /// Engages battle with the target enemy.
-        /// </summary>
-        /// <param name="enemyPartner">Target enemy</param>
-        public void StartBattle(DigimonModel enemyPartner)
-        {
-            if (!TargetPartners.Any(x => x.Id == enemyPartner.Id))
-                TargetPartners.Add(enemyPartner);
-
-            if (!InBattle)
-            {
-                _targetHandler = enemyPartner.GeneralHandler;
-                InBattle = true;
-            }
-        }
+        // -------------------------------------------------------------------------------------------------
 
         public void StartBattleWithSkill(List<MobConfigModel> mobs, SkillTypeEnum skillType)
         {
@@ -812,10 +820,11 @@ namespace DigitalWorldOnline.Commons.Models.Character
             InBattle = true;
         }
 
+        // -------------------------------------------------------------------------------------------------
+
         /// <summary>
         /// Removes the character target mob.
         /// </summary>
-        /// <param name="mobConfig">Target mob</param>
         public void RemoveTarget(MobConfigModel mobConfig)
         {
             if (_targetHandler == mobConfig.GeneralHandler)
@@ -823,7 +832,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             TargetMobs.RemoveAll(x => x.Id == mobConfig.Id);
 
-            if (!TargetMobs.Any()) InBattle = false;
+            if (!TargetMobs.Any())
+                InBattle = false;
         }
 
         public void RemoveTarget(SummonMobModel mobConfig)
@@ -836,8 +846,22 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             TargetSummonMobs.RemoveAll(x => x.Id == mobConfig.Id);
 
-            if (!TargetSummonMobs.Any()) InBattle = false;
+            if (!TargetSummonMobs.Any())
+                InBattle = false;
         }
+
+        public void RemoveTarget(DigimonModel mobConfig)
+        {
+            if (_targetHandler == mobConfig.GeneralHandler)
+                _targetHandler = 0;
+
+            TargetPartners.RemoveAll(x => x.Id == mobConfig.Id);
+
+            if (!TargetPartners.Any())
+                InBattle = false;
+        }
+
+        // -------------------------------------------------------------------------------------------------
 
         /// <summary>
         /// Updates current exp value.
@@ -2167,13 +2191,13 @@ namespace DigitalWorldOnline.Commons.Models.Character
             return m.ToArray();
         }
 
-        private bool _pvpMap = false;
+        /*private bool _pvpMap = false;
 
         public bool PvpMap
         {
             get { return _pvpMap; }
             set { _pvpMap = value; }
-        }
+        }*/
 
         public CharacterModel SetDeckBuff(DeckBuffModel? deckBuffModel)
         {

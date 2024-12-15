@@ -544,10 +544,8 @@ namespace DigitalWorldOnline.GameHost
             List<long> mobsToAdd = new List<long>();
             List<long> mobsToRemove = new List<long>();
 
-            // Criar uma cópia da lista de Mobs
             List<SummonMobModel> mobsCopy = new List<SummonMobModel>(map.SummonMobs);
 
-            // Iterar sobre a cópia da lista
             mobsCopy.ForEach(mob =>
             {
                 if (tamer.TempShowFullMap)
@@ -571,7 +569,6 @@ namespace DigitalWorldOnline.GameHost
                 }
             });
 
-            // Adicionar e remover os IDs de Mob na lista tamer.MobsInView após a iteração
             mobsToAdd.ForEach(id => tamer.MobsInView.Add(id));
             mobsToRemove.ForEach(id => tamer.MobsInView.Remove(id));
         }
