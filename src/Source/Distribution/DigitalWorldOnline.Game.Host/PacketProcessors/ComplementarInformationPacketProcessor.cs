@@ -23,6 +23,8 @@ using Microsoft.IdentityModel.Tokens;
 using DigitalWorldOnline.GameHost;
 using MediatR;
 using Serilog;
+using DigitalWorldOnline.Commons.Enums;
+using DigitalWorldOnline.GameHost.EventsServer;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -33,23 +35,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly PartyManager _partyManager;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly AssetsLoader _assets;
         private readonly ILogger _logger;
         private readonly ISender _sender;
         private readonly IMapper _mapper;
 
-        public ComplementarInformationPacketProcessor(
-            PartyManager partyManager,
-            MapServer mapServer,
-            DungeonsServer dungeonsServer,
-            AssetsLoader assets,
-            ILogger logger,
-            ISender sender,
-            IMapper mapper)
+        public ComplementarInformationPacketProcessor(PartyManager partyManager, MapServer mapServer, DungeonsServer dungeonsServer,
+            EventServer eventServer, PvpServer pvpServer, AssetsLoader assets,
+            ILogger logger, ISender sender, IMapper mapper)
         {
             _partyManager = partyManager;
             _mapServer = mapServer;
             _dungeonServer = dungeonsServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _assets = assets;
             _logger = logger;
             _sender = sender;
@@ -284,7 +285,42 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             _logger.Debug($"Updating account welcome flag for account {client.AccountId}...");
             await _sender.Send(new UpdateAccountWelcomeFlagCommand(client.AccountId, false));
 
-            if (!client.DungeonMap)
+            var mapTypeConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
+            switch (mapTypeConfig!.Type)
+            {
+                case MapTypeEnum.Dungeon:
+                    {
+
+                    }
+                    break;
+
+                case MapTypeEnum.Event:
+                    {
+                        var map = _eventServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
+
+                        if (map != null)
+                            NotifyTamerKillSpawnEnteringMap(client, map);
+                    }
+                    break;
+
+                case MapTypeEnum.Pvp:
+                    {
+
+                    }
+                    break;
+
+                case MapTypeEnum.Default:
+                    {
+                        var map = _mapServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
+
+                        if (map != null)
+                            NotifyTamerKillSpawnEnteringMap(client, map);
+                    }
+                    break;
+            }
+
+            /*if (!client.DungeonMap)
             {
                 var map = _mapServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
 
@@ -292,7 +328,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     NotifyTamerKillSpawnEnteringMap(client, map);
                 }
-            }
+            }*/
 
             var currentMap = _assets.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
 

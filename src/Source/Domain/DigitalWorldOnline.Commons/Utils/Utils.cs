@@ -22,7 +22,7 @@ namespace DigitalWorldOnline.Commons.Utils
 
         public static List<short> PvpMapIds = new List<short>()
         {
-            9101, 10, 1
+            9101, 10, 1, 3
         };
 
         public static List<int> IncreasePerLevelStun = new List<int>()

@@ -81,7 +81,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
 
                 if (client.PvpMap)
-                    _pvpServer.RemoveClient(client);
+                    //_pvpServer.RemoveClient(client);
+                    _mapServer.RemoveClient(client);
                 else
                     _mapServer.RemoveClient(client);
 
@@ -160,7 +161,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
 
                 if (client.PvpMap)
-                    _pvpServer.RemoveClient(client);
+                    //_pvpServer.RemoveClient(client);
+                    _mapServer.RemoveClient(client);
                 else
                     _mapServer.RemoveClient(client);
                 

@@ -73,18 +73,30 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                     else if (party.Members.Count <= 2)
                     {
-                        //_logger.Information($"{client.Tamer.Name} left the party !! (else if)");
+                        _logger.Information($"{client.Tamer.Name} left the party !! (else if)");
 
                         foreach (var target in party.Members.Values)
                         {
-                            var dungeonClient = _dungeonServer.FindClientByTamerId(target.Id);
+                            //var dungeonClient = _dungeonServer.FindClientByTamerId(target.Id);
 
-                            if (dungeonClient == null)
+                            //if (dungeonClient == null)
+                            //{
+                            //party.RemoveMember(leaveTargetKey);
+                            //_mapServer.BroadcastForUniqueTamer(target.Id, new PartyMemberLeavePacket(leaveTargetKey).Serialize());
+                            //continue;
+                            //}
+
+                            GameClient? dungeonClient;
+
+                            if (!client.DungeonMap)
                             {
                                 party.RemoveMember(leaveTargetKey);
-                                _mapServer.BroadcastForUniqueTamer(target.Id,
-                                    new PartyMemberLeavePacket(leaveTargetKey).Serialize());
+                                _mapServer.BroadcastForUniqueTamer(target.Id, new PartyMemberLeavePacket(leaveTargetKey).Serialize());
                                 continue;
+                            }
+                            else
+                            {
+                                dungeonClient = _dungeonServer.FindClientByTamerId(target.Id);
                             }
 
                             // -- Teleport player outside of Dungeon ---------------------------------

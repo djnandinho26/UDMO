@@ -4,6 +4,7 @@ using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using Serilog;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
@@ -40,14 +41,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 party.ChangeLeader(newLeaderSlot);
 
-                foreach (var memberId in party.GetMembersIdList())
-                {
-                    var targetMessage = _mapServer.FindClientByTamerId(memberId);
-                    if (targetMessage == null) targetMessage = _dungeonServer.FindClientByTamerId(memberId);
-                    targetMessage.Send(new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
-                }
+                //foreach (var memberId in party.GetMembersIdList())
+                //{
+                    //var targetMessage = _mapServer.FindClientByTamerId(memberId);
+                    //if (targetMessage == null) targetMessage = _dungeonServer.FindClientByTamerId(memberId);
+                    //targetMessage.Send(new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
+                //}
 
-                _logger.Debug($"Character {client.TamerId} appointed party slot {newLeaderSlot} as leader.");
+                _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
+                _dungeonServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
+                //_eventServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
+
+                _logger.Debug($"Tamer {client.TamerId} : {client.Tamer.Name} appointed party slot {newLeaderSlot} as leader.");
             }
             else
             {
