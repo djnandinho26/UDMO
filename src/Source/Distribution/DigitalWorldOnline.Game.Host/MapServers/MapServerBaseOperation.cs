@@ -12,6 +12,7 @@ using DigitalWorldOnline.Commons.Packets.MapServer;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Text;
+using System.Threading;
 
 namespace DigitalWorldOnline.GameHost
 {
@@ -36,10 +37,7 @@ namespace DigitalWorldOnline.GameHost
 
             foreach (var map in mapsToRemove)
             {
-                _logger.Debug(
-                    $"Removing inactive instance for {map.Type} map {map.Id} CH {map.Channel} - {map.Name}...");
-                _logger.Information(
-                    $"Removing inactive instance for {map.Type} map {map.Id} CH {map.Channel} - {map.Name}...");
+                _logger.Information($"Removing inactive instance for {map.Type} map {map.Id} CH {map.Channel} - {map.Name}...");
                 Maps.Remove(map);
             }
 
@@ -74,8 +72,7 @@ namespace DigitalWorldOnline.GameHost
                     if (!Maps.Any(x => x.Id == newMap.Id && x.Channel == _loadChannel))
                     {
                         newMap.Channel = _loadChannel;
-                        _logger.Information(
-                            $"Initializing new Channel for {newMap.Type} map {newMap.Id} Ch {_loadChannel} - {newMap.Name}...");
+                        _logger.Information($"Initializing new {newMap.Type} map {newMap.Id} Ch {_loadChannel} - {newMap.Name} ...");
                         Maps.Add(newMap);
                     }
                 }
@@ -97,8 +94,7 @@ namespace DigitalWorldOnline.GameHost
                         if (newMap.Type == MapTypeEnum.Default)
                         {
                             newMap.Channel = client.Tamer.Channel;
-                            _logger.Information(
-                                $"Initializing new Channel for {newMap.Type} map {newMap.Id} Ch {client.Tamer.Channel} - {newMap.Name}...");
+                            _logger.Information($"Initializing new {newMap.Type} map {newMap.Id} Ch {client.Tamer.Channel} - {newMap.Name} ...");
                             Maps.Add(newMap);
                         }
                     }
@@ -302,16 +298,14 @@ namespace DigitalWorldOnline.GameHost
                                                            x.Channel == client.Tamer.Channel);
 
                             _loadChannel = client.Tamer.Channel;
-                            _logger.Warning(
-                                $"Waiting map {client.Tamer.Location.MapId} CH {_loadChannel} initialization.");
+                            _logger.Warning($"Waiting map {client.Tamer.Location.MapId} CH {_loadChannel} initialization.");
 
                             if (map == null)
                                 await SearchNewMaps(client);
 
                             if (stopWatch.ElapsedMilliseconds >= timeLimit)
                             {
-                                _logger.Warning(
-                                    $"The map instance {client.Tamer.Location.MapId} CH {_loadChannel} has not been started, aborting process...");
+                                _logger.Warning($"The map instance {client.Tamer.Location.MapId} CH {_loadChannel} has not been started, aborting process...");
                                 //stopWatch.Stop();
                                 break;
                             }

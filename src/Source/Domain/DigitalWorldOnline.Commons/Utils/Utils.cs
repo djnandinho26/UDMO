@@ -17,12 +17,12 @@ namespace DigitalWorldOnline.Commons.Utils
 
         public static List<short> EventMapIds = new List<short>()
         {
-            
+            96,97,98,99
         };
 
         public static List<short> PvpMapIds = new List<short>()
         {
-            9101, 10, 1, 3
+            9101, 10, 1
         };
 
         public static List<int> IncreasePerLevelStun = new List<int>()

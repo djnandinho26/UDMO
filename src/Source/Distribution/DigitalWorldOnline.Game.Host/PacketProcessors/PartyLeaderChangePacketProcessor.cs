@@ -33,6 +33,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         public Task Process(GameClient client, byte[] packetData)
         {
             var packet = new GamePacketReader(packetData);
+
             var newLeaderSlot = packet.ReadInt();
 
             var party = _partyManager.FindParty(client.TamerId);

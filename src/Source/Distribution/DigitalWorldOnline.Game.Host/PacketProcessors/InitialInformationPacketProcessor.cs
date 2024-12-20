@@ -124,12 +124,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
                         x.SkillCode == buff.SkillId || x.DigimonSkillCode == buff.SkillId));
 
-                //await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
-
                 _logger.Debug($"Getting available channels...");
 
-                bool isDungeonMap = UtilitiesFunctions.DungeonMapIds.Contains(character?.Location.MapId ?? 0);
-                if (isDungeonMap)
+                if (client.DungeonMap)
                 {
                     character.SetCurrentChannel(0);
                 }
@@ -186,10 +183,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                 break;
                             case MapTypeEnum.Event:
                                 _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Event Map)");
-                                await _dungeonsServer.AddClient(client);
+                                await _eventServer.AddClient(client);
                                 break;
                             case MapTypeEnum.Default:
-                            default:
                                 _logger.Debug($"Adding Tamer {character.Id}:{character.Name} to map {character.Location.MapId} Ch {character.Channel}... (Normal Map)");
                                 await _mapServer.AddClient(client);
                                 break;
@@ -197,9 +193,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                 }
 
-                while (client.Loading) await Task.Delay(1000);
-                character.SetGenericHandler(character.Partner.GeneralHandler);
-
+                while (client.Loading)
+                    await Task.Delay(1000);
+                
                 character.SetGenericHandler(character.Partner.GeneralHandler);
 
                 var party = _partyManager.FindParty(client.TamerId);
@@ -223,8 +219,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         if (targetClient == null) continue;
 
-                        KeyValuePair<byte, CharacterModel> partyMember =
-                            party.Members.FirstOrDefault(x => x.Value.Id == client.TamerId);
+                        KeyValuePair<byte, CharacterModel> partyMember = party.Members.FirstOrDefault(x => x.Value.Id == client.TamerId);
+                        
                         targetClient.Send(
                             UtilitiesFunctions.GroupPackets(
                                 new PartyMemberWarpGatePacket(partyMember, targetClient.Tamer).Serialize(),
@@ -257,6 +253,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 _logger.Debug($"Updating character channel...");
                 await _sender.Send(new UpdateCharacterChannelCommand(character.Id, character.Channel));
+
+                //_logger.Information($"***********************************************************************");
             }
             catch (Exception ex)
             {

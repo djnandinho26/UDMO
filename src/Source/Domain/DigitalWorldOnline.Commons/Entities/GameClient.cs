@@ -72,8 +72,6 @@ namespace DigitalWorldOnline.Commons.Entities
 
         public bool GameQuit { get; private set; }
 
-        //public bool PvpMap => true;
-
         // -------------------------------------------------------------------------------------------------------
 
         public bool DungeonMap => UtilitiesFunctions.DungeonMapIds.Contains(Tamer?.Location.MapId ?? 0);

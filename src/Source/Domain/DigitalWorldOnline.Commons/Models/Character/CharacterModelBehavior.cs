@@ -214,8 +214,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// <summary>
         /// Returns the current character target mob.
         /// </summary>
-        public SummonMobModel? TargetSummonMob =>
-            TargetSummonMobs.FirstOrDefault(x => x.GeneralHandler == _targetHandler);
+        public SummonMobModel? TargetSummonMob => TargetSummonMobs.FirstOrDefault(x => x.GeneralHandler == _targetHandler);
 
         /// <summary>
         /// Returns the current character target partner.
@@ -2190,14 +2189,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             return m.ToArray();
         }
-
-        /*private bool _pvpMap = false;
-
-        public bool PvpMap
-        {
-            get { return _pvpMap; }
-            set { _pvpMap = value; }
-        }*/
 
         public CharacterModel SetDeckBuff(DeckBuffModel? deckBuffModel)
         {

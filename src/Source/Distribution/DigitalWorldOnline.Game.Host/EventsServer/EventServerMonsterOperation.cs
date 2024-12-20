@@ -10,22 +10,26 @@ using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Commons.Writers;
+using System.Diagnostics;
 
 
 namespace DigitalWorldOnline.GameHost.EventsServer
 {
     public sealed partial class EventServer
     {
-        private Task MonsterOperation(GameMap map)
+        private void MonsterOperation(GameMap map)
         {
             if (!map.ConnectedTamers.Any())
-                return Task.CompletedTask;
+                return;
+
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
             map.UpdateMapMobs();
 
             foreach (var mob in map.Mobs)
             {
-                if (DateTime.Now > mob.ViewCheckTime)
+                if (!mob.AwaitingKillSpawn && DateTime.Now > mob.ViewCheckTime)
                 {
                     mob.SetViewCheckTime();
 
@@ -47,6 +51,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                                 var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == nearTamer);
 
                                 targetClient?.Send(new LoadMobsPacket(mob));
+                                targetClient?.Send(new LoadBuffsPacket(mob));
                             }
                         });
                     }
@@ -73,7 +78,12 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 mob.SetNextAction();
             }
 
-            return Task.CompletedTask;
+            stopwatch.Stop();
+
+            var totalTime = stopwatch.Elapsed.TotalMilliseconds;
+
+            if (totalTime >= 1000)
+                Console.WriteLine($"Event MonstersOperation ({map.Mobs.Count}): {totalTime}.");
         }
 
         private void BossOperation(GameMap map, MobConfigModel mob, List<long> nearTamers, List<long> farTamers)
@@ -85,182 +95,190 @@ namespace DigitalWorldOnline.GameHost.EventsServer
         {
             switch (mob.CurrentAction)
             {
+                case MobActionEnum.CrowdControl:
+                    {
+
+                    }
+                    break;
+
                 case MobActionEnum.Respawn:
-                {
-                    mob.Reset();
-                    mob.ResetLocation();
-                }
+                    {
+                        mob.Reset();
+                        mob.ResetLocation();
+                    }
                     break;
 
                 case MobActionEnum.Reward:
-                {
-                    ItemsReward(map, mob);
+                    {
+                        ItemsReward(map, mob);
 
-                    ExperienceReward(map, mob);
-                }
+                        ExperienceReward(map, mob);
+                    }
                     break;
 
                 case MobActionEnum.Wait:
-                {
-                    if (mob.Respawn && DateTime.Now > mob.DieTime.AddSeconds(2))
                     {
-                        mob.SetNextWalkTime(UtilitiesFunctions.RandomInt(7, 14));
-                        mob.SetAgressiveCheckTime(5);
-                        mob.SetRespawn();
+                        if (mob.Respawn && DateTime.Now > mob.DieTime.AddSeconds(2))
+                        {
+                            mob.SetNextWalkTime(UtilitiesFunctions.RandomInt(7, 14));
+                            mob.SetAgressiveCheckTime(5);
+                            mob.SetRespawn();
+                        }
+                        else
+                        {
+                            //map.AttackNearbyTamer(mob, mob.TamersViewing, _assets.NpcColiseum);
+                        }
                     }
-                    else
-                    {
-                        map.AttackNearbyTamer(mob, mob.TamersViewing, _assets.NpcColiseum);
-                    }
-                }
                     break;
 
                 case MobActionEnum.Walk:
-                {
-                    //map.BroadcastForTargetTamers(mob.TamersViewing, new SyncConditionPacket(mob.GeneralHandler, ConditionEnum.Default).Serialize());
-                    //mob.Move();
-                    //map.BroadcastForTargetTamers(mob.TamersViewing, new MobWalkPacket(mob).Serialize());
-                }
+                    {
+                        map.BroadcastForTargetTamers(mob.TamersViewing, new SyncConditionPacket(mob.GeneralHandler, ConditionEnum.Default).Serialize());
+                        mob.Move();
+                        map.BroadcastForTargetTamers(mob.TamersViewing, new MobWalkPacket(mob).Serialize());
+                    }
                     break;
 
                 case MobActionEnum.GiveUp:
-                {
-                    map.BroadcastForTargetTamers(mob.TamersViewing,
-                        new SyncConditionPacket(mob.GeneralHandler, ConditionEnum.Immortal).Serialize());
-                    mob.ResetLocation();
-                    map.BroadcastForTargetTamers(mob.TamersViewing, new MobRunPacket(mob).Serialize());
-                    map.BroadcastForTargetTamers(mob.TamersViewing,
-                        new SetCombatOffPacket(mob.GeneralHandler).Serialize());
-
-                    foreach (var targetTamer in mob.TargetTamers)
                     {
-                        if (targetTamer.TargetMobs.Count <= 1)
-                        {
-                            targetTamer.StopBattle();
-                            map.BroadcastForTamerViewsAndSelf(targetTamer.Id,
-                                new SetCombatOffPacket(targetTamer.Partner.GeneralHandler).Serialize());
-                        }
-                    }
+                        //_logger.Information($"The mob GiveUp !!!");
 
-                    mob.Reset(true);
-                    map.BroadcastForTargetTamers(mob.TamersViewing,
-                        new UpdateCurrentHPRatePacket(mob.GeneralHandler, mob.CurrentHpRate).Serialize());
-                }
+                        map.BroadcastForTargetTamers(mob.TamersViewing,
+                            new SyncConditionPacket(mob.GeneralHandler, ConditionEnum.Immortal).Serialize());
+                        mob.ResetLocation();
+                        map.BroadcastForTargetTamers(mob.TamersViewing, new MobRunPacket(mob).Serialize());
+                        map.BroadcastForTargetTamers(mob.TamersViewing,
+                            new SetCombatOffPacket(mob.GeneralHandler).Serialize());
+
+                        foreach (var targetTamer in mob.TargetTamers)
+                        {
+                            if (targetTamer.TargetMobs.Count <= 1)
+                            {
+                                targetTamer.StopBattle();
+                                map.BroadcastForTamerViewsAndSelf(targetTamer.Id,
+                                    new SetCombatOffPacket(targetTamer.Partner.GeneralHandler).Serialize());
+                            }
+                        }
+
+                        mob.Reset(true);
+                        map.BroadcastForTargetTamers(mob.TamersViewing,
+                            new UpdateCurrentHPRatePacket(mob.GeneralHandler, mob.CurrentHpRate).Serialize());
+                    }
                     break;
 
                 case MobActionEnum.Attack:
-                {
-                    if (!mob.Dead && ((mob.TargetTamer == null || mob.TargetTamer.Hidden) ||
-                                      DateTime.Now > mob.LastHitTryTime.AddSeconds(15))) //Anti-kite
                     {
-                        mob.GiveUp();
-                        break;
-                    }
-
-                    if (!mob.Dead && !mob.Chasing && mob.TargetAlive)
-                    {
-                        var diff = UtilitiesFunctions.CalculateDistance(
-                            mob.CurrentLocation.X,
-                            mob.Target.Location.X,
-                            mob.CurrentLocation.Y,
-                            mob.Target.Location.Y);
-
-                        var range = Math.Max(mob.ARValue, mob.Target.BaseInfo.ARValue);
-                        if (diff <= range)
+                        if (!mob.Dead && ((mob.TargetTamer == null || mob.TargetTamer.Hidden) ||
+                                          DateTime.Now > mob.LastHitTryTime.AddSeconds(15))) //Anti-kite
                         {
-                            if (DateTime.Now < mob.LastHitTime.AddMilliseconds(mob.ASValue))
-                                break;
+                            mob.GiveUp();
+                            break;
+                        }
 
-                            var missed = false;
+                        if (!mob.Dead && !mob.Chasing && mob.TargetAlive)
+                        {
+                            var diff = UtilitiesFunctions.CalculateDistance(
+                                mob.CurrentLocation.X,
+                                mob.Target.Location.X,
+                                mob.CurrentLocation.Y,
+                                mob.Target.Location.Y);
 
-                            if (mob.TargetTamer != null && mob.TargetTamer.GodMode)
-                                missed = true;
-                            else if (mob.CanMissHit())
-                                missed = true;
-
-                            if (missed)
+                            var range = Math.Max(mob.ARValue, mob.Target.BaseInfo.ARValue);
+                            if (diff <= range)
                             {
-                                mob.UpdateLastHitTry();
-                                map.BroadcastForTargetTamers(mob.TamersViewing,
-                                    new MissHitPacket(mob.GeneralHandler, mob.TargetHandler).Serialize());
-                                mob.UpdateLastHit();
-                                break;
+                                if (DateTime.Now < mob.LastHitTime.AddMilliseconds(mob.ASValue))
+                                    break;
+
+                                var missed = false;
+
+                                if (mob.TargetTamer != null && mob.TargetTamer.GodMode)
+                                    missed = true;
+                                else if (mob.CanMissHit())
+                                    missed = true;
+
+                                if (missed)
+                                {
+                                    mob.UpdateLastHitTry();
+                                    map.BroadcastForTargetTamers(mob.TamersViewing,
+                                        new MissHitPacket(mob.GeneralHandler, mob.TargetHandler).Serialize());
+                                    mob.UpdateLastHit();
+                                    break;
+                                }
+
+                                map.AttackTarget(mob, _assets.NpcColiseum);
                             }
-
-                            map.AttackTarget(mob, _assets.NpcColiseum);
+                            else
+                            {
+                                map.ChaseTarget(mob);
+                            }
                         }
-                        else
+
+                        if (mob.Dead)
                         {
-                            map.ChaseTarget(mob);
+                            foreach (var targetTamer in mob.TargetTamers)
+                            {
+                                targetTamer.StopBattle();
+                                map.BroadcastForTamerViewsAndSelf(targetTamer.Id,
+                                    new SetCombatOffPacket(targetTamer.Partner.GeneralHandler).Serialize());
+                            }
                         }
                     }
-
-                    if (mob.Dead)
-                    {
-                        foreach (var targetTamer in mob.TargetTamers)
-                        {
-                            targetTamer.StopBattle();
-                            map.BroadcastForTamerViewsAndSelf(targetTamer.Id,
-                                new SetCombatOffPacket(targetTamer.Partner.GeneralHandler).Serialize());
-                        }
-                    }
-                }
                     break;
                 case MobActionEnum.UseAttackSkill:
-                {
-                    if (!mob.Dead && ((mob.TargetTamer == null || mob.TargetTamer.Hidden) ||
-                                      DateTime.Now > mob.LastSkillTryTime.AddSeconds(mob.Cooldown))) //Anti-kite
                     {
-                        mob.GiveUp();
-                        break;
-                    }
-
-                    if (!mob.Dead && !mob.Chasing && mob.TargetAlive)
-                    {
-                        var diff = UtilitiesFunctions.CalculateDistance(
-                            mob.CurrentLocation.X,
-                            mob.Target.Location.X,
-                            mob.CurrentLocation.Y,
-                            mob.Target.Location.Y);
-
-                        var range = Math.Max(mob.ARValue, mob.Target.BaseInfo.ARValue);
-
-                        if (diff <= range)
+                        if (!mob.Dead && ((mob.TargetTamer == null || mob.TargetTamer.Hidden) ||
+                                          DateTime.Now > mob.LastSkillTryTime.AddSeconds(mob.Cooldown))) //Anti-kite
                         {
-                            var skillList = _assets.MonsterSkillInfo.Where(x => x.Type == mob.Type).ToList();
+                            mob.GiveUp();
+                            break;
+                        }
 
-                            if (!skillList.Any())
+                        if (!mob.Dead && !mob.Chasing && mob.TargetAlive)
+                        {
+                            var diff = UtilitiesFunctions.CalculateDistance(
+                                mob.CurrentLocation.X,
+                                mob.Target.Location.X,
+                                mob.CurrentLocation.Y,
+                                mob.Target.Location.Y);
+
+                            var range = Math.Max(mob.ARValue, mob.Target.BaseInfo.ARValue);
+
+                            if (diff <= range)
                             {
-                                mob.UpdateCheckSkill(true);
-                                mob.SetNextAction();
-                                break;
+                                var skillList = _assets.MonsterSkillInfo.Where(x => x.Type == mob.Type).ToList();
+
+                                if (!skillList.Any())
+                                {
+                                    mob.UpdateCheckSkill(true);
+                                    mob.SetNextAction();
+                                    break;
+                                }
+
+                                Random random = new Random();
+
+                                var targetSkill = skillList[random.Next(0, skillList.Count)];
+
+                                if (DateTime.Now < mob.LastSkillTryTime.AddMilliseconds(mob.Cooldown) && mob.Cooldown > 0)
+                                    break;
+
+                                map.AttackTarget(mob, _assets.NpcColiseum);
                             }
-
-                            Random random = new Random();
-
-                            var targetSkill = skillList[random.Next(0, skillList.Count)];
-
-                            if (DateTime.Now < mob.LastSkillTryTime.AddMilliseconds(mob.Cooldown) && mob.Cooldown > 0)
-                                break;
-
-                            map.AttackTarget(mob, _assets.NpcColiseum);
+                            else
+                            {
+                                map.ChaseTarget(mob);
+                            }
                         }
-                        else
+
+                        if (mob.Dead)
                         {
-                            map.ChaseTarget(mob);
+                            foreach (var targetTamer in mob.TargetTamers)
+                            {
+                                targetTamer.StopBattle();
+                                map.BroadcastForTamerViewsAndSelf(targetTamer.Id,
+                                    new SetCombatOffPacket(targetTamer.Partner.GeneralHandler).Serialize());
+                            }
                         }
                     }
-
-                    if (mob.Dead)
-                    {
-                        foreach (var targetTamer in mob.TargetTamers)
-                        {
-                            targetTamer.StopBattle();
-                            map.BroadcastForTamerViewsAndSelf(targetTamer.Id,
-                                new SetCombatOffPacket(targetTamer.Partner.GeneralHandler).Serialize());
-                        }
-                    }
-                }
                     break;
             }
         }

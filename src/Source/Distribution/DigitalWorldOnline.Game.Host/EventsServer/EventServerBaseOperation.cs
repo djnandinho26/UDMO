@@ -124,11 +124,10 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 {
                     if (!Maps.Any(x => x.MapId == client.Tamer.Location.MapId && x.Channel == client.Tamer.Channel))
                     {
-                        if (newMap.Type == MapTypeEnum.Default)
+                        if (newMap.Type == MapTypeEnum.Event)
                         {
                             newMap.Channel = client.Tamer.Channel;
-                            _logger.Information(
-                                $"Initializing new Channel for {newMap.Type} map {newMap.Id} Ch {client.Tamer.Channel} - {newMap.Name}...");
+                            _logger.Information($"Initializing new Channel for {newMap.Type} map {newMap.Id} Ch {client.Tamer.Channel} - {newMap.Name}...");
                             Maps.Add(newMap);
                         }
                     }
@@ -378,15 +377,14 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                                                            x.Channel == client.Tamer.Channel);
 
                             _loadChannel = client.Tamer.Channel;
-                            _logger.Warning(
-                                $"Waiting event map {client.Tamer.Location.MapId} CH {_loadChannel} initialization.");
+                            _logger.Warning($"Waiting event map {client.Tamer.Location.MapId} CH {_loadChannel} initialization.");
 
-                            if (map == null) await SearchNewMaps(client);
+                            if (map == null)
+                                await SearchNewMaps(client);
 
                             if (stopWatch.ElapsedMilliseconds >= timeLimit)
                             {
-                                _logger.Warning(
-                                    $"The event map instance {client.Tamer.Location.MapId} CH {_loadChannel} has not been started, aborting process...");
+                                _logger.Warning($"The event map instance {client.Tamer.Location.MapId} CH {_loadChannel} has not been started, aborting process...");
                                 //stopWatch.Stop();
                                 break;
                             }

@@ -1,5 +1,6 @@
 ﻿using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.Character;
@@ -8,6 +9,7 @@ using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.GameServer.Combat;
+using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
@@ -37,10 +39,13 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
                 ShowOrHideTamer(map, tamer);
 
-                if (tamer.TargetMob != null)
+                if (tamer.TargetMobs.Count > 0)
                 {
-                    PartnerAutoAttack(tamer);
+                    _logger.Debug($"Target found !!");
+                    PartnerAutoAttackMob(tamer);
                 }
+                    
+                CheckTimeReward(client);
 
                 tamer.AutoRegen();
                 tamer.ActiveEvolutionReduction();
@@ -294,46 +299,58 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
         // ------------------------------------------------------------------------------------
 
-        private void PartnerAutoAttack(CharacterModel tamer)
+        public void PartnerAutoAttackMob(CharacterModel tamer)
         {
             if (!tamer.Partner.AutoAttack)
                 return;
 
-            if (!tamer.Partner.IsAttacking && tamer.TargetMob != null && tamer.TargetMob.Alive)
+            if (!tamer.Partner.IsAttacking && tamer.TargetMob != null && tamer.TargetMob.Alive & tamer.Partner.Alive)
             {
-                tamer.Partner.SetEndAttacking();
+                tamer.Partner.SetEndAttacking(tamer.Partner.AS);
                 tamer.SetHidden(false);
 
-                if (!tamer.InBattle)
+                if (!tamer.InBattle && tamer.TargetMob != null)
                 {
-                    _logger.Verbose($"Character {tamer.Id} engaged {tamer.TargetMob.Id} - {tamer.TargetMob.Name}.");
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
+                    _logger.Debug($"Character {tamer.Id} engaged {tamer.TargetMob.Id} - {tamer.TargetMob.Name}.");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
                     tamer.StartBattle(tamer.TargetMob);
+                    tamer.Partner.StartAutoAttack();
                 }
 
-                if (!tamer.TargetMob.InBattle)
+                if (!tamer.TargetMob.InBattle && tamer.TargetMob != null)
                 {
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.TargetMob.GeneralHandler).Serialize());
+                    _logger.Debug($"Mob {tamer.TargetMob.Name} engaged battle with {tamer.Partner.Name}.");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SetCombatOnPacket(tamer.TargetMob.GeneralHandler).Serialize());
                     tamer.TargetMob.StartBattle(tamer);
+                    //tamer.Partner.StartAutoAttack();
                 }
 
                 var missed = false;
 
-                if (!tamer.GodMode && tamer.Partner.Level <= tamer.TargetMob.Level)
+                if (!tamer.GodMode)
                 {
                     missed = tamer.CanMissHit();
                 }
 
                 if (missed)
                 {
-                    BroadcastForTamerViewsAndSelf(tamer.Id, new MissHitPacket(tamer.Partner.GeneralHandler, tamer.TargetMob.GeneralHandler).Serialize());
+                    _logger.Verbose(
+                        $"Partner {tamer.Partner.Id} missed hit on {tamer.TargetMob.Id} - {tamer.TargetMob.Name}.");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new MissHitPacket(tamer.Partner.GeneralHandler, tamer.TargetMob.GeneralHandler).Serialize());
                 }
                 else
                 {
                     #region Hit Damage
+
                     var critBonusMultiplier = 0.00;
                     var blocked = false;
-                    var finalDmg = tamer.GodMode ? tamer.TargetMob.CurrentHP : CalculateDamage(tamer, out critBonusMultiplier, out blocked);
+                    var finalDmg = tamer.GodMode
+                        ? tamer.TargetMob.CurrentHP
+                        : CalculateDamageMob(tamer, out critBonusMultiplier, out blocked);
+
                     #endregion
 
                     if (finalDmg <= 0) finalDmg = 1;
@@ -345,6 +362,9 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
                     if (newHp > 0)
                     {
+                        _logger.Verbose(
+                            $"Partner {tamer.Partner.Id} inflicted {finalDmg} to mob {tamer.TargetMob?.Id} - {tamer.TargetMob?.Name}({tamer.TargetMob?.Type}).");
+
                         BroadcastForTamerViewsAndSelf(
                             tamer.Id,
                             new HitPacket(
@@ -354,11 +374,12 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                                 tamer.TargetMob.HPValue,
                                 newHp,
                                 hitType).Serialize());
-
-                        _logger.Verbose($"Character {tamer.Id} inflicted {finalDmg} to mob {tamer.TargetMob?.Id} - {tamer.TargetMob?.Name}.");
                     }
                     else
                     {
+                        _logger.Verbose(
+                            $"Partner {tamer.Partner.Id} killed mob {tamer.TargetMob?.Id} - {tamer.TargetMob?.Name}({tamer.TargetMob?.Type}) with {finalDmg} damage.");
+
                         BroadcastForTamerViewsAndSelf(
                             tamer.Id,
                             new KillOnHitPacket(
@@ -377,53 +398,82 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                                 tamer.Id,
                                 new SetCombatOffPacket(tamer.Partner.GeneralHandler).Serialize());
                         }
-
-                        _logger.Verbose($"Character {tamer.Id} - {tamer.Name} killed mob {tamer.TargetMob?.Id} - {tamer.TargetMob?.Name} with {finalDmg} damage.");
                     }
-
                 }
 
                 tamer.Partner.UpdateLastHitTime();
             }
 
-            if (tamer.TargetMob == null || !tamer.TargetMob.Alive)
-                tamer.Partner?.StopAutoAttack();
+            bool StopAttackMob = tamer.TargetMob == null || tamer.TargetMob.Dead;
+
+            if (StopAttackMob) tamer.Partner?.StopAutoAttack();
         }
 
-        private static int CalculateDamage(CharacterModel tamer, out double critBonusMultiplier, out bool blocked)
+        // ------------------------------------------------------------------------------------
+
+        private static int CalculateDamageMob(CharacterModel tamer, out double critBonusMultiplier, out bool blocked)
         {
-            var baseDamage = tamer.Partner.AT - tamer.TargetMob.DEValue + UtilitiesFunctions.RandomInt(1, 15);
-            if (baseDamage < 0) baseDamage = 0;
+            int baseDamage = tamer.Partner.AT - tamer.TargetMob.DEValue;
+
+            if (baseDamage < tamer.Partner.AT * 0.5) // If Damage is less than 50% of AT
+            {
+                baseDamage = (int)(tamer.Partner.AT * 0.9); // give 90% of AT as Damage
+            }
+
+            // -------------------------------------------------------------------------------
 
             critBonusMultiplier = 0.00;
             double critChance = tamer.Partner.CC / 100;
+
             if (critChance >= UtilitiesFunctions.RandomDouble())
-                critBonusMultiplier = tamer.Partner.CD;
+            {
+                blocked = false;
 
-            blocked = tamer.TargetMob.BLValue >= UtilitiesFunctions.RandomDouble();
-            var levelBonusMultiplier = tamer.Partner.Level > tamer.TargetMob.Level ?
-                (0.01f * (tamer.Partner.Level - tamer.TargetMob.Level)) : 0; //TODO: externalizar no portal
+                var critDamageMultiplier = tamer.Partner.CD / 100.0;
+                critBonusMultiplier = baseDamage * (critDamageMultiplier / 100);
+            }
 
+            if (tamer.TargetMob != null)
+            {
+                blocked = tamer.TargetMob.BLValue >= UtilitiesFunctions.RandomDouble();
+            }
+            else
+            {
+                blocked = false;
+                return 0;
+            }
+
+            // -------------------------------------------------------------------------------
+
+            // Level Diference
+            var levelBonusMultiplier = 0;
+            //var levelDifference = client.Tamer.Partner.Level - targetMob.Level;
+            //var levelBonusMultiplier = levelDifference > 0 ? levelDifference * 0.02 : levelDifference * 0.01;
+
+            // Attribute
             var attributeMultiplier = 0.00;
             if (tamer.Partner.BaseInfo.Attribute.HasAttributeAdvantage(tamer.TargetMob.Attribute))
             {
-                var vlrAtual = tamer.Partner.GetAttributeExperience();
-                var bonusMax = 50.0; //TODO: externalizar?
-                var expMax = 10000; //TODO: externalizar?
+                var attExp = tamer.Partner.GetAttributeExperience();
+                var attValue = tamer.Partner.ATT / 100.0;
+                var attValuePercent = attValue / 100.0;
+                var bonusMax = 1;
+                var expMax = 10000;
 
-                attributeMultiplier = (bonusMax * vlrAtual) / expMax;
+                attributeMultiplier = ((bonusMax + attValuePercent) * attExp) / expMax;
             }
             else if (tamer.TargetMob.Attribute.HasAttributeAdvantage(tamer.Partner.BaseInfo.Attribute))
             {
                 attributeMultiplier = -0.25;
             }
 
+            // Element
             var elementMultiplier = 0.00;
             if (tamer.Partner.BaseInfo.Element.HasElementAdvantage(tamer.TargetMob.Element))
             {
                 var vlrAtual = tamer.Partner.GetElementExperience();
-                var bonusMax = 0.5; //TODO: externalizar?
-                var expMax = 10000; //TODO: externalizar?
+                var bonusMax = 1;
+                var expMax = 10000;
 
                 elementMultiplier = (bonusMax * vlrAtual) / expMax;
             }
@@ -432,13 +482,14 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 elementMultiplier = -0.25;
             }
 
-            baseDamage /= blocked ? 2 : 1;
+            // -------------------------------------------------------------------------------
 
-            return (int)Math.Floor(baseDamage +
-                (baseDamage * critBonusMultiplier) +
-                (baseDamage * levelBonusMultiplier) +
-                (baseDamage * attributeMultiplier) +
-                (baseDamage * elementMultiplier));
+            if (blocked)
+                baseDamage /= 2;
+
+            return (int)Math.Max(1, Math.Floor(baseDamage + critBonusMultiplier +
+                                               (baseDamage * levelBonusMultiplier) +
+                                               (baseDamage * attributeMultiplier) + (baseDamage * elementMultiplier)));
         }
 
         // ------------------------------------------------------------------------------------
@@ -488,6 +539,162 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             }
 
             return partnerResult;
+        }
+
+        // ------------------------------------------------------------------------------------
+
+        private async void CheckTimeReward(GameClient client)
+        {
+            if (client.Tamer.TimeReward.ReedemRewards)
+            {
+                _logger.Debug($"Reward Index: {client.Tamer.TimeReward.RewardIndex}");
+                client.Tamer.TimeReward.SetStartTime();
+                await _sender.Send(new UpdateTamerAttendanceTimeRewardCommand(client.Tamer.TimeReward));
+            }
+
+            if (client.Tamer.TimeReward.RewardIndex <= TimeRewardIndexEnum.Fourth)
+            {
+                if (client.Tamer.TimeReward.CurrentTime == 0)
+                {
+                    client.Tamer.TimeReward.CurrentTime = client.Tamer.TimeReward.AtualTime;
+                }
+
+                if (DateTime.Now >= client.Tamer.TimeReward.LastTimeRewardUpdate)
+                {
+                    //_logger.Information($"CurrentTime: {client.Tamer.TimeReward.CurrentTime} | AtualTime: {client.Tamer.TimeReward.AtualTime}");
+
+                    client.Tamer.TimeReward.CurrentTime++;
+                    client.Tamer.TimeReward.UpdateCounter++;
+                    client.Tamer.TimeReward.SetAtualTime();
+
+                    if (client.Tamer.TimeReward.TimeCompleted())
+                    {
+                        ReedemTimeReward(client);
+                        client.Tamer.TimeReward.RewardIndex++;
+                        client.Tamer.TimeReward.CurrentTime = 0;
+                        client.Tamer.TimeReward.SetAtualTime();
+
+                        await _sender.Send(new UpdateTamerAttendanceTimeRewardCommand(client.Tamer.TimeReward));
+                    }
+                    else if (client.Tamer.TimeReward.UpdateCounter >= 5)
+                    {
+                        await _sender.Send(new UpdateTamerAttendanceTimeRewardCommand(client.Tamer.TimeReward));
+                        client.Tamer.TimeReward.UpdateCounter = 0;
+                    }
+
+                    client.Send(new TimeRewardPacket(client.Tamer.TimeReward));
+                }
+
+                client.Tamer.TimeReward.SetLastTimeRewardDate();
+            }
+            else
+            {
+                client.Tamer.TimeReward.RewardIndex = TimeRewardIndexEnum.Ended;
+                await _sender.Send(new UpdateTamerAttendanceTimeRewardCommand(client.Tamer.TimeReward));
+            }
+        }
+
+        private void ReedemTimeReward(GameClient client)
+        {
+            var reward = new ItemModel();
+
+            switch (client.Tamer.TimeReward.RewardIndex)
+            {
+                case TimeRewardIndexEnum.First:
+                    {
+                        var GetPrizes = _assets.TimeRewardAssets
+                            .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.First).ToList();
+
+                        GetPrizes.ForEach(drop =>
+                        {
+                            reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
+                            reward.ItemId = drop.ItemId;
+                            reward.Amount = drop.ItemCount;
+
+                            if (reward.IsTemporary)
+                                reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
+
+                            if (client.Tamer.Inventory.AddItem(reward))
+                            {
+                                client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
+                                _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                            }
+                        });
+                    }
+                    break;
+
+                case TimeRewardIndexEnum.Second:
+                    {
+                        var GetPrizes = _assets.TimeRewardAssets
+                            .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.Second).ToList();
+
+                        GetPrizes.ForEach(drop =>
+                        {
+                            reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
+                            reward.ItemId = drop.ItemId;
+                            reward.Amount = drop.ItemCount;
+
+                            if (reward.IsTemporary)
+                                reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
+
+                            if (client.Tamer.Inventory.AddItem(reward))
+                            {
+                                client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
+                                _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                            }
+                        });
+                    }
+                    break;
+
+                case TimeRewardIndexEnum.Third:
+                    {
+                        var GetPrizes = _assets.TimeRewardAssets
+                            .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.Third).ToList();
+
+                        GetPrizes.ForEach(drop =>
+                        {
+                            reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
+                            reward.ItemId = drop.ItemId;
+                            reward.Amount = drop.ItemCount;
+
+                            if (reward.IsTemporary)
+                                reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
+
+                            if (client.Tamer.Inventory.AddItem(reward))
+                            {
+                                client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
+                                _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                            }
+                        });
+                    }
+                    break;
+
+                case TimeRewardIndexEnum.Fourth:
+                    {
+                        var GetPrizes = _assets.TimeRewardAssets
+                            .Where(drop => drop.CurrentReward == (int)TimeRewardIndexEnum.Fourth).ToList();
+
+                        GetPrizes.ForEach(drop =>
+                        {
+                            reward.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == drop.ItemId));
+                            reward.ItemId = drop.ItemId;
+                            reward.Amount = drop.ItemCount;
+
+                            if (reward.IsTemporary)
+                                reward.SetRemainingTime((uint)reward.ItemInfo.UsageTimeMinutes);
+
+                            if (client.Tamer.Inventory.AddItem(reward))
+                            {
+                                client.Send(new ReceiveItemPacket(reward, InventoryTypeEnum.Inventory));
+                                _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                            }
+                        });
+                    }
+                    break;
+
+                default:
+                    break;
+            }
         }
 
     }

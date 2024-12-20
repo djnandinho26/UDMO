@@ -506,16 +506,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         // EVENT SERVER -> ATTACK MOB
                         else
                         {
+                            //_logger.Information($"Partner auto attack packet (Event Server)");
+
                             var targetMob = _eventServer.GetMobByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
                             if (targetMob == null || client.Partner == null)
                                 return;
+
+                            //_logger.Information($"targetMob != null");
 
                             if (DateTime.Now < client.Partner.LastHitTime.AddMilliseconds(client.Partner.AS))
                                 client.Partner.StartAutoAttack();
 
                             if (targetMob.Alive)
                             {
+                                //_logger.Information($"Mob Alive");
+
                                 if (client.Partner.IsAttacking)
                                 {
                                     if (client.Tamer.TargetMob?.GeneralHandler != targetMob.GeneralHandler)
@@ -615,7 +621,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                         }
                                         else
                                         {
-                                            client.Partner.SetEndAttacking(client.Partner.AS * -2);
+                                            //client.Partner.SetEndAttacking(client.Partner.AS * -2);
+                                            client.Partner.SetEndAttacking(client.Partner.AS);
 
                                             _logger.Verbose($"Partner {client.Partner.Id} killed mob {targetMob?.Id} - {targetMob?.Name}({targetMob?.Type}) with {finalDmg} damage.");
 
@@ -645,6 +652,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             }
                             else
                             {
+                                _logger.Information($"Mob dead");
+
                                 if (!_eventServer.MobsAttacking(client.Tamer.Location.MapId, client.TamerId))
                                 {
                                     client.Tamer.StopBattle();

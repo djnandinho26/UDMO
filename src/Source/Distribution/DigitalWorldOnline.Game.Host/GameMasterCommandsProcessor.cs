@@ -2899,8 +2899,8 @@ namespace DigitalWorldOnline.Game
 
                 case "tptamer":
                     {
-                        var regex = @"tptamer\s\d+(\s\d+)?";
-                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+                        var regex = @"^tptamer\s[\w\s]+$";
+                        var match = Regex.Match(message, regex, RegexOptions.None);
 
                         if (!match.Success)
                         {

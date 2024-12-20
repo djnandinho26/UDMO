@@ -65,7 +65,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 client.Tamer.Inventory.RemoveOrReduceItem(inventoryItem, itemInfo.Amount, inventoryItem.Slot);
 
-
                 var rand = new Random();
 
                 if (itemInfo.Chance >= rand.Next(100))
@@ -108,18 +107,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             var scanAsset = _assets.ScanDetail.FirstOrDefault(scan =>
                                 scan.Rewards.Any(reward => reward.ItemId == inventoryItem.ItemId));
 
-
                             if (inventoryItem.Amount > requiredAmount)
                             {
-                                client.Tamer.Inventory.RemoveOrReduceItem(inventoryItem, requiredAmount,
-                                    inventoryItem.Slot);
+                                client.Tamer.Inventory.RemoveOrReduceItem(inventoryItem, requiredAmount, inventoryItem.Slot);
                                 requiredAmount = 0;
                             }
                             else
                             {
                                 requiredAmount -= inventoryItem.Amount;
-                                client.Tamer.Inventory.RemoveOrReduceItem(inventoryItem, inventoryItem.Amount,
-                                    inventoryItem.Slot);
+                                client.Tamer.Inventory.RemoveOrReduceItem(inventoryItem, inventoryItem.Amount, inventoryItem.Slot);
                             }
 
                             if (requiredAmount > 0)

@@ -359,6 +359,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Send(new SystemMessagePacket($"Unknown map info for map id {client.Tamer.Location.MapId}."));
                 _logger.Warning($"Unknown map info for map id {client.Tamer.Location.MapId}.");
             }
+
+            //_logger.Information($"***********************************************************************");
         }
 
         private void UpdateSkillCooldown(GameClient client)

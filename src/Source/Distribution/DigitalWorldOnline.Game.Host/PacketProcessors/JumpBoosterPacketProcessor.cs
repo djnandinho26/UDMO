@@ -87,6 +87,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 _pvpServer.RemoveClient(client);
             }
+            else if (client.EventMap)
+            {
+                _eventServer.RemoveClient(client);
+            }
             else
             {
                 _mapServer.RemoveClient(client);
