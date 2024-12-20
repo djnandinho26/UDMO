@@ -62,7 +62,9 @@ namespace DigitalWorldOnline.GameHost
         {
             if (DateTime.Now > _lastMapsSearch)
             {
-                var mapsToLoad = _mapper.Map<List<GameMap>>(await _sender.Send(new GameMapsConfigQuery(MapTypeEnum.Pvp), cancellationToken));
+                var mapsToLoad =
+                    _mapper.Map<List<GameMap>>(await _sender.Send(new GameMapsConfigQuery(MapTypeEnum.Pvp),
+                        cancellationToken));
 
                 foreach (var newMap in mapsToLoad)
                 {
@@ -90,7 +92,8 @@ namespace DigitalWorldOnline.GameHost
                         if (newMap.Type == MapTypeEnum.Pvp)
                         {
                             newMap.Channel = client.Tamer.Channel;
-                            _logger.Information($"Initializing new Channel for pvp map {newMap.Id} : {newMap.Name} Ch {client.Tamer.Channel}");
+                            _logger.Information(
+                                $"Initializing new Channel for pvp map {newMap.Id} : {newMap.Name} Ch {client.Tamer.Channel}");
                             Maps.Add(newMap);
                         }
                     }
@@ -123,7 +126,9 @@ namespace DigitalWorldOnline.GameHost
             {
                 foreach (var map in Maps.Where(x => x.Initialized))
                 {
-                    var mapMobs = _mapper.Map<IList<MobConfigModel>>(await _sender.Send(new MapMobConfigsQuery(map.Id), cancellationToken));
+                    var mapMobs =
+                        _mapper.Map<IList<MobConfigModel>>(await _sender.Send(new MapMobConfigsQuery(map.Id),
+                            cancellationToken));
 
                     if (map.RequestMobsUpdate(mapMobs))
                         map.UpdateMobsList();
@@ -208,6 +213,20 @@ namespace DigitalWorldOnline.GameHost
 
         #endregion
 
+        public Drop? GetDrop(short mapId, int dropHandler, long tamerId)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
+
+            return map?.GetDrop(dropHandler);
+        }
+
+        public void RemoveDrop(Drop drop, long tamerId)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
+
+            map?.RemoveMapDrop(drop);
+        }
+
         #region Add / Remove Client
 
         /// <summary>
@@ -216,7 +235,8 @@ namespace DigitalWorldOnline.GameHost
         /// <param name="client">The game client to be added.</param>
         public async Task AddClient(GameClient client)
         {
-            var map = Maps.FirstOrDefault(x => x.Initialized && x.MapId == client.Tamer.Location.MapId && x.Channel == client.Tamer.Channel);
+            var map = Maps.FirstOrDefault(x =>
+                x.Initialized && x.MapId == client.Tamer.Location.MapId && x.Channel == client.Tamer.Channel);
 
             client.SetLoading();
 
@@ -237,17 +257,21 @@ namespace DigitalWorldOnline.GameHost
                     {
                         await Task.Delay(2500);
 
-                        map = Maps.FirstOrDefault(x => x.Initialized && x.MapId == client.Tamer.Location.MapId && x.Channel == client.Tamer.Channel);
+                        map = Maps.FirstOrDefault(x =>
+                            x.Initialized && x.MapId == client.Tamer.Location.MapId &&
+                            x.Channel == client.Tamer.Channel);
 
                         _loadChannel = client.Tamer.Channel;
-                        _logger.Information($"Waiting pvp map {client.Tamer.Location.MapId} CH {_loadChannel} initialization.");
+                        _logger.Information(
+                            $"Waiting pvp map {client.Tamer.Location.MapId} CH {_loadChannel} initialization.");
 
                         if (map == null)
                             await SearchNewMaps(client);
 
                         if (stopWatch.ElapsedMilliseconds >= timeLimit)
                         {
-                            _logger.Error($"The map {client.Tamer.Location.MapId} CH {_loadChannel} was not found, aborting process...");
+                            _logger.Error(
+                                $"The map {client.Tamer.Location.MapId} CH {_loadChannel} was not found, aborting process...");
                             //stopWatch.Stop();
                             break;
                         }
@@ -322,7 +346,8 @@ namespace DigitalWorldOnline.GameHost
 
         public void BroadcastForMapAllChannels(short mapId, byte[] packet)
         {
-            var maps = Maps.Where(x => x.Clients.Exists(gameClient => gameClient.Tamer.Location.MapId == mapId)).SelectMany(map => map.Clients);
+            var maps = Maps.Where(x => x.Clients.Exists(gameClient => gameClient.Tamer.Location.MapId == mapId))
+                .SelectMany(map => map.Clients);
             maps.ToList().ForEach(client => { client.Send(packet); });
         }
 
@@ -334,6 +359,11 @@ namespace DigitalWorldOnline.GameHost
         public GameClient? FindClientByTamerName(string tamerName)
         {
             return Maps.SelectMany(map => map.Clients).FirstOrDefault(client => client.Tamer.Name == tamerName);
+        }
+
+        public GameClient? FindClientByTamerHandle(int handle)
+        {
+            return Maps.SelectMany(map => map.Clients).FirstOrDefault(client => client.Tamer?.GeneralHandler == handle);
         }
 
         public void BroadcastForTargetTamers(List<long> targetTamers, byte[] packet)
@@ -356,6 +386,14 @@ namespace DigitalWorldOnline.GameHost
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == sourceId));
 
             map?.BroadcastForTamerViewsAndSelf(sourceId, packet);
+        }
+
+        public void BroadcastForTamerViews(GameClient client, byte[] packet)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient =>
+                gameClient.TamerId == client.TamerId && gameClient.Tamer.Channel == client.Tamer.Channel));
+
+            map?.BroadcastForTamerViewOnly(client.TamerId, packet);
         }
 
         public void BroadcastForTamerViewsAndSelf(GameClient client, byte[] packet)
@@ -390,7 +428,8 @@ namespace DigitalWorldOnline.GameHost
 
         public DigimonModel? GetEnemyByHandler(short mapId, int handler, long tamerId)
         {
-            return Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId))?.ConnectedTamers
+            return Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId))
+                ?.ConnectedTamers
                 .Select(x => x.Partner).FirstOrDefault(x => x.GeneralHandler == handler);
         }
 

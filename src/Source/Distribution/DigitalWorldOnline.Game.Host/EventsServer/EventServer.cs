@@ -1,11 +1,12 @@
 ﻿using AutoMapper;
 using DigitalWorldOnline.Application;
-using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Models.Config;
 using DigitalWorldOnline.Commons.Models.Config.Events;
 using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Game.Managers;
+using DigitalWorldOnline.Infrastructure;
 using MediatR;
+using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 
 namespace DigitalWorldOnline.GameHost.EventsServer
@@ -13,26 +14,23 @@ namespace DigitalWorldOnline.GameHost.EventsServer
     public sealed partial class EventServer
     {
         private readonly EventQueueManager _eventQueueManager;
+        private readonly PartyManager _partyManager;
         private readonly StatusManager _statusManager;
-        private readonly ConfigsLoader _configs;
         private readonly ExpManager _expManager;
         private readonly DropManager _dropManager;
         private readonly AssetsLoader _assets;
+        private readonly ConfigsLoader _configs;
         private readonly ILogger _logger;
         private readonly ISender _sender;
         private readonly IMapper _mapper;
+        private readonly IServiceProvider _serviceProvider;
+        public List<EventConfigModel> Events { get; set; }
 
-        public List<EventConfigModel> Events { get; private set; }
-
-        public List<GameMap> Maps { get; set; } = new List<GameMap>();
-
-        public int MobAmount { get; }
-        public int DropAmount { get; }
-
-        private List<Point> _randomPoints = new();
+        public List<GameMap> Maps { get; set; }
 
         public EventServer(
             EventQueueManager eventQueueManager,
+            PartyManager partyManager,
             AssetsLoader assets,
             ConfigsLoader configs,
             StatusManager statusManager,
@@ -40,9 +38,11 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             DropManager dropManager,
             ILogger logger,
             ISender sender,
-            IMapper mapper)
+            IMapper mapper,
+            IServiceProvider serviceProvider)
         {
             _eventQueueManager = eventQueueManager;
+            _partyManager = partyManager;
             _statusManager = statusManager;
             _expManager = expManager;
             _dropManager = dropManager;
@@ -51,39 +51,39 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             _logger = logger;
             _sender = sender;
             _mapper = mapper;
+            _serviceProvider = serviceProvider;
 
-            MobAmount = 100;
-            DropAmount = 50;
-
-            _randomPoints = GenerateRandomPoints(MobAmount + DropAmount, 17662, 71080, 13055, 79041, 1000);
-
-            Events = InitializeAsync().GetAwaiter().GetResult();
-            AddContent();
+            Maps = new List<GameMap>();
+            Events = configs.Events;
         }
 
-        private async Task<List<EventConfigModel>> InitializeAsync()
+        private void SaveMobToDatabase(MobConfigModel mob)
         {
-            return _mapper.Map<List<EventConfigModel>>(await _sender.Send(new EventsConfigQuery()));
-        }
+            using (var scope = _serviceProvider.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
+                var mobDto = dbContext.MobConfig.SingleOrDefault(m => m.Id == mob.Id);
 
-        /*
-        1 - 15819 20253
-        2 - 21809 12602
-        3 - 28231 13720
-        4 - 32128 23940
-        5 - 40158 24186
-        6 - 43741 30970
-        7 - 39892 39970
-        8 - 25502 41207
-        9 - 16880 46273
-        10 - 17478 55724
-        11 - 20586 66258
-        12 - 33182 60792
-        13 - 40993 50675
-        14 - 52773 55483
-        15 - 57050 70033
-        16 - 66715 76088
-        */
+                if (mobDto == null)
+                {
+                    _logger.Error($"BOSS {mob.Name},{mob.Id} Does not exist in the database Unable to call MobConfig.");
+                    return;
+                }
+
+                mobDto.DeathTime = mob.DeathTime;
+                mobDto.ResurrectionTime = mob.ResurrectionTime;
+
+                try
+                {
+                    dbContext.SaveChanges();
+                    _logger.Information($"BOSS {mob.Name},{mob.Id} Update seuccess.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error($"BOSS time Update error： {mob.Name} (Id: {mob.Id}): {ex.Message}");
+                }
+            }
+        }
 
         private void AddContent()
         {
@@ -115,56 +115,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
         {
             //11940
             //15213
-
             return new List<EventMobConfigModel>();
         }
-
-        private static List<Point> GenerateRandomPoints(int numberOfPoints, int minX, int maxX, int minY, int maxY,
-            int minDistance)
-        {
-            var points = new List<Point>();
-            Random random = new Random();
-
-            while (points.Count < numberOfPoints)
-            {
-                int x = random.Next(minX, maxX + 1);
-                int y = random.Next(minY, maxY + 1);
-
-                bool valid = true;
-                foreach (Point existingPoint in points)
-                {
-                    int distanceSquared = (x - existingPoint.X) * (x - existingPoint.X) +
-                                          (y - existingPoint.Y) * (y - existingPoint.Y);
-                    if (distanceSquared < minDistance * minDistance)
-                    {
-                        valid = false;
-                        break;
-                    }
-                }
-
-                if (valid)
-                {
-                    points.Add(new Point(x, y));
-                }
-            }
-
-            return points;
-        }
-    }
-
-    class Point
-    {
-        public bool Free { get; private set; }
-        public int X { get; }
-        public int Y { get; }
-
-        public Point(int x, int y)
-        {
-            X = x;
-            Y = y;
-            Free = true;
-        }
-
-        public void UsePoint() => Free = false;
     }
 }

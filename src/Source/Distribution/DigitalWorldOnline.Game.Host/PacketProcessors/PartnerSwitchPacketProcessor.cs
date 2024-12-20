@@ -30,7 +30,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ISender _sender;
 
         public PartnerSwitchPacketProcessor(PartyManager partyManager, StatusManager statusManager, AssetsLoader assets,
-            MapServer mapServer, DungeonsServer dungeonServer, EventServer eventServer, PvpServer pvpServer, ILogger logger, ISender sender)
+            MapServer mapServer, DungeonsServer dungeonServer, EventServer eventServer, PvpServer pvpServer,
+            ILogger logger, ISender sender)
         {
             _partyManager = partyManager;
             _statusManager = statusManager;
@@ -62,19 +63,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             switch (mapConfig!.Type)
             {
                 case MapTypeEnum.Dungeon:
-                    _dungeonServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                    _dungeonServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel,
+                        client.Partner, newPartner);
                     break;
 
                 case MapTypeEnum.Event:
-                    _eventServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                    _eventServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner,
+                        newPartner);
                     break;
 
                 case MapTypeEnum.Pvp:
-                    _pvpServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                    _pvpServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner,
+                        newPartner);
                     break;
 
                 default:
-                    _mapServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner, newPartner);
+                    _mapServer.SwapDigimonHandlers(client.Tamer.Location.MapId, client.Tamer.Channel, client.Partner,
+                        newPartner);
                     break;
             }
 
@@ -85,7 +90,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             client.Partner.NewLocation(client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y);
 
             client.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(client.Tamer.Partner.CurrentType));
-            client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Tamer.Partner.CurrentType, client.Tamer.Partner.Level, client.Tamer.Partner.Size));
+            client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Tamer.Partner.CurrentType,
+                client.Tamer.Partner.Level, client.Tamer.Partner.Size));
             client.Partner.SetSealStatus(_assets.SealInfo);
 
             // Battle Tag
@@ -104,21 +110,30 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             foreach (var buff in client.Tamer.Partner.BuffList.ActiveBuffs)
                 buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
-                    x.SkillCode == buff.SkillId && buff.BuffInfo == null || x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
+                    x.SkillCode == buff.SkillId && buff.BuffInfo == null ||
+                    x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
 
             switch (mapConfig.Type)
             {
                 case MapTypeEnum.Dungeon:
-                    _dungeonServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                    _dungeonServer.BroadcastForTamerViewsAndSelf(client,
+                        new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot)
+                            .Serialize());
                     break;
                 case MapTypeEnum.Event:
-                    _eventServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                    _eventServer.BroadcastForTamerViewsAndSelf(client,
+                        new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot)
+                            .Serialize());
                     break;
                 case MapTypeEnum.Pvp:
-                    _pvpServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                    _pvpServer.BroadcastForTamerViewsAndSelf(client,
+                        new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot)
+                            .Serialize());
                     break;
                 case MapTypeEnum.Default:
-                    _mapServer.BroadcastForTamerViewsAndSelf(client, new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot).Serialize());
+                    _mapServer.BroadcastForTamerViewsAndSelf(client,
+                        new PartnerSwitchPacket(client.Tamer.GenericHandler, previousType, client.Partner, slot)
+                            .Serialize());
                     break;
             }
 
@@ -134,17 +149,34 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     if (digimonBuffModel.Duration != 0)
                         Ts = UtilitiesFunctions.RemainingTimeSeconds(digimonBuffModel.RemainingSeconds);
 
-                    if (client.DungeonMap)
+                    if (digimonBuffModel.BuffInfo != null)
                     {
-                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
-                            new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffInfo,
-                                (short)digimonBuffModel.TypeN, Ts).Serialize());
-                    }
-                    else
-                    {
-                        _mapServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
-                            new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffInfo,
-                                (short)digimonBuffModel.TypeN, Ts).Serialize());
+                        switch (mapConfig?.Type)
+                        {
+                            case MapTypeEnum.Dungeon:
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                                    new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffInfo,
+                                        (short)digimonBuffModel.TypeN, Ts).Serialize());
+                                break;
+
+                            case MapTypeEnum.Event:
+                                _eventServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                                    new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffInfo,
+                                        (short)digimonBuffModel.TypeN, Ts).Serialize());
+                                break;
+
+                            case MapTypeEnum.Pvp:
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                                    new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffInfo,
+                                        (short)digimonBuffModel.TypeN, Ts).Serialize());
+                                break;
+
+                            default:
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                                    new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffInfo,
+                                        (short)digimonBuffModel.TypeN, Ts).Serialize());
+                                break;
+                        }
                     }
                 });
             }
@@ -165,8 +197,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 foreach (var target in party.Members.Values)
                 {
-                    var targetClient = _mapServer.FindClientByTamerId(target.Id);
-                    if (targetClient == null) targetClient = _dungeonServer.FindClientByTamerId(target.Id);
+                    var targetClient = _mapServer.FindClientByTamerId(target.Id) ?? _dungeonServer.FindClientByTamerId(target.Id);
+                    targetClient ??= _eventServer.FindClientByTamerId(target.Id);
+                    targetClient ??= _pvpServer.FindClientByTamerId(target.Id);
 
                     if (targetClient == null) continue;
 

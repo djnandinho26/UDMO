@@ -128,7 +128,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (client.Partner.Digiclone.MaxCloneLevel)
                 {
-                    _dungeonServer.BroadcastGlobal(
+                    client.SendToAll(new NeonMessagePacket(
+                            NeonMessageTypeEnum.Digimon,
+                            client.Tamer.Name,
+                            client.Partner.CurrentType,
+                            client.Partner.Digiclone.CloneLevel - 1
+                        )
+                        .Serialize());
+                    /*_dungeonServer.BroadcastGlobal(
                         new NeonMessagePacket(
                             NeonMessageTypeEnum.Digimon,
                             client.Tamer.Name,
@@ -144,7 +151,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             client.Partner.CurrentType,
                             client.Partner.Digiclone.CloneLevel - 1
                         )
-                    .Serialize());
+                    .Serialize());*/
                 }
             }
             else

@@ -28,6 +28,7 @@ using Serilog;
 using System;
 using System.Diagnostics.Eventing.Reader;
 using System.Text.RegularExpressions;
+using DigitalWorldOnline.GameHost.EventsServer;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -40,6 +41,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly StatusManager _statusManager;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly AssetsLoader _assets;
         private readonly ConfigsLoader _configs;
         private readonly ExpManager _expManager;
@@ -51,6 +54,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             StatusManager statusManager,
             MapServer mapServer,
             DungeonsServer dungeonsServer,
+            EventServer eventServer,
+            PvpServer pvpServer,
             AssetsLoader assets,
             ExpManager expManager,
             ConfigsLoader configs,
@@ -61,6 +66,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             _statusManager = statusManager;
             _mapServer = mapServer;
             _dungeonServer = dungeonsServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _expManager = expManager;
             _assets = assets;
             _configs = configs;
@@ -97,7 +104,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             if (targetItem.ItemInfo.Type == 60)
             {
-
                 if (targetItem.ItemInfo?.SkillInfo == null)
                 {
                     client.Send(
@@ -108,292 +114,414 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         )
                     );
 
-                    _logger.Warning($"Invalid skill info for item id {targetItem.ItemId} and tamer id {client.TamerId}.");
+                    _logger.Warning(
+                        $"Invalid skill info for item id {targetItem.ItemId} and tamer id {client.TamerId}.");
                     return;
                 }
+
+                var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
 
                 foreach (var apply in targetItem.ItemInfo?.SkillInfo.Apply)
                 {
                     switch (apply.Type)
                     {
                         case SkillCodeApplyTypeEnum.Default:
+                        {
+                            switch (apply.Attribute)
                             {
-                                switch (apply.Attribute)
+                                case SkillCodeApplyAttributeEnum.EXP:
                                 {
-                                    case SkillCodeApplyAttributeEnum.EXP:
+                                    switch (targetItem.ItemInfo.Target)
+                                    {
+                                        case ItemConsumeTargetEnum.Both:
                                         {
-                                            switch (targetItem.ItemInfo.Target)
+                                            var value = Convert.ToInt64(apply.Value);
+
+                                            var result = _expManager.ReceiveTamerExperience(value, client.Tamer);
+                                            var result2 =
+                                                _expManager.ReceiveDigimonExperience(value, client.Tamer.Partner);
+
+                                            if (result.Success)
                                             {
-                                                case ItemConsumeTargetEnum.Both:
-                                                    {
-                                                        var value = Convert.ToInt64(apply.Value);
+                                                client.Send(
+                                                    new ReceiveExpPacket(
+                                                        value,
+                                                        0,
+                                                        client.Tamer.CurrentExperience,
+                                                        client.Tamer.Partner.GeneralHandler,
+                                                        0,
+                                                        0,
+                                                        client.Tamer.Partner.CurrentExperience,
+                                                        0
+                                                    )
+                                                );
+                                            }
+                                            else
+                                            {
+                                                client.Send(new SystemMessagePacket(
+                                                    $"No proper configuration for tamer {client.Tamer.Model} leveling."));
+                                                return;
+                                            }
 
-                                                        var result = _expManager.ReceiveTamerExperience(value, client.Tamer);
-                                                        var result2 = _expManager.ReceiveDigimonExperience(value, client.Tamer.Partner);
-
-                                                        if (result.Success)
-                                                        {
-                                                            client.Send(
-                                                                new ReceiveExpPacket(
-                                                                    value,
-                                                                    0,
-                                                                    client.Tamer.CurrentExperience,
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    0,
-                                                                    0,
-                                                                    client.Tamer.Partner.CurrentExperience,
-                                                                    0
-                                                                )
-                                                            );
-                                                        }
-                                                        else
-                                                        {
-                                                            client.Send(new SystemMessagePacket($"No proper configuration for tamer {client.Tamer.Model} leveling."));
-                                                            return;
-                                                        }
-
-                                                        if (result.LevelGain > 0)
-                                                        {
-                                                            client.Tamer.SetLevelStatus(
-                                                                _statusManager.GetTamerLevelStatus(
-                                                                    client.Tamer.Model,
-                                                                    client.Tamer.Level
-                                                                )
-                                                            );
-
-                                                            if (client.DungeonMap)
-                                                            {
-                                                                _dungeonServer.BroadcastForTamerViewsAndSelf(
-                                                                client.TamerId,
-                                                                new LevelUpPacket(
-                                                                    client.Tamer.GeneralHandler,
-                                                                    client.Tamer.Level).Serialize());
-                                                            }
-                                                            else
-                                                            {
-                                                                _mapServer.BroadcastForTamerViewsAndSelf(
-                                                                client.TamerId,
-                                                                new LevelUpPacket(
-                                                                    client.Tamer.GeneralHandler,
-                                                                    client.Tamer.Level).Serialize());
-
-                                                            }
-                                                            client.Tamer.FullHeal();
-
-                                                            client.Send(new UpdateStatusPacket(client.Tamer));
-                                                        }
-
-                                                        if (result.Success)
-                                                            await _sender.Send(new UpdateCharacterExperienceCommand(client.TamerId, client.Tamer.CurrentExperience, client.Tamer.Level));
-
-                                                        if (result2.Success)
-                                                        {
-                                                            client.Send(
-                                                                new ReceiveExpPacket(
-                                                                    0,
-                                                                    0,
-                                                                    client.Tamer.CurrentExperience,
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    value,
-                                                                    0,
-                                                                    client.Tamer.Partner.CurrentExperience,
-                                                                    0
-                                                                )
-                                                            );
-                                                        }
-
-                                                        if (result2.LevelGain > 0)
-                                                        {
-                                                            client.Partner.SetBaseStatus(
-                                                                _statusManager.GetDigimonBaseStatus(
-                                                                    client.Partner.CurrentType,
-                                                                    client.Partner.Level,
-                                                                    client.Partner.Size
-                                                                )
-                                                            );
-
-                                                            if (client.DungeonMap)
-                                                            {
-                                                                _dungeonServer.BroadcastForTamerViewsAndSelf(
-                                                                client.TamerId,
-                                                                new LevelUpPacket(
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    client.Tamer.Partner.Level
-                                                                ).Serialize()
-                                                            );
-
-                                                            }
-                                                            else
-                                                            {
-                                                                _mapServer.BroadcastForTamerViewsAndSelf(
-                                                                client.TamerId,
-                                                                new LevelUpPacket(
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    client.Tamer.Partner.Level
-                                                                ).Serialize()
-                                                            );
-
-
-                                                            }
-
-                                                            client.Partner.FullHeal();
-
-                                                            client.Send(new UpdateStatusPacket(client.Tamer));
-                                                        }
-
-                                                        if (result2.Success)
-                                                            await _sender.Send(new UpdateDigimonExperienceCommand(client.Partner));
-                                                    }
-
-                                                    break;
-
-                                                case ItemConsumeTargetEnum.Digimon:
-                                                    {
-                                                        var digimonResult = _expManager.ReceiveDigimonExperience(apply.Value, client.Tamer.Partner);
-                                                        var value = Convert.ToInt64(apply.Value);
-
-                                                        if (digimonResult.Success)
-                                                        {
-                                                            client.Send(
-                                                                new ReceiveExpPacket(
-                                                                    0,
-                                                                    0,
-                                                                    client.Tamer.CurrentExperience,
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    value,
-                                                                    0,
-                                                                    client.Tamer.Partner.CurrentExperience,
-                                                                    0
-                                                                )
-                                                            );
-                                                        }
-
-                                                        if (digimonResult.LevelGain > 0)
-                                                        {
-                                                            client.Partner.SetBaseStatus(
-                                                                _statusManager.GetDigimonBaseStatus(
-                                                                    client.Partner.CurrentType,
-                                                                    client.Partner.Level,
-                                                                    client.Partner.Size
-                                                                )
-                                                            );
-
-                                                            if (client.DungeonMap)
-                                                            {
-                                                                _dungeonServer.BroadcastForTamerViewsAndSelf(
-                                                                    client.TamerId,
-                                                                    new LevelUpPacket(
-                                                                        client.Tamer.Partner.GeneralHandler,
-                                                                        client.Tamer.Partner.Level
-                                                                    ).Serialize()
-                                                                );
-                                                            }
-                                                            else
-                                                            {
-                                                                _mapServer.BroadcastForTamerViewsAndSelf(
-                                                                    client.TamerId,
-                                                                    new LevelUpPacket(
-                                                                        client.Tamer.Partner.GeneralHandler,
-                                                                        client.Tamer.Partner.Level
-                                                                    ).Serialize()
-                                                                );
-                                                            }
-
-                                                            client.Partner.FullHeal();
-
-                                                            client.Send(new UpdateStatusPacket(client.Tamer));
-                                                        }
-
-                                                        if (digimonResult.Success)
-                                                            await _sender.Send(new UpdateDigimonExperienceCommand(client.Partner));
+                                            if (result.LevelGain > 0)
+                                            {
+                                                client.Tamer.SetLevelStatus(
+                                                    _statusManager.GetTamerLevelStatus(
+                                                        client.Tamer.Model,
+                                                        client.Tamer.Level
+                                                    )
+                                                );
+                                                switch (mapConfig?.Type)
+                                                {
+                                                    case MapTypeEnum.Dungeon:
+                                                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.GeneralHandler,
+                                                                client.Tamer.Level).Serialize());
                                                         break;
-                                                    }
 
-                                                case ItemConsumeTargetEnum.Tamer:
-                                                    {
-                                                        var value = Convert.ToInt64(apply.Value);
+                                                    case MapTypeEnum.Event:
+                                                        _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.GeneralHandler,
+                                                                client.Tamer.Level).Serialize());
+                                                        break;
 
-                                                        var result = _expManager.ReceiveTamerExperience(value, client.Tamer);
-                                                        if (result.Success)
-                                                        {
-                                                            client.Send(
-                                                                new ReceiveExpPacket(
-                                                                    value,
-                                                                    0,
-                                                                    client.Tamer.CurrentExperience,
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    0,
-                                                                    0,
-                                                                    client.Tamer.Partner.CurrentExperience,
-                                                                    0
-                                                                )
-                                                            );
-                                                        }
-                                                        else
-                                                        {
-                                                            client.Send(new SystemMessagePacket($"No proper configuration for tamer {client.Tamer.Model} leveling."));
-                                                            return;
-                                                        }
+                                                    case MapTypeEnum.Pvp:
+                                                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.GeneralHandler,
+                                                                client.Tamer.Level).Serialize());
+                                                        break;
 
-                                                        if (result.LevelGain > 0)
-                                                        {
-                                                            client.Tamer.SetLevelStatus(
-                                                                _statusManager.GetTamerLevelStatus(
-                                                                    client.Tamer.Model,
-                                                                    client.Tamer.Level
-                                                                )
-                                                            );
+                                                    default:
+                                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.GeneralHandler,
+                                                                client.Tamer.Level).Serialize());
+                                                        break;
+                                                }
 
-                                                            _mapServer.BroadcastForTamerViewsAndSelf(
+                                                client.Tamer.FullHeal();
+
+                                                client.Send(new UpdateStatusPacket(client.Tamer));
+                                            }
+
+                                            if (result.Success)
+                                                await _sender.Send(new UpdateCharacterExperienceCommand(client.TamerId,
+                                                    client.Tamer.CurrentExperience, client.Tamer.Level));
+
+                                            if (result2.Success)
+                                            {
+                                                client.Send(
+                                                    new ReceiveExpPacket(
+                                                        0,
+                                                        0,
+                                                        client.Tamer.CurrentExperience,
+                                                        client.Tamer.Partner.GeneralHandler,
+                                                        value,
+                                                        0,
+                                                        client.Tamer.Partner.CurrentExperience,
+                                                        0
+                                                    )
+                                                );
+                                            }
+
+                                            if (result2.LevelGain > 0)
+                                            {
+                                                client.Partner.SetBaseStatus(
+                                                    _statusManager.GetDigimonBaseStatus(
+                                                        client.Partner.CurrentType,
+                                                        client.Partner.Level,
+                                                        client.Partner.Size
+                                                    )
+                                                );
+
+                                                switch (mapConfig?.Type)
+                                                {
+                                                    case MapTypeEnum.Dungeon:
+                                                        _dungeonServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.Partner.GeneralHandler,
+                                                                client.Tamer.Partner.Level
+                                                            ).Serialize()
+                                                        );
+                                                        break;
+
+                                                    case MapTypeEnum.Event:
+                                                        _eventServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.Partner.GeneralHandler,
+                                                                client.Tamer.Partner.Level
+                                                            ).Serialize()
+                                                        );
+                                                        break;
+
+                                                    case MapTypeEnum.Pvp:
+                                                        _pvpServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.Partner.GeneralHandler,
+                                                                client.Tamer.Partner.Level
+                                                            ).Serialize()
+                                                        );
+                                                        break;
+
+                                                    default:
+                                                        _mapServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.Partner.GeneralHandler,
+                                                                client.Tamer.Partner.Level
+                                                            ).Serialize()
+                                                        );
+                                                        break;
+                                                }
+
+                                                client.Partner.FullHeal();
+
+                                                client.Send(new UpdateStatusPacket(client.Tamer));
+                                            }
+
+                                            if (result2.Success)
+                                                await _sender.Send(new UpdateDigimonExperienceCommand(client.Partner));
+                                        }
+
+                                            break;
+
+                                        case ItemConsumeTargetEnum.Digimon:
+                                        {
+                                            var digimonResult =
+                                                _expManager.ReceiveDigimonExperience(apply.Value, client.Tamer.Partner);
+                                            var value = Convert.ToInt64(apply.Value);
+
+                                            if (digimonResult.Success)
+                                            {
+                                                client.Send(
+                                                    new ReceiveExpPacket(
+                                                        0,
+                                                        0,
+                                                        client.Tamer.CurrentExperience,
+                                                        client.Tamer.Partner.GeneralHandler,
+                                                        value,
+                                                        0,
+                                                        client.Tamer.Partner.CurrentExperience,
+                                                        0
+                                                    )
+                                                );
+                                            }
+
+                                            if (digimonResult.LevelGain > 0)
+                                            {
+                                                client.Partner.SetBaseStatus(
+                                                    _statusManager.GetDigimonBaseStatus(
+                                                        client.Partner.CurrentType,
+                                                        client.Partner.Level,
+                                                        client.Partner.Size
+                                                    )
+                                                );
+
+
+                                                switch (mapConfig?.Type)
+                                                {
+                                                    case MapTypeEnum.Dungeon:
+                                                        _dungeonServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.Partner.GeneralHandler,
+                                                                client.Tamer.Partner.Level
+                                                            ).Serialize()
+                                                        );
+                                                        break;
+
+                                                    case MapTypeEnum.Event:
+                                                        _eventServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.Partner.GeneralHandler,
+                                                                client.Tamer.Partner.Level
+                                                            ).Serialize()
+                                                        );
+                                                        break;
+
+                                                    case MapTypeEnum.Pvp:
+                                                        _pvpServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.Partner.GeneralHandler,
+                                                                client.Tamer.Partner.Level
+                                                            ).Serialize()
+                                                        );
+                                                        break;
+
+                                                    default:
+                                                        _mapServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.Partner.GeneralHandler,
+                                                                client.Tamer.Partner.Level
+                                                            ).Serialize()
+                                                        );
+                                                        break;
+                                                }
+
+                                                client.Partner.FullHeal();
+
+                                                client.Send(new UpdateStatusPacket(client.Tamer));
+                                            }
+
+                                            if (digimonResult.Success)
+                                                await _sender.Send(new UpdateDigimonExperienceCommand(client.Partner));
+                                            break;
+                                        }
+
+                                        case ItemConsumeTargetEnum.Tamer:
+                                        {
+                                            var value = Convert.ToInt64(apply.Value);
+
+                                            var result = _expManager.ReceiveTamerExperience(value, client.Tamer);
+                                            if (result.Success)
+                                            {
+                                                client.Send(
+                                                    new ReceiveExpPacket(
+                                                        value,
+                                                        0,
+                                                        client.Tamer.CurrentExperience,
+                                                        client.Tamer.Partner.GeneralHandler,
+                                                        0,
+                                                        0,
+                                                        client.Tamer.Partner.CurrentExperience,
+                                                        0
+                                                    )
+                                                );
+                                            }
+                                            else
+                                            {
+                                                client.Send(new SystemMessagePacket(
+                                                    $"No proper configuration for tamer {client.Tamer.Model} leveling."));
+                                                return;
+                                            }
+
+                                            if (result.LevelGain > 0)
+                                            {
+                                                client.Tamer.SetLevelStatus(
+                                                    _statusManager.GetTamerLevelStatus(
+                                                        client.Tamer.Model,
+                                                        client.Tamer.Level
+                                                    )
+                                                );
+
+
+                                                switch (mapConfig?.Type)
+                                                {
+                                                    case MapTypeEnum.Dungeon:
+                                                        _dungeonServer.BroadcastForTamerViewsAndSelf(
                                                             client.TamerId,
                                                             new LevelUpPacket(
                                                                 client.Tamer.GeneralHandler,
                                                                 client.Tamer.Level).Serialize());
+                                                        break;
 
-                                                            client.Tamer.FullHeal();
+                                                    case MapTypeEnum.Event:
+                                                        _eventServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.GeneralHandler,
+                                                                client.Tamer.Level).Serialize());
+                                                        break;
 
-                                                            client.Send(new UpdateStatusPacket(client.Tamer));
-                                                        }
+                                                    case MapTypeEnum.Pvp:
+                                                        _pvpServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.GeneralHandler,
+                                                                client.Tamer.Level).Serialize());
+                                                        break;
 
-                                                        if (result.Success)
-                                                            await _sender.Send(new UpdateCharacterExperienceCommand(client.TamerId, client.Tamer.CurrentExperience, client.Tamer.Level));
-                                                    }
-                                                    break;
+                                                    default:
+                                                        _mapServer.BroadcastForTamerViewsAndSelf(
+                                                            client.TamerId,
+                                                            new LevelUpPacket(
+                                                                client.Tamer.GeneralHandler,
+                                                                client.Tamer.Level).Serialize());
+                                                        break;
+                                                }
+
+                                                client.Tamer.FullHeal();
+
+                                                client.Send(new UpdateStatusPacket(client.Tamer));
                                             }
-                                        }
-                                        break;
 
+                                            if (result.Success)
+                                                await _sender.Send(new UpdateCharacterExperienceCommand(client.TamerId,
+                                                    client.Tamer.CurrentExperience, client.Tamer.Level));
+                                        }
+                                            break;
+                                    }
                                 }
+                                    break;
                             }
+                        }
                             break;
                     }
                 }
 
-                if (client.DungeonMap)
+
+                switch (mapConfig?.Type)
                 {
-                    _dungeonServer.BroadcastForTargetTamers(client.TamerId,
-                        UtilitiesFunctions.GroupPackets(
-                            new UpdateCurrentHPRatePacket(
-                                client.Tamer.GeneralHandler,
-                                client.Tamer.HpRate).Serialize(),
-                            new UpdateCurrentHPRatePacket(
-                                client.Tamer.Partner.GeneralHandler,
-                                client.Tamer.Partner.HpRate).Serialize()
-                        )
-                    );
-                }
-                else
-                {
-                    _mapServer.BroadcastForTargetTamers(client.TamerId,
-                        UtilitiesFunctions.GroupPackets(
-                            new UpdateCurrentHPRatePacket(
-                                client.Tamer.GeneralHandler,
-                                client.Tamer.HpRate).Serialize(),
-                            new UpdateCurrentHPRatePacket(
-                                client.Tamer.Partner.GeneralHandler,
-                                client.Tamer.Partner.HpRate).Serialize()
-                        )
-                    );
+                    case MapTypeEnum.Dungeon:
+                        _dungeonServer.BroadcastForTargetTamers(client.TamerId,
+                            UtilitiesFunctions.GroupPackets(
+                                new UpdateCurrentHPRatePacket(
+                                    client.Tamer.GeneralHandler,
+                                    client.Tamer.HpRate).Serialize(),
+                                new UpdateCurrentHPRatePacket(
+                                    client.Tamer.Partner.GeneralHandler,
+                                    client.Tamer.Partner.HpRate).Serialize()
+                            )
+                        );
+                        break;
+
+                    case MapTypeEnum.Event:
+                        _eventServer.BroadcastForTargetTamers(client.TamerId,
+                            UtilitiesFunctions.GroupPackets(
+                                new UpdateCurrentHPRatePacket(
+                                    client.Tamer.GeneralHandler,
+                                    client.Tamer.HpRate).Serialize(),
+                                new UpdateCurrentHPRatePacket(
+                                    client.Tamer.Partner.GeneralHandler,
+                                    client.Tamer.Partner.HpRate).Serialize()
+                            )
+                        );
+                        break;
+
+                    case MapTypeEnum.Pvp:
+                        _pvpServer.BroadcastForTargetTamers(client.TamerId,
+                            UtilitiesFunctions.GroupPackets(
+                                new UpdateCurrentHPRatePacket(
+                                    client.Tamer.GeneralHandler,
+                                    client.Tamer.HpRate).Serialize(),
+                                new UpdateCurrentHPRatePacket(
+                                    client.Tamer.Partner.GeneralHandler,
+                                    client.Tamer.Partner.HpRate).Serialize()
+                            )
+                        );
+                        break;
+
+                    default:
+                        _mapServer.BroadcastForTargetTamers(client.TamerId,
+                            UtilitiesFunctions.GroupPackets(
+                                new UpdateCurrentHPRatePacket(
+                                    client.Tamer.GeneralHandler,
+                                    client.Tamer.HpRate).Serialize(),
+                                new UpdateCurrentHPRatePacket(
+                                    client.Tamer.Partner.GeneralHandler,
+                                    client.Tamer.Partner.HpRate).Serialize()
+                            )
+                        );
+                        break;
                 }
 
                 _logger.Verbose($"Character {client.TamerId} consumed {targetItem.ItemId}.");
@@ -428,7 +556,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     await ConsumeAchievement(client, itemSlot, targetItem);
                 }
-
             }
             else if (targetItem.ItemInfo.Type == 63)
             {
@@ -465,7 +592,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             else if (targetItem.ItemInfo.Type == 180)
             {
                 await CashTamerSkills(client, itemSlot, targetItem);
-
             }
             else if (targetItem.ItemInfo.Type == 201)
             {
@@ -499,18 +625,20 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
 
             byte? digimonSlot = (byte)Enumerable.Range(0, client.Tamer.DigimonSlots)
-                            .FirstOrDefault(slot => client.Tamer.Digimons.FirstOrDefault(x => x.Slot == slot) == null);
+                .FirstOrDefault(slot => client.Tamer.Digimons.FirstOrDefault(x => x.Slot == slot) == null);
 
             if (digimonSlot == null)
                 return;
 
-            var newDigimon = DigimonModel.Create("digiName", hatchInfo.HatchType, hatchInfo.HatchType, DigimonHatchGradeEnum.Perfect, 12500, (byte)digimonSlot);
+            var newDigimon = DigimonModel.Create("digiName", hatchInfo.HatchType, hatchInfo.HatchType,
+                DigimonHatchGradeEnum.Perfect, 12500, (byte)digimonSlot);
 
             newDigimon.NewLocation(client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y);
 
             newDigimon.SetBaseInfo(_statusManager.GetDigimonBaseInfo(newDigimon.BaseType));
 
-            newDigimon.SetBaseStatus(_statusManager.GetDigimonBaseStatus(newDigimon.BaseType, newDigimon.Level, newDigimon.Size));
+            newDigimon.SetBaseStatus(
+                _statusManager.GetDigimonBaseStatus(newDigimon.BaseType, newDigimon.Level, newDigimon.Size));
 
             newDigimon.AddEvolutions(_assets.EvolutionInfo.First(x => x.Type == newDigimon.BaseType));
 
@@ -525,7 +653,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             client.Tamer.AddDigimon(newDigimon);
 
-            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), (byte)digimonSlot));
+            client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000),
+                (byte)digimonSlot));
 
             var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
 
@@ -562,9 +691,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             await _sender.Send(new UpdateItemCommand(targetItem));
 
             client.Send(UtilitiesFunctions.GroupPackets(
-                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                    new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
-
+                new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
+                new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
         }
 
         private async Task CashTamerSkills(GameClient client, short itemSlot, ItemModel targetItem)
@@ -580,7 +708,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (targetSkill != null)
                 {
-                    targetItem.ItemInfo?.SetSkillInfo(_assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == targetSkill.SkillCode));
+                    targetItem.ItemInfo?.SetSkillInfo(
+                        _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == targetSkill.SkillCode));
                 }
 
                 if (targetItem.ItemInfo?.SkillInfo == null)
@@ -593,11 +722,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         )
                     );
 
-                    _logger.Warning($"Invalid skill info for item id {targetItem.ItemId} and tamer id {client.TamerId}.");
+                    _logger.Warning(
+                        $"Invalid skill info for item id {targetItem.ItemId} and tamer id {client.TamerId}.");
                     return;
                 }
 
-                var activeSkill = client.Tamer.ActiveSkill.FirstOrDefault(x => x.SkillId == 0 || x.SkillId == targetSkill?.SkillId);
+                var activeSkill =
+                    client.Tamer.ActiveSkill.FirstOrDefault(x => x.SkillId == 0 || x.SkillId == targetSkill?.SkillId);
                 if (activeSkill != null)
                 {
                     if (activeSkill.SkillId == targetSkill?.SkillId)
@@ -606,10 +737,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                     else
                     {
-                        activeSkill.SetTamerSkill(targetSkill.SkillId, 0, TamerSkillTypeEnum.Cash, targetItem.ItemInfo.UsageTimeMinutes);
+                        activeSkill.SetTamerSkill(targetSkill.SkillId, 0, TamerSkillTypeEnum.Cash,
+                            targetItem.ItemInfo.UsageTimeMinutes);
                     }
                 }
-
 
 
                 await _sender.Send(new UpdateTamerSkillCooldownByIdCommand(activeSkill));
@@ -619,24 +750,26 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
                 client.Send(
-            UtilitiesFunctions.GroupPackets(
-                new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize(),
-                new ActiveTamerCashSkill(activeSkill.SkillId, UtilitiesFunctions.RemainingTimeMinutes(activeSkill.RemainingMinutes)).Serialize()
-                     )
-
-              );
+                    UtilitiesFunctions.GroupPackets(
+                        new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
+                        new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize(),
+                        new ActiveTamerCashSkill(activeSkill.SkillId,
+                            UtilitiesFunctions.RemainingTimeMinutes(activeSkill.RemainingMinutes)).Serialize()
+                    )
+                );
 
 
                 return;
             }
         }
 
-        private async Task SummonMonster(GameClient client, short itemSlot, ItemModel targetItem, SummonModel? SummonInfo)
+        private async Task SummonMonster(GameClient client, short itemSlot, ItemModel targetItem,
+            SummonModel? SummonInfo)
         {
             if (!SummonInfo.Maps.Contains(client.Tamer.Location.MapId))
             {
-                client.Send(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type, ItemConsumeFailEnum.InvalidArea));
+                client.Send(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type,
+                    ItemConsumeFailEnum.InvalidArea));
             }
             else
             {
@@ -650,11 +783,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     if (mob?.Location?.X != 0 && mob?.Location?.Y != 0)
                     {
-                        var diff = UtilitiesFunctions.CalculateDistance(mob.Location.X, client.Tamer.Location.X, mob.Location.Y, client.Tamer.Location.Y);
+                        var diff = UtilitiesFunctions.CalculateDistance(mob.Location.X, client.Tamer.Location.X,
+                            mob.Location.Y, client.Tamer.Location.Y);
 
                         if (diff > 5000)
                         {
-                            client.Send(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type, ItemConsumeFailEnum.InvalidArea));
+                            client.Send(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type,
+                                ItemConsumeFailEnum.InvalidArea));
                             break;
                         }
                         else if (count == 1)
@@ -662,8 +797,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
                             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
-                            client.Send(UtilitiesFunctions.GroupPackets(new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                              new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
+                            client.Send(UtilitiesFunctions.GroupPackets(
+                                new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
+                                new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory)
+                                    .Serialize()));
                         }
                     }
                     else
@@ -671,8 +808,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
                         await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
-                        client.Send(UtilitiesFunctions.GroupPackets(new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                          new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
+                        client.Send(UtilitiesFunctions.GroupPackets(
+                            new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
+                            new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
                     }
 
                     int radius = 500; // Ajuste este valor para controlar a dispersão dos chefes
@@ -688,7 +826,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     if (client.DungeonMap)
                     {
-                        var map = _dungeonServer.Maps.FirstOrDefault(x => x.Clients.Exists(x => x.TamerId == client.TamerId));
+                        var map = _dungeonServer.Maps.FirstOrDefault(x =>
+                            x.Clients.Exists(x => x.TamerId == client.TamerId));
 
                         var mobId = map.SummonMobs.Count + 1;
 
@@ -727,13 +866,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         else
                         {
                             mob.SetLocation(client.Tamer.Location.MapId, bossX, bossY);
-
                         }
 
                         mob.SetDuration();
                         mob.SetTargetSummonHandle(client.Tamer.GeneralHandler);
                         _mapServer.AddSummonMobs(client.Tamer.Location.MapId, mob, client.TamerId);
-
                     }
                 }
             }
@@ -744,18 +881,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
 
             client.Send(
-          UtilitiesFunctions.GroupPackets(
-              new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-              new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
-          )
-
-      );
+                UtilitiesFunctions.GroupPackets(
+                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
+                    new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
+                )
+            );
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
         }
 
         private async Task BombTeleport(GameClient client, short itemSlot, ItemModel targetIte)
         {
-            Dictionary<int, int> itemMapIdMapping = new Dictionary<int, int> {
+            Dictionary<int, int> itemMapIdMapping = new Dictionary<int, int>
+            {
                 // Esse é um dicionário de ID de mapas e ID de itens
                 {
                     25001, // ID do item
@@ -789,7 +926,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     9028,
                     1103
                 }
-
             };
             // Verificar o ID do item e o ID do mapa que ele vai teleportar
             if (itemMapIdMapping.TryGetValue(targetIte.ItemId, out int mapId))
@@ -851,7 +987,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 Console.WriteLine($"ItemID {targetIte.ItemId} não encontrado no mapeamento.");
             }
-
         }
 
         private async Task Fruits(GameClient client, short itemSlot, ItemModel targetItem)
@@ -871,7 +1006,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            var newSizeList = fruitConfig.SizeList.Where(x => x.HatchGrade == client.Partner.HatchGrade && x.MinSize > 0 && x.MaxSize > 0);
+            var newSizeList = fruitConfig.SizeList.Where(x =>
+                x.HatchGrade == client.Partner.HatchGrade && x.MinSize > 0 && x.MaxSize > 0);
 
             if (!newSizeList.Any())
             {
@@ -882,15 +1018,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     client.Send(
                         UtilitiesFunctions.GroupPackets(
                             new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type).Serialize(),
-                            new SystemMessagePacket($"Invalid size list for fruit {targetItem.ItemId} and {client.Partner.HatchGrade} grade.").Serialize(),
+                            new SystemMessagePacket(
+                                    $"Invalid size list for fruit {targetItem.ItemId} and {client.Partner.HatchGrade} grade.")
+                                .Serialize(),
                             new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
                         )
                     );
-                    _logger.Error($"Invalid size list for fruit {targetItem.ItemId} and {client.Partner.HatchGrade} grade.");
+                    _logger.Error(
+                        $"Invalid size list for fruit {targetItem.ItemId} and {client.Partner.HatchGrade} grade.");
                     return;
                 }
                 else
                 {
+                    var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
                     short newSize = 0;
                     var changeSize = false;
                     bool rare = false;
@@ -913,22 +1053,47 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
 
-                    _logger.Verbose($"Character {client.TamerId} used {targetItem.ItemId} to change partner {client.Partner.Id} size from {client.Partner.Size / 100}% to {newSize / 100}%.");
+                    _logger.Verbose(
+                        $"Character {client.TamerId} used {targetItem.ItemId} to change partner {client.Partner.Id} size from {client.Partner.Size / 100}% to {newSize / 100}%.");
 
                     client.Partner.SetSize(newSize);
 
-                    if (client.DungeonMap)
-                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
-                    else
-                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                    switch (mapConfig?.Type)
+                    {
+                        case MapTypeEnum.Dungeon:
+                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                            break;
+
+                        case MapTypeEnum.Event:
+                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                            break;
+
+                        case MapTypeEnum.Pvp:
+                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                            break;
+
+                        default:
+                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                            break;
+                    }
 
                     client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(
                         client.Partner.CurrentType, client.Partner.Level, client.Partner.Size));
 
                     if (rare)
                     {
-                        _mapServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name, client.Partner.BaseType, client.Partner.Size).Serialize());
-                        _dungeonServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name, client.Partner.BaseType, client.Partner.Size).Serialize());
+                        _mapServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name,
+                            client.Partner.BaseType, client.Partner.Size).Serialize());
+                        _dungeonServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale,
+                            client.Tamer.Name, client.Partner.BaseType, client.Partner.Size).Serialize());
+                        _eventServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale,
+                            client.Tamer.Name, client.Partner.BaseType, client.Partner.Size).Serialize());
+                        _pvpServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale,
+                            client.Tamer.Name, client.Partner.BaseType, client.Partner.Size).Serialize());
                     }
 
                     await _sender.Send(new UpdateItemCommand(targetItem));
@@ -941,12 +1106,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
                         )
                     );
-
                 }
-
             }
             else
             {
+                var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
                 double newSize = 0;
 
                 Random random = new Random();
@@ -966,17 +1130,36 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
 
-                _logger.Verbose($"Character {client.TamerId} used {targetItem.ItemId} to change partner {client.Partner.Id} size from {client.Partner.Size / 100}% to {newSize / 100}%.");
+                _logger.Verbose(
+                    $"Character {client.TamerId} used {targetItem.ItemId} to change partner {client.Partner.Id} size from {client.Partner.Size / 100}% to {newSize / 100}%.");
 
                 client.Partner.SetSize((short)newSize);
 
-                if (client.DungeonMap)
-                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
-                else
-                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                switch (mapConfig?.Type)
+                {
+                    case MapTypeEnum.Dungeon:
+                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                            new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                        break;
+
+                    case MapTypeEnum.Event:
+                        _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                            new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                        break;
+
+                    case MapTypeEnum.Pvp:
+                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                            new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                        break;
+
+                    default:
+                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                            new UpdateSizePacket(client.Partner.GeneralHandler, client.Partner.Size).Serialize());
+                        break;
+                }
 
                 client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(
-                        client.Partner.CurrentType, client.Partner.Level, client.Partner.Size));
+                    client.Partner.CurrentType, client.Partner.Level, client.Partner.Size));
 
                 await _sender.Send(new UpdateItemCommand(targetItem));
                 await _sender.Send(new UpdateDigimonSizeCommand(client.Partner.Id, client.Partner.Size));
@@ -988,9 +1171,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
                     )
                 );
-
             }
-
         }
 
         private async Task Transcend(GameClient client, short itemSlot, ItemModel targetItem)
@@ -1024,7 +1205,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Partner.SetSize((short)randomSize);
 
                 client.Partner.SetBaseStatus(
-                    _statusManager.GetDigimonBaseStatus(client.Partner.CurrentType, client.Partner.Level, client.Partner.Size)
+                    _statusManager.GetDigimonBaseStatus(client.Partner.CurrentType, client.Partner.Level,
+                        client.Partner.Size)
                 );
 
                 client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
@@ -1041,8 +1223,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     )
                 );
 
-                client.Send(new SystemMessagePacket($"Tamer {client.Tamer.Name} used {targetItem.ItemInfo.Name} to transcend partner {client.Partner.Name} to {client.Partner.HatchGrade} with {client.Partner.Size / 100}% size.", ""));
-                _logger.Verbose($"Tamer {client.Tamer.Name} used {targetItem.ItemInfo.Name} to transcend partner {client.Partner.Name} to {client.Partner.HatchGrade} with {client.Partner.Size / 100}% size.");
+                client.Send(new SystemMessagePacket(
+                    $"Tamer {client.Tamer.Name} used {targetItem.ItemInfo.Name} to transcend partner {client.Partner.Name} to {client.Partner.HatchGrade} with {client.Partner.Size / 100}% size.",
+                    ""));
+                _logger.Verbose(
+                    $"Tamer {client.Tamer.Name} used {targetItem.ItemInfo.Name} to transcend partner {client.Partner.Name} to {client.Partner.HatchGrade} with {client.Partner.Size / 100}% size.");
 
                 client.Tamer.UpdateState(CharacterStateEnum.Loading);
                 await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
@@ -1081,7 +1266,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 return;
             }
-
         }
 
         private async Task ConsumeFoodItem(GameClient client, short itemSlot, ItemModel targetItem)
@@ -1100,174 +1284,256 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
             foreach (var apply in targetItem.ItemInfo?.SkillInfo.Apply)
             {
                 switch (apply.Type)
                 {
                     case SkillCodeApplyTypeEnum.Percent:
                     case SkillCodeApplyTypeEnum.AlsoPercent:
+                    {
+                        switch (apply.Attribute)
                         {
-                            switch (apply.Attribute)
+                            case SkillCodeApplyAttributeEnum.HP:
                             {
-                                case SkillCodeApplyAttributeEnum.HP:
+                                switch (targetItem.ItemInfo.Target)
+                                {
+                                    case ItemConsumeTargetEnum.Both:
                                     {
-                                        switch (targetItem.ItemInfo.Target)
-                                        {
-                                            case ItemConsumeTargetEnum.Both:
-                                                {
-                                                    client.Tamer.RecoverHp((int)Math.Ceiling((double)(apply.Value) / 100 * client.Tamer.HP));
-                                                    client.Partner.RecoverHp((int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.HP));
-                                                }
-                                                break;
-
-                                            case ItemConsumeTargetEnum.Digimon:
-                                                client.Partner.RecoverHp((int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.HP));
-                                                break;
-
-                                            case ItemConsumeTargetEnum.Tamer:
-                                                client.Tamer.RecoverHp((int)Math.Ceiling((double)(apply.Value) / 100 * client.Tamer.HP));
-                                                break;
-                                        }
+                                        client.Tamer.RecoverHp(
+                                            (int)Math.Ceiling((double)(apply.Value) / 100 * client.Tamer.HP));
+                                        client.Partner.RecoverHp(
+                                            (int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.HP));
                                     }
-                                    break;
+                                        break;
 
-                                case SkillCodeApplyAttributeEnum.DS:
-                                    {
-                                        switch (targetItem.ItemInfo.Target)
-                                        {
-                                            case ItemConsumeTargetEnum.Both:
-                                                {
-                                                    client.Tamer.RecoverDs((int)Math.Ceiling((double)(apply.Value) / 100 * client.Tamer.DS));
-                                                    client.Partner.RecoverDs((int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.DS));
-                                                }
-                                                break;
+                                    case ItemConsumeTargetEnum.Digimon:
+                                        client.Partner.RecoverHp(
+                                            (int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.HP));
+                                        break;
 
-                                            case ItemConsumeTargetEnum.Digimon:
-                                                client.Partner.RecoverDs((int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.DS));
-                                                break;
-
-                                            case ItemConsumeTargetEnum.Tamer:
-                                                client.Partner.RecoverDs((int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.DS));
-                                                break;
-                                        }
-                                    }
-                                    break;
+                                    case ItemConsumeTargetEnum.Tamer:
+                                        client.Tamer.RecoverHp(
+                                            (int)Math.Ceiling((double)(apply.Value) / 100 * client.Tamer.HP));
+                                        break;
+                                }
                             }
+                                break;
+
+                            case SkillCodeApplyAttributeEnum.DS:
+                            {
+                                switch (targetItem.ItemInfo.Target)
+                                {
+                                    case ItemConsumeTargetEnum.Both:
+                                    {
+                                        client.Tamer.RecoverDs(
+                                            (int)Math.Ceiling((double)(apply.Value) / 100 * client.Tamer.DS));
+                                        client.Partner.RecoverDs(
+                                            (int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.DS));
+                                    }
+                                        break;
+
+                                    case ItemConsumeTargetEnum.Digimon:
+                                        client.Partner.RecoverDs(
+                                            (int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.DS));
+                                        break;
+
+                                    case ItemConsumeTargetEnum.Tamer:
+                                        client.Partner.RecoverDs(
+                                            (int)Math.Ceiling((double)(apply.Value) / 100 * client.Partner.DS));
+                                        break;
+                                }
+                            }
+                                break;
                         }
+                    }
                         break;
 
                     case SkillCodeApplyTypeEnum.Default:
+                    {
+                        switch (apply.Attribute)
                         {
-                            switch (apply.Attribute)
+                            case SkillCodeApplyAttributeEnum.HP:
                             {
-                                case SkillCodeApplyAttributeEnum.HP:
+                                switch (targetItem.ItemInfo.Target)
+                                {
+                                    case ItemConsumeTargetEnum.Both:
                                     {
-                                        switch (targetItem.ItemInfo.Target)
-                                        {
-                                            case ItemConsumeTargetEnum.Both:
-                                                {
-                                                    client.Tamer.RecoverHp(apply.Value);
-                                                    client.Partner.RecoverHp(apply.Value);
-                                                }
-                                                break;
-
-                                            case ItemConsumeTargetEnum.Digimon:
-                                                client.Partner.RecoverHp(apply.Value);
-                                                break;
-
-                                            case ItemConsumeTargetEnum.Tamer:
-                                                client.Tamer.RecoverHp(apply.Value);
-                                                break;
-                                        }
+                                        client.Tamer.RecoverHp(apply.Value);
+                                        client.Partner.RecoverHp(apply.Value);
                                     }
-                                    break;
+                                        break;
 
-                                case SkillCodeApplyAttributeEnum.DS:
-                                    {
-                                        switch (targetItem.ItemInfo.Target)
-                                        {
-                                            case ItemConsumeTargetEnum.Both:
-                                                {
-                                                    client.Tamer.RecoverDs(apply.Value);
-                                                    client.Partner.RecoverDs(apply.Value);
-                                                    client.Send(new UpdateCurrentResourcesPacket(client.Tamer.GeneralHandler, (short)client.Tamer.CurrentHp, (short)client.Tamer.CurrentDs, (short)0));
-                                                    client.Send(new UpdateCurrentResourcesPacket(client.Tamer.Partner.GeneralHandler, (short)client.Tamer.Partner.CurrentHp, (short)client.Tamer.Partner.CurrentDs, (short)0));
+                                    case ItemConsumeTargetEnum.Digimon:
+                                        client.Partner.RecoverHp(apply.Value);
+                                        break;
 
-                                                    if (client.DungeonMap)
-                                                    {
-                                                        _dungeonServer.BroadcastForTargetTamers(client.TamerId,
-                                                            UtilitiesFunctions.GroupPackets(
-                                                                new UpdateCurrentHPRatePacket(
-                                                                    client.Tamer.GeneralHandler,
-                                                                    client.Tamer.HpRate).Serialize(),
-                                                                new UpdateCurrentHPRatePacket(
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    client.Tamer.Partner.HpRate).Serialize()
-                                                            )
-                                                        );
-                                                    }
-                                                    else
-                                                    {
-                                                        _mapServer.BroadcastForTargetTamers(client.TamerId,
-                                                            UtilitiesFunctions.GroupPackets(
-                                                                new UpdateCurrentHPRatePacket(
-                                                                    client.Tamer.GeneralHandler,
-                                                                    client.Tamer.HpRate).Serialize(),
-                                                                new UpdateCurrentHPRatePacket(
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    client.Tamer.Partner.HpRate).Serialize()
-                                                            )
-                                                        );
-                                                    }
-                                                }
-                                                break;
-
-                                            case ItemConsumeTargetEnum.Digimon:
-                                                client.Partner.RecoverDs(apply.Value);
-                                                client.Send(new UpdateCurrentResourcesPacket(client.Tamer.Partner.GeneralHandler, (short)client.Tamer.Partner.CurrentHp, (short)client.Tamer.Partner.CurrentDs, (short)0));
-
-                                                if (client.DungeonMap)
-                                                {
-                                                    _dungeonServer.BroadcastForTargetTamers(client.TamerId, new UpdateCurrentHPRatePacket(client.Tamer.Partner.GeneralHandler, client.Tamer.Partner.HpRate).Serialize());
-                                                }
-                                                else
-                                                {
-                                                    _mapServer.BroadcastForTargetTamers(client.TamerId, new UpdateCurrentHPRatePacket(client.Tamer.Partner.GeneralHandler, client.Tamer.Partner.HpRate).Serialize());
-                                                }
-                                                break;
-
-                                            case ItemConsumeTargetEnum.Tamer:
-                                                client.Tamer.RecoverDs(apply.Value);
-                                                client.Send(new UpdateCurrentResourcesPacket(client.Tamer.GeneralHandler, (short)client.Tamer.CurrentHp, (short)client.Tamer.CurrentDs, (short)0));
-
-                                                if (client.DungeonMap)
-                                                {
-                                                    _dungeonServer.BroadcastForTargetTamers(client.TamerId, new UpdateCurrentHPRatePacket(client.Tamer.GeneralHandler, client.Tamer.HpRate).Serialize());
-                                                }
-                                                else
-                                                {
-                                                    _mapServer.BroadcastForTargetTamers(client.TamerId, new UpdateCurrentHPRatePacket(client.Tamer.GeneralHandler, client.Tamer.HpRate).Serialize());
-                                                }
-                                                break;
-                                        }
-                                    }
-                                    break;
-
-                                case SkillCodeApplyAttributeEnum.XG:
-                                    {
-                                        switch (targetItem.ItemInfo.Target)
-                                        {
-                                            case ItemConsumeTargetEnum.Both:
-                                                {
-                                                    client.Tamer.SetXGauge(apply.Value);
-                                                    client.Send(new TamerXaiResourcesPacket(client.Tamer.XGauge, client.Tamer.XCrystals));
-                                                }
-                                                break;
-                                        }
-                                    }
-                                    break;
+                                    case ItemConsumeTargetEnum.Tamer:
+                                        client.Tamer.RecoverHp(apply.Value);
+                                        break;
+                                }
                             }
+                                break;
+
+                            case SkillCodeApplyAttributeEnum.DS:
+                            {
+                                switch (targetItem.ItemInfo.Target)
+                                {
+                                    case ItemConsumeTargetEnum.Both:
+                                    {
+                                        client.Tamer.RecoverDs(apply.Value);
+                                        client.Partner.RecoverDs(apply.Value);
+                                        client.Send(new UpdateCurrentResourcesPacket(client.Tamer.GeneralHandler,
+                                            (short)client.Tamer.CurrentHp, (short)client.Tamer.CurrentDs, (short)0));
+                                        client.Send(new UpdateCurrentResourcesPacket(
+                                            client.Tamer.Partner.GeneralHandler, (short)client.Tamer.Partner.CurrentHp,
+                                            (short)client.Tamer.Partner.CurrentDs, (short)0));
+
+                                        switch (mapConfig?.Type)
+                                        {
+                                            case MapTypeEnum.Dungeon:
+                                                _dungeonServer.BroadcastForTargetTamers(client.TamerId,
+                                                    UtilitiesFunctions.GroupPackets(
+                                                        new UpdateCurrentHPRatePacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.HpRate).Serialize(),
+                                                        new UpdateCurrentHPRatePacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.HpRate).Serialize()
+                                                    )
+                                                );
+                                                break;
+
+                                            case MapTypeEnum.Event:
+                                                _eventServer.BroadcastForTargetTamers(client.TamerId,
+                                                    UtilitiesFunctions.GroupPackets(
+                                                        new UpdateCurrentHPRatePacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.HpRate).Serialize(),
+                                                        new UpdateCurrentHPRatePacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.HpRate).Serialize()
+                                                    )
+                                                );
+                                                break;
+
+                                            case MapTypeEnum.Pvp:
+                                                _pvpServer.BroadcastForTargetTamers(client.TamerId,
+                                                    UtilitiesFunctions.GroupPackets(
+                                                        new UpdateCurrentHPRatePacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.HpRate).Serialize(),
+                                                        new UpdateCurrentHPRatePacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.HpRate).Serialize()
+                                                    )
+                                                );
+                                                break;
+
+                                            default:
+                                                _mapServer.BroadcastForTargetTamers(client.TamerId,
+                                                    UtilitiesFunctions.GroupPackets(
+                                                        new UpdateCurrentHPRatePacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.HpRate).Serialize(),
+                                                        new UpdateCurrentHPRatePacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.HpRate).Serialize()
+                                                    )
+                                                );
+                                                break;
+                                        }
+                                    }
+                                        break;
+
+                                    case ItemConsumeTargetEnum.Digimon:
+                                        client.Partner.RecoverDs(apply.Value);
+                                        client.Send(new UpdateCurrentResourcesPacket(
+                                            client.Tamer.Partner.GeneralHandler, (short)client.Tamer.Partner.CurrentHp,
+                                            (short)client.Tamer.Partner.CurrentDs, (short)0));
+
+                                        switch (mapConfig?.Type)
+                                        {
+                                            case MapTypeEnum.Dungeon:
+                                                _dungeonServer.BroadcastForTargetTamers(client.TamerId,
+                                                    new UpdateCurrentHPRatePacket(client.Tamer.Partner.GeneralHandler,
+                                                        client.Tamer.Partner.HpRate).Serialize());
+                                                break;
+
+                                            case MapTypeEnum.Event:
+                                                _eventServer.BroadcastForTargetTamers(client.TamerId,
+                                                    new UpdateCurrentHPRatePacket(client.Tamer.Partner.GeneralHandler,
+                                                        client.Tamer.Partner.HpRate).Serialize());
+                                                break;
+
+                                            case MapTypeEnum.Pvp:
+                                                _pvpServer.BroadcastForTargetTamers(client.TamerId,
+                                                    new UpdateCurrentHPRatePacket(client.Tamer.Partner.GeneralHandler,
+                                                        client.Tamer.Partner.HpRate).Serialize());
+                                                break;
+
+                                            default:
+                                                _mapServer.BroadcastForTargetTamers(client.TamerId,
+                                                    new UpdateCurrentHPRatePacket(client.Tamer.Partner.GeneralHandler,
+                                                        client.Tamer.Partner.HpRate).Serialize());
+                                                break;
+                                        }
+
+                                        break;
+
+                                    case ItemConsumeTargetEnum.Tamer:
+                                        client.Tamer.RecoverDs(apply.Value);
+                                        client.Send(new UpdateCurrentResourcesPacket(client.Tamer.GeneralHandler,
+                                            (short)client.Tamer.CurrentHp, (short)client.Tamer.CurrentDs, (short)0));
+                                        switch (mapConfig?.Type)
+                                        {
+                                            case MapTypeEnum.Dungeon:
+                                                _dungeonServer.BroadcastForTargetTamers(client.TamerId,
+                                                    new UpdateCurrentHPRatePacket(client.Tamer.GeneralHandler,
+                                                        client.Tamer.HpRate).Serialize());
+                                                break;
+
+                                            case MapTypeEnum.Event:
+                                                _eventServer.BroadcastForTargetTamers(client.TamerId,
+                                                    new UpdateCurrentHPRatePacket(client.Tamer.GeneralHandler,
+                                                        client.Tamer.HpRate).Serialize());
+                                                break;
+
+                                            case MapTypeEnum.Pvp:
+                                                _pvpServer.BroadcastForTargetTamers(client.TamerId,
+                                                    new UpdateCurrentHPRatePacket(client.Tamer.GeneralHandler,
+                                                        client.Tamer.HpRate).Serialize());
+                                                break;
+
+                                            default:
+                                                _mapServer.BroadcastForTargetTamers(client.TamerId,
+                                                    new UpdateCurrentHPRatePacket(client.Tamer.GeneralHandler,
+                                                        client.Tamer.HpRate).Serialize());
+                                                break;
+                                        }
+
+                                        break;
+                                }
+                            }
+                                break;
+
+                            case SkillCodeApplyAttributeEnum.XG:
+                            {
+                                switch (targetItem.ItemInfo.Target)
+                                {
+                                    case ItemConsumeTargetEnum.Both:
+                                    {
+                                        client.Tamer.SetXGauge(apply.Value);
+                                        client.Send(new TamerXaiResourcesPacket(client.Tamer.XGauge,
+                                            client.Tamer.XCrystals));
+                                    }
+                                        break;
+                                }
+                            }
+                                break;
                         }
+                    }
                         break;
                 }
             }
@@ -1278,17 +1544,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             await _sender.Send(new UpdateCharacterBasicInfoCommand(client.Tamer));
 
             client.Send(UtilitiesFunctions.GroupPackets(
-                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                    new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
+                new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
+                new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
 
-           // _logger.Information($"Tamer {client.Tamer.Name} consumed {targetItem.ItemId} : {targetItem.ItemInfo.Name}");
+            // _logger.Information($"Tamer {client.Tamer.Name} consumed {targetItem.ItemId} : {targetItem.ItemInfo.Name}");
         }
 
         private async Task IncreaseArchiveSlots(GameClient client, short itemSlot, ItemModel targetItem)
         {
             client.Tamer.DigimonArchive.AddSlot();
 
-            _logger.Verbose($"Character {client.TamerId} used {targetItem.ItemId} to expand digimon archive slots to {client.Tamer.DigimonArchive.Slots}.");
+            _logger.Verbose(
+                $"Character {client.TamerId} used {targetItem.ItemId} to expand digimon archive slots to {client.Tamer.DigimonArchive.Slots}.");
 
             client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
 
@@ -1312,7 +1579,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             client.Tamer.AddDigimonSlots();
 
-            _logger.Verbose($"Character {client.TamerId} used {targetItem.ItemId} to expand digimon slots to {client.Tamer.DigimonSlots}.");
+            _logger.Verbose(
+                $"Character {client.TamerId} used {targetItem.ItemId} to expand digimon slots to {client.Tamer.DigimonSlots}.");
 
             client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
 
@@ -1332,7 +1600,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var newSlot = client.Tamer.Warehouse.AddSlot();
 
-            _logger.Verbose($"Character {client.TamerId} used {targetItem.ItemId} to expand warehouse slots to {client.Tamer.Warehouse.Size}.");
+            _logger.Verbose(
+                $"Character {client.TamerId} used {targetItem.ItemId} to expand warehouse slots to {client.Tamer.Warehouse.Size}.");
 
             client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
 
@@ -1351,7 +1620,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var newSlot = client.Tamer.Inventory.AddSlot();
 
-            _logger.Verbose($"Character {client.TamerId} used {targetItem.ItemId} to expand inventory slots to {client.Tamer.Inventory.Size}.");
+            _logger.Verbose(
+                $"Character {client.TamerId} used {targetItem.ItemId} to expand inventory slots to {client.Tamer.Inventory.Size}.");
 
             client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
 
@@ -1370,13 +1640,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             var containerItem = client.Tamer.Inventory.FindItemBySlot(itemSlot);
             var ItemId = 0;
-
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
             if (containerItem == null || containerItem.ItemId == 0 || containerItem.ItemInfo == null)
             {
                 client.Send(
                     UtilitiesFunctions.GroupPackets(
                         new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type).Serialize(),
-                        new SystemMessagePacket($"Invalid item on slot {itemSlot} for tamer {client.TamerId}").Serialize(),
+                        new SystemMessagePacket($"Invalid item on slot {itemSlot} for tamer {client.TamerId}")
+                            .Serialize(),
                         new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
                     )
                 );
@@ -1390,7 +1661,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Send(
                     UtilitiesFunctions.GroupPackets(
                         new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type).Serialize(),
-                        new SystemMessagePacket($"No container configuration for item id {containerItem.ItemId}.").Serialize(),
+                        new SystemMessagePacket($"No container configuration for item id {containerItem.ItemId}.")
+                            .Serialize(),
                         new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
                     )
                 );
@@ -1403,11 +1675,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Send(
                     UtilitiesFunctions.GroupPackets(
                         new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type).Serialize(),
-                        new SystemMessagePacket($"Container config for item {containerAsset.ItemId} has incorrect rewards configuration.").Serialize(),
+                        new SystemMessagePacket(
+                                $"Container config for item {containerAsset.ItemId} has incorrect rewards configuration.")
+                            .Serialize(),
                         new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
                     )
                 );
-                _logger.Warning($"Container config for item {containerAsset.ItemId} has incorrect rewards configuration.");
+                _logger.Warning(
+                    $"Container config for item {containerAsset.ItemId} has incorrect rewards configuration.");
                 return;
             }
 
@@ -1434,13 +1709,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     if (contentItem.ItemInfo == null)
                     {
                         client.Send(new SystemMessagePacket($"Invalid item info for item {possibleReward.ItemId}."));
-                        _logger.Warning($"Invalid item info for item {possibleReward.ItemId} in tamer {client.TamerId} scan.");
+                        _logger.Warning(
+                            $"Invalid item info for item {possibleReward.ItemId} in tamer {client.TamerId} scan.");
                         error = true;
                         return;
                     }
 
                     contentItem.SetItemId(possibleReward.ItemId);
-                    contentItem.SetAmount(UtilitiesFunctions.RandomInt(possibleReward.MinAmount, possibleReward.MaxAmount));
+                    contentItem.SetAmount(UtilitiesFunctions.RandomInt(possibleReward.MinAmount,
+                        possibleReward.MaxAmount));
 
                     if (contentItem.IsTemporary)
                         contentItem.SetRemainingTime((uint)contentItem.ItemInfo.UsageTimeMinutes);
@@ -1467,16 +1744,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 var receiveList = string.Join(',', receivedItems.Select(x => $"{x.ItemId} x{x.Amount}"));
 
-                _logger.Verbose($"Character {client.TamerId} openned box {containerItem.ItemId} and obtained {receiveList}");
+                _logger.Verbose(
+                    $"Character {client.TamerId} openned box {containerItem.ItemId} and obtained {receiveList}");
 
                 client.Tamer.Inventory.RemoveOrReduceItem(containerItem, 1, itemSlot);
 
                 client.Send(
-             UtilitiesFunctions.GroupPackets(
-                 new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                 new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
-             )
-         );
+                    UtilitiesFunctions.GroupPackets(
+                        new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
+                        new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
+                    )
+                );
 
                 receivedItems.ForEach(receivedItem =>
                 {
@@ -1485,7 +1763,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 });
 
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-
 
 
                 if (ItemId == 70102)
@@ -1504,7 +1781,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         {
                             if (!client.Tamer.BuffList.Buffs.Any(x => x.BuffId == BuffId))
                             {
-
                                 var duration = UtilitiesFunctions.RemainingTimeSeconds(Value2);
 
                                 var newCharacterBuff = CharacterBuffModel.Create(BuffId, Value1, Value2);
@@ -1513,34 +1789,86 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                 client.Tamer.BuffList.Add(newCharacterBuff);
                                 await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
 
-                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration).Serialize());
+                                switch (mapConfig?.Type)
+                                {
+                                    case MapTypeEnum.Dungeon:
+                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration)
+                                                .Serialize());
+                                        break;
 
+                                    case MapTypeEnum.Event:
+                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration)
+                                                .Serialize());
+                                        break;
+
+                                    case MapTypeEnum.Pvp:
+                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration)
+                                                .Serialize());
+                                        break;
+
+                                    default:
+                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration)
+                                                .Serialize());
+                                        break;
+                                }
                             }
                             else
                             {
-
                                 var BuffInfo = client.Tamer.BuffList.Buffs.FirstOrDefault(x => x.BuffId == BuffId);
 
                                 if (BuffInfo != null)
                                 {
-
                                     BuffInfo.SetDuration(Value2);
 
                                     var duration = UtilitiesFunctions.RemainingTimeSeconds(BuffInfo.Duration);
 
-                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                  new UpdateBuffPacket(client.Tamer.GeneralHandler, buff, (short)0, duration).Serialize());
 
+                                    switch (mapConfig?.Type)
+                                    {
+                                        case MapTypeEnum.Dungeon:
+                                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new UpdateBuffPacket(client.Tamer.GeneralHandler, buff, (short)0,
+                                                        duration)
+                                                    .Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Event:
+                                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new UpdateBuffPacket(client.Tamer.GeneralHandler, buff, (short)0,
+                                                        duration)
+                                                    .Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Pvp:
+                                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new UpdateBuffPacket(client.Tamer.GeneralHandler, buff, (short)0,
+                                                        duration)
+                                                    .Serialize());
+                                            break;
+
+                                        default:
+                                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new UpdateBuffPacket(client.Tamer.GeneralHandler, buff, (short)0,
+                                                        duration)
+                                                    .Serialize());
+                                            break;
+                                    }
 
                                     await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
                                 }
                             }
                         }
+
                         int time = 30 * 24 * 60 * 60;
                         client.IncreaseMembershipDuration(time);
-                        client.Send(new MembershipPacket(client.MembershipExpirationDate!.Value, client.MembershipUtcSeconds));
-                        await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId, client.MembershipExpirationDate));
+                        client.Send(new MembershipPacket(client.MembershipExpirationDate!.Value,
+                            client.MembershipUtcSeconds));
+                        await _sender.Send(new UpdateAccountMembershipCommand(client.AccountId,
+                            client.MembershipExpirationDate));
 
                         client.Send(new UpdateStatusPacket(client.Tamer));
                     }
@@ -1551,64 +1879,113 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private async Task BuffItem(GameClient client, short itemSlot, ItemModel targetItem)
         {
             var buff = _assets.BuffInfo.FirstOrDefault(x => x.SkillCode == targetItem.ItemInfo.SkillCode);
-
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
             if (buff != null)
             {
                 var duration = UtilitiesFunctions.RemainingTimeSeconds(targetItem.ItemInfo.TimeInSeconds);
 
-                var newCharacterBuff = CharacterBuffModel.Create(buff.BuffId, buff.SkillId, targetItem.ItemInfo.TypeN, targetItem.ItemInfo.TimeInSeconds);
+                var newCharacterBuff = CharacterBuffModel.Create(buff.BuffId, buff.SkillId, targetItem.ItemInfo.TypeN,
+                    targetItem.ItemInfo.TimeInSeconds);
                 newCharacterBuff.SetBuffInfo(buff);
 
-                var newDigimonBuff = DigimonBuffModel.Create(buff.BuffId, buff.SkillId, targetItem.ItemInfo.TypeN, targetItem.ItemInfo.TimeInSeconds);
+                var newDigimonBuff = DigimonBuffModel.Create(buff.BuffId, buff.SkillId, targetItem.ItemInfo.TypeN,
+                    targetItem.ItemInfo.TimeInSeconds);
 
                 newDigimonBuff.SetBuffInfo(buff);
 
                 var characterBuffs = new List<SkillCodeApplyAttributeEnum>
-                    {
-                        SkillCodeApplyAttributeEnum.MS,
-                        SkillCodeApplyAttributeEnum.MovementSpeedIncrease,
-                        SkillCodeApplyAttributeEnum.EXP,
-                        SkillCodeApplyAttributeEnum.AttributeExperienceAdded
-                    };
+                {
+                    SkillCodeApplyAttributeEnum.MS,
+                    SkillCodeApplyAttributeEnum.MovementSpeedIncrease,
+                    SkillCodeApplyAttributeEnum.EXP,
+                    SkillCodeApplyAttributeEnum.AttributeExperienceAdded
+                };
 
                 if (characterBuffs.Contains(buff.SkillInfo.Apply.First().Attribute))
                 {
                     if (client.Tamer.BuffList.ActiveBuffs.Any(x => x.BuffId == buff.BuffId))
                     {
-                        if (client.DungeonMap)
+                        client.Tamer.BuffList.ForceExpired(newCharacterBuff.BuffId);
+                        client.Tamer.BuffList.Add(newCharacterBuff);
+                        switch (mapConfig?.Type)
                         {
-                            client.Tamer.BuffList.ForceExpired(newCharacterBuff.BuffId);
-                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new RemoveBuffPacket(client.Tamer.GeneralHandler, newCharacterBuff.BuffId).Serialize());
+                            case MapTypeEnum.Dungeon:
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new RemoveBuffPacket(client.Tamer.GeneralHandler, newCharacterBuff.BuffId)
+                                        .Serialize());
 
-                            client.Tamer.BuffList.Add(newCharacterBuff);
-                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)targetItem.ItemInfo.TypeN, duration).Serialize());
-                        }
-                        else
-                        {
-                            client.Tamer.BuffList.ForceExpired(newCharacterBuff.BuffId);
-                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new RemoveBuffPacket(client.Tamer.GeneralHandler, newCharacterBuff.BuffId).Serialize());
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Tamer.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
 
-                            client.Tamer.BuffList.Add(newCharacterBuff);
-                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)targetItem.ItemInfo.TypeN, duration).Serialize());
+                            case MapTypeEnum.Event:
+                                _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new RemoveBuffPacket(client.Tamer.GeneralHandler, newCharacterBuff.BuffId)
+                                        .Serialize());
+
+                                _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Tamer.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
+
+                            case MapTypeEnum.Pvp:
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new RemoveBuffPacket(client.Tamer.GeneralHandler, newCharacterBuff.BuffId)
+                                        .Serialize());
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Tamer.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
+
+                            default:
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new RemoveBuffPacket(client.Tamer.GeneralHandler, newCharacterBuff.BuffId)
+                                        .Serialize());
+
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Tamer.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
                         }
                     }
                     else
                     {
-                        if (client.DungeonMap)
+                        client.Tamer.BuffList.Add(newCharacterBuff);
+                        switch (mapConfig?.Type)
                         {
-                            client.Tamer.BuffList.Add(newCharacterBuff);
-                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)targetItem.ItemInfo.TypeN, duration).Serialize());
-                        }
-                        else
-                        {
-                            client.Tamer.BuffList.Add(newCharacterBuff);
-                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new AddBuffPacket(client.Tamer.GeneralHandler, buff, (short)targetItem.ItemInfo.TypeN, duration).Serialize());
+                            case MapTypeEnum.Dungeon:
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Tamer.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
+
+                            case MapTypeEnum.Event:
+                                _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Tamer.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
+
+                            case MapTypeEnum.Pvp:
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Tamer.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
+
+                            default:
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Tamer.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
                         }
                     }
                 }
@@ -1616,40 +1993,95 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     if (client.Partner.BuffList.ActiveBuffs.Any(x => x.BuffId == buff.BuffId))
                     {
-                        if (client.DungeonMap)
+                        client.Partner.BuffList.ForceExpired(newDigimonBuff.BuffId);
+                        client.Partner.BuffList.Add(newDigimonBuff);
+                        switch (mapConfig?.Type)
                         {
-                            client.Partner.BuffList.ForceExpired(newDigimonBuff.BuffId);
-                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new RemoveBuffPacket(client.Partner.GeneralHandler, newCharacterBuff.BuffId).Serialize());
+                            case MapTypeEnum.Dungeon:
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new RemoveBuffPacket(client.Partner.GeneralHandler, newCharacterBuff.BuffId)
+                                        .Serialize());
 
-                            client.Partner.BuffList.Add(newDigimonBuff);
-                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new AddBuffPacket(client.Partner.GeneralHandler, buff, (short)targetItem.ItemInfo.TypeN, duration).Serialize());
-                        }
-                        else
-                        {
-                            client.Partner.BuffList.ForceExpired(newDigimonBuff.BuffId);
-                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new RemoveBuffPacket(client.Partner.GeneralHandler, newCharacterBuff.BuffId).Serialize());
 
-                            client.Partner.BuffList.Add(newDigimonBuff);
-                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new AddBuffPacket(client.Partner.GeneralHandler, buff, (short)targetItem.ItemInfo.TypeN, duration).Serialize());
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Partner.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+
+                                break;
+
+                            case MapTypeEnum.Event:
+                                _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new RemoveBuffPacket(client.Partner.GeneralHandler, newCharacterBuff.BuffId)
+                                        .Serialize());
+
+
+                                _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Partner.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+
+                                break;
+
+                            case MapTypeEnum.Pvp:
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new RemoveBuffPacket(client.Partner.GeneralHandler, newCharacterBuff.BuffId)
+                                        .Serialize());
+
+
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Partner.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
+
+                            default:
+                                client.Partner.BuffList.ForceExpired(newDigimonBuff.BuffId);
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new RemoveBuffPacket(client.Partner.GeneralHandler, newCharacterBuff.BuffId)
+                                        .Serialize());
+
+                                client.Partner.BuffList.Add(newDigimonBuff);
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Partner.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
                         }
                     }
                     else
                     {
-                        if (client.DungeonMap)
+                        client.Partner.BuffList.Add(newDigimonBuff);
+                        switch (mapConfig?.Type)
                         {
-                            client.Partner.BuffList.Add(newDigimonBuff);
-                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new AddBuffPacket(client.Partner.GeneralHandler, buff, (short)targetItem.ItemInfo.TypeN, duration).Serialize());
-                        }
-                        else
-                        {
-                            client.Partner.BuffList.Add(newDigimonBuff);
-                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new AddBuffPacket(client.Partner.GeneralHandler, buff, (short)targetItem.ItemInfo.TypeN, duration).Serialize());
+                            case MapTypeEnum.Dungeon:
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Partner.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
+
+                            case MapTypeEnum.Event:
+                                _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Partner.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
+
+                            case MapTypeEnum.Pvp:
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Partner.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+                                break;
+
+                            default:
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new AddBuffPacket(client.Partner.GeneralHandler, buff,
+                                        (short)targetItem.ItemInfo.TypeN,
+                                        duration).Serialize());
+
+                                break;
                         }
                     }
                 }
@@ -1684,15 +2116,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             if (targetItem.ItemInfo?.SkillInfo == null)
             {
-                client.Send(UtilitiesFunctions.GroupPackets(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type).Serialize(),
-                        new SystemMessagePacket($"Invalid skill info for item id {targetItem.ItemId}.").Serialize(),
-                        new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
-                    ));
+                client.Send(UtilitiesFunctions.GroupPackets(
+                    new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type).Serialize(),
+                    new SystemMessagePacket($"Invalid skill info for item id {targetItem.ItemId}.").Serialize(),
+                    new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
+                ));
 
                 _logger.Error($"Invalid skill info for item id {targetItem.ItemId} and tamer id {client.TamerId}.");
                 return;
             }
 
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
             foreach (var apply in targetItem.ItemInfo?.SkillInfo.Apply)
             {
                 //_logger.Information($"ApplyType: {apply.Type}");
@@ -1703,277 +2137,371 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         break;
 
                     case SkillCodeApplyTypeEnum.Default:
+                    {
+                        switch (apply.Attribute)
                         {
-                            switch (apply.Attribute)
+                            case SkillCodeApplyAttributeEnum.EXP:
                             {
-                                case SkillCodeApplyAttributeEnum.EXP:
+                                switch (targetItem.ItemInfo.Target)
+                                {
+                                    case ItemConsumeTargetEnum.Both:
                                     {
-                                        switch (targetItem.ItemInfo.Target)
+                                        Random random = new Random();
+                                        int randomValue = random.Next(targetItem.ItemInfo.ApplyValueMin,
+                                            targetItem.ItemInfo.ApplyValueMax + 1);
+
+                                        int value = apply.Value * (randomValue / 100);
+
+                                        var result = _expManager.ReceiveTamerExperience(value, client.Tamer);
+                                        var result2 = _expManager.ReceiveDigimonExperience(value, client.Tamer.Partner);
+
+                                        if (result.Success)
                                         {
-                                            case ItemConsumeTargetEnum.Both:
-                                                {
-                                                    Random random = new Random();
-                                                    int randomValue = random.Next(targetItem.ItemInfo.ApplyValueMin, targetItem.ItemInfo.ApplyValueMax + 1);
+                                            client.Send(
+                                                new ReceiveExpPacket(
+                                                    value,
+                                                    0,
+                                                    client.Tamer.CurrentExperience,
+                                                    client.Tamer.Partner.GeneralHandler,
+                                                    0,
+                                                    0,
+                                                    client.Tamer.Partner.CurrentExperience,
+                                                    0
+                                                )
+                                            );
+                                        }
+                                        else
+                                        {
+                                            client.Send(new SystemMessagePacket(
+                                                $"No proper configuration for tamer {client.Tamer.Model} leveling."));
+                                            return;
+                                        }
 
-                                                    int value = apply.Value * (randomValue / 100);
+                                        if (result.LevelGain > 0)
+                                        {
+                                            client.Tamer.SetLevelStatus(
+                                                _statusManager.GetTamerLevelStatus(
+                                                    client.Tamer.Model,
+                                                    client.Tamer.Level
+                                                )
+                                            );
 
-                                                    var result = _expManager.ReceiveTamerExperience(value, client.Tamer);
-                                                    var result2 = _expManager.ReceiveDigimonExperience(value, client.Tamer.Partner);
-
-                                                    if (result.Success)
-                                                    {
-                                                        client.Send(
-                                                            new ReceiveExpPacket(
-                                                                value,
-                                                                0,
-                                                                client.Tamer.CurrentExperience,
-                                                                client.Tamer.Partner.GeneralHandler,
-                                                                0,
-                                                                0,
-                                                                client.Tamer.Partner.CurrentExperience,
-                                                                0
-                                                            )
-                                                        );
-                                                    }
-                                                    else
-                                                    {
-                                                        client.Send(new SystemMessagePacket($"No proper configuration for tamer {client.Tamer.Model} leveling."));
-                                                        return;
-                                                    }
-
-                                                    if (result.LevelGain > 0)
-                                                    {
-                                                        client.Tamer.SetLevelStatus(
-                                                            _statusManager.GetTamerLevelStatus(
-                                                                client.Tamer.Model,
-                                                                client.Tamer.Level
-                                                            )
-                                                        );
-
-                                                        if (client.DungeonMap)
-                                                        {
-                                                            _dungeonServer.BroadcastForTamerViewsAndSelf(
-                                                            client.TamerId,
-                                                            new LevelUpPacket(
-                                                                client.Tamer.GeneralHandler,
-                                                                client.Tamer.Level).Serialize());
-                                                        }
-                                                        else
-                                                        {
-                                                            _mapServer.BroadcastForTamerViewsAndSelf(
-                                                            client.TamerId,
-                                                            new LevelUpPacket(
-                                                                client.Tamer.GeneralHandler,
-                                                                client.Tamer.Level).Serialize());
-
-                                                        }
-                                                        client.Tamer.FullHeal();
-
-                                                        client.Send(new UpdateStatusPacket(client.Tamer));
-                                                    }
-
-                                                    if (result.Success)
-                                                        await _sender.Send(new UpdateCharacterExperienceCommand(client.TamerId, client.Tamer.CurrentExperience, client.Tamer.Level));
-
-                                                    if (result2.Success)
-                                                    {
-                                                        client.Send(
-                                                            new ReceiveExpPacket(
-                                                                0,
-                                                                0,
-                                                                client.Tamer.CurrentExperience,
-                                                                client.Tamer.Partner.GeneralHandler,
-                                                                value,
-                                                                0,
-                                                                client.Tamer.Partner.CurrentExperience,
-                                                                0
-                                                            )
-                                                        );
-                                                    }
-
-                                                    if (result2.LevelGain > 0)
-                                                    {
-                                                        client.Partner.SetBaseStatus(
-                                                            _statusManager.GetDigimonBaseStatus(
-                                                                client.Partner.CurrentType,
-                                                                client.Partner.Level,
-                                                                client.Partner.Size
-                                                            )
-                                                        );
-
-                                                        if (client.DungeonMap)
-                                                        {
-                                                            _dungeonServer.BroadcastForTamerViewsAndSelf(
-                                                            client.TamerId,
-                                                            new LevelUpPacket(
-                                                                client.Tamer.Partner.GeneralHandler,
-                                                                client.Tamer.Partner.Level
-                                                            ).Serialize()
-                                                        );
-
-                                                        }
-                                                        else
-                                                        {
-                                                            _mapServer.BroadcastForTamerViewsAndSelf(
-                                                            client.TamerId,
-                                                            new LevelUpPacket(
-                                                                client.Tamer.Partner.GeneralHandler,
-                                                                client.Tamer.Partner.Level
-                                                            ).Serialize()
-                                                        );
-
-
-                                                        }
-
-                                                        client.Partner.FullHeal();
-
-                                                        client.Send(new UpdateStatusPacket(client.Tamer));
-                                                    }
-
-                                                    if (result2.Success)
-                                                        await _sender.Send(new UpdateDigimonExperienceCommand(client.Partner));
-                                                }
-                                                break;
-
-                                            case ItemConsumeTargetEnum.Digimon:
-                                                {
-                                                    Random random = new Random();
-                                                    int randomValue = random.Next(targetItem.ItemInfo.ApplyValueMin, targetItem.ItemInfo.ApplyValueMax + 1);
-
-                                                    int value = apply.Value * (randomValue / 100);
-
-                                                    var digimonResult = _expManager.ReceiveDigimonExperience(value, client.Tamer.Partner);
-
-                                                    if (digimonResult.Success)
-                                                    {
-                                                        client.Send(
-                                                            new ReceiveExpPacket(
-                                                                0,
-                                                                0,
-                                                                client.Tamer.CurrentExperience,
-                                                                client.Tamer.Partner.GeneralHandler,
-                                                                value,
-                                                                0,
-                                                                client.Tamer.Partner.CurrentExperience,
-                                                                0
-                                                            )
-                                                        );
-                                                    }
-
-                                                    if (digimonResult.LevelGain > 0)
-                                                    {
-                                                        client.Partner.SetBaseStatus(
-                                                            _statusManager.GetDigimonBaseStatus(
-                                                                client.Partner.CurrentType,
-                                                                client.Partner.Level,
-                                                                client.Partner.Size
-                                                            )
-                                                        );
-
-                                                        if (client.DungeonMap)
-                                                        {
-                                                            _dungeonServer.BroadcastForTamerViewsAndSelf(
-                                                                client.TamerId,
-                                                                new LevelUpPacket(
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    client.Tamer.Partner.Level
-                                                                ).Serialize()
-                                                            );
-                                                        }
-                                                        else
-                                                        {
-                                                            _mapServer.BroadcastForTamerViewsAndSelf(
-                                                                client.TamerId,
-                                                                new LevelUpPacket(
-                                                                    client.Tamer.Partner.GeneralHandler,
-                                                                    client.Tamer.Partner.Level
-                                                                ).Serialize()
-                                                            );
-                                                        }
-
-                                                        client.Partner.FullHeal();
-
-                                                        client.Send(new UpdateStatusPacket(client.Tamer));
-                                                    }
-
-                                                    if (digimonResult.Success)
-                                                        await _sender.Send(new UpdateDigimonExperienceCommand(client.Partner));
-                                                }
-                                                break;
-
-                                            case ItemConsumeTargetEnum.Tamer:
-                                                {
-                                                    Random random = new Random();
-                                                    int randomValue = random.Next(targetItem.ItemInfo.ApplyValueMin, targetItem.ItemInfo.ApplyValueMax + 1);
-
-                                                    int value = apply.Value * (randomValue / 100);
-
-                                                    var result = _expManager.ReceiveTamerExperience(value, client.Tamer);
-
-                                                    if (result.Success)
-                                                    {
-                                                        client.Send(
-                                                            new ReceiveExpPacket(
-                                                                value,
-                                                                0,
-                                                                client.Tamer.CurrentExperience,
-                                                                client.Tamer.Partner.GeneralHandler,
-                                                                0,
-                                                                0,
-                                                                client.Tamer.Partner.CurrentExperience,
-                                                                0
-                                                            )
-                                                        );
-                                                    }
-                                                    else
-                                                    {
-                                                        client.Send(new SystemMessagePacket($"No proper configuration for tamer {client.Tamer.Model} leveling."));
-                                                        return;
-                                                    }
-
-                                                    if (result.LevelGain > 0)
-                                                    {
-                                                        client.Tamer.SetLevelStatus(
-                                                            _statusManager.GetTamerLevelStatus(
-                                                                client.Tamer.Model,
-                                                                client.Tamer.Level
-                                                            )
-                                                        );
-
-                                                        _mapServer.BroadcastForTamerViewsAndSelf(
+                                            switch (mapConfig?.Type)
+                                            {
+                                                case MapTypeEnum.Dungeon:
+                                                    _dungeonServer.BroadcastForTamerViewsAndSelf(
                                                         client.TamerId,
                                                         new LevelUpPacket(
                                                             client.Tamer.GeneralHandler,
                                                             client.Tamer.Level).Serialize());
+                                                    break;
 
-                                                        client.Tamer.FullHeal();
+                                                case MapTypeEnum.Event:
+                                                    _eventServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.Level).Serialize());
+                                                    break;
 
-                                                        client.Send(new UpdateStatusPacket(client.Tamer));
-                                                    }
+                                                case MapTypeEnum.Pvp:
+                                                    _pvpServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.Level).Serialize());
+                                                    break;
 
-                                                    if (result.Success)
-                                                        await _sender.Send(new UpdateCharacterExperienceCommand(client.TamerId, client.Tamer.CurrentExperience, client.Tamer.Level));
-                                                }
-                                                break;
+                                                default:
+                                                    _mapServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.Level).Serialize());
+                                                    break;
+                                            }
+
+                                            client.Tamer.FullHeal();
+
+                                            client.Send(new UpdateStatusPacket(client.Tamer));
                                         }
-                                    }
-                                    break;
 
-                                default:
+                                        if (result.Success)
+                                            await _sender.Send(new UpdateCharacterExperienceCommand(client.TamerId,
+                                                client.Tamer.CurrentExperience, client.Tamer.Level));
+
+                                        if (result2.Success)
+                                        {
+                                            client.Send(
+                                                new ReceiveExpPacket(
+                                                    0,
+                                                    0,
+                                                    client.Tamer.CurrentExperience,
+                                                    client.Tamer.Partner.GeneralHandler,
+                                                    value,
+                                                    0,
+                                                    client.Tamer.Partner.CurrentExperience,
+                                                    0
+                                                )
+                                            );
+                                        }
+
+                                        if (result2.LevelGain > 0)
+                                        {
+                                            client.Partner.SetBaseStatus(
+                                                _statusManager.GetDigimonBaseStatus(
+                                                    client.Partner.CurrentType,
+                                                    client.Partner.Level,
+                                                    client.Partner.Size
+                                                )
+                                            );
+
+                                            switch (mapConfig?.Type)
+                                            {
+                                                case MapTypeEnum.Dungeon:
+                                                    _dungeonServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.Level
+                                                        ).Serialize()
+                                                    );
+
+                                                    break;
+
+                                                case MapTypeEnum.Event:
+                                                    _eventServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.Level
+                                                        ).Serialize()
+                                                    );
+                                                    break;
+
+                                                case MapTypeEnum.Pvp:
+                                                    _pvpServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.Level
+                                                        ).Serialize()
+                                                    );
+                                                    break;
+
+                                                default:
+                                                    _mapServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.Level
+                                                        ).Serialize()
+                                                    );
+                                                    break;
+                                            }
+
+                                            client.Partner.FullHeal();
+
+                                            client.Send(new UpdateStatusPacket(client.Tamer));
+                                        }
+
+                                        if (result2.Success)
+                                            await _sender.Send(new UpdateDigimonExperienceCommand(client.Partner));
+                                    }
+                                        break;
+
+                                    case ItemConsumeTargetEnum.Digimon:
                                     {
-                                        _logger.Error($"ApplyAttribute: {apply.Attribute} not configured!! (ItemConsumePacket)");
-                                    }
-                                    break;
+                                        Random random = new Random();
+                                        int randomValue = random.Next(targetItem.ItemInfo.ApplyValueMin,
+                                            targetItem.ItemInfo.ApplyValueMax + 1);
 
+                                        int value = apply.Value * (randomValue / 100);
+
+                                        var digimonResult =
+                                            _expManager.ReceiveDigimonExperience(value, client.Tamer.Partner);
+
+                                        if (digimonResult.Success)
+                                        {
+                                            client.Send(
+                                                new ReceiveExpPacket(
+                                                    0,
+                                                    0,
+                                                    client.Tamer.CurrentExperience,
+                                                    client.Tamer.Partner.GeneralHandler,
+                                                    value,
+                                                    0,
+                                                    client.Tamer.Partner.CurrentExperience,
+                                                    0
+                                                )
+                                            );
+                                        }
+
+                                        if (digimonResult.LevelGain > 0)
+                                        {
+                                            client.Partner.SetBaseStatus(
+                                                _statusManager.GetDigimonBaseStatus(
+                                                    client.Partner.CurrentType,
+                                                    client.Partner.Level,
+                                                    client.Partner.Size
+                                                )
+                                            );
+
+                                            switch (mapConfig?.Type)
+                                            {
+                                                case MapTypeEnum.Dungeon:
+                                                    _dungeonServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.Level
+                                                        ).Serialize()
+                                                    );
+                                                    break;
+
+                                                case MapTypeEnum.Event:
+                                                    _eventServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.Level
+                                                        ).Serialize()
+                                                    );
+                                                    break;
+
+                                                case MapTypeEnum.Pvp:
+                                                    _pvpServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.Level
+                                                        ).Serialize()
+                                                    );
+                                                    break;
+
+                                                default:
+                                                    _mapServer.BroadcastForTamerViewsAndSelf(
+                                                        client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.Partner.GeneralHandler,
+                                                            client.Tamer.Partner.Level
+                                                        ).Serialize()
+                                                    );
+                                                    break;
+                                            }
+
+                                            client.Partner.FullHeal();
+
+                                            client.Send(new UpdateStatusPacket(client.Tamer));
+                                        }
+
+                                        if (digimonResult.Success)
+                                            await _sender.Send(new UpdateDigimonExperienceCommand(client.Partner));
+                                    }
+                                        break;
+
+                                    case ItemConsumeTargetEnum.Tamer:
+                                    {
+                                        Random random = new Random();
+                                        int randomValue = random.Next(targetItem.ItemInfo.ApplyValueMin,
+                                            targetItem.ItemInfo.ApplyValueMax + 1);
+
+                                        int value = apply.Value * (randomValue / 100);
+
+                                        var result = _expManager.ReceiveTamerExperience(value, client.Tamer);
+
+                                        if (result.Success)
+                                        {
+                                            client.Send(
+                                                new ReceiveExpPacket(
+                                                    value,
+                                                    0,
+                                                    client.Tamer.CurrentExperience,
+                                                    client.Tamer.Partner.GeneralHandler,
+                                                    0,
+                                                    0,
+                                                    client.Tamer.Partner.CurrentExperience,
+                                                    0
+                                                )
+                                            );
+                                        }
+                                        else
+                                        {
+                                            client.Send(new SystemMessagePacket(
+                                                $"No proper configuration for tamer {client.Tamer.Model} leveling."));
+                                            return;
+                                        }
+
+                                        if (result.LevelGain > 0)
+                                        {
+                                            client.Tamer.SetLevelStatus(
+                                                _statusManager.GetTamerLevelStatus(
+                                                    client.Tamer.Model,
+                                                    client.Tamer.Level
+                                                )
+                                            );
+
+                                            switch (mapConfig?.Type)
+                                            {
+                                                case MapTypeEnum.Dungeon:
+                                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.Level).Serialize());
+                                                    break;
+
+                                                case MapTypeEnum.Event:
+                                                    _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.Level).Serialize());
+                                                    break;
+
+                                                case MapTypeEnum.Pvp:
+                                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.Level).Serialize());
+                                                    break;
+
+                                                default:
+                                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                        new LevelUpPacket(
+                                                            client.Tamer.GeneralHandler,
+                                                            client.Tamer.Level).Serialize());
+                                                    break;
+                                            }
+
+
+                                            client.Tamer.FullHeal();
+
+                                            client.Send(new UpdateStatusPacket(client.Tamer));
+                                        }
+
+                                        if (result.Success)
+                                            await _sender.Send(new UpdateCharacterExperienceCommand(client.TamerId,
+                                                client.Tamer.CurrentExperience, client.Tamer.Level));
+                                    }
+                                        break;
+                                }
                             }
+                                break;
+
+                            default:
+                            {
+                                _logger.Error(
+                                    $"ApplyAttribute: {apply.Attribute} not configured!! (ItemConsumePacket)");
+                            }
+                                break;
                         }
+                    }
                         break;
 
                     default:
-                        {
-                            _logger.Error($"ApplyType: {apply.Type} not configured! (ItemConsumePacket)");
-                            return;
-                        }
+                    {
+                        _logger.Error($"ApplyType: {apply.Type} not configured! (ItemConsumePacket)");
+                        return;
+                    }
                 }
             }
 
@@ -1983,11 +2511,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             await _sender.Send(new UpdateCharacterBasicInfoCommand(client.Tamer));
 
             client.Send(UtilitiesFunctions.GroupPackets(
-                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                    new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
+                new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
+                new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
 
             // _logger.Verbose($"Tamer {client.Tamer.Name} consumed 1 : {targetItem.ItemInfo.Name}");
         }
-
     }
 }

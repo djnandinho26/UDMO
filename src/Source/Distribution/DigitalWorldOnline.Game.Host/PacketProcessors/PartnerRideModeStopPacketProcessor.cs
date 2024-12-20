@@ -13,13 +13,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         public GameServerPacketEnum Type => GameServerPacketEnum.PartnerRideModeStop;
 
         private readonly MapServer _mapServer;
+        private readonly DungeonsServer _dungeonsServer;
         private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
 
-        public PartnerRideModeStopPacketProcessor(MapServer mapServer, EventServer eventServer, ILogger logger)
+        public PartnerRideModeStopPacketProcessor(
+            MapServer mapServer,
+            DungeonsServer dungeonsServer, 
+            EventServer eventServer, 
+            PvpServer pvpServer, 
+            ILogger logger
+            )
         {
             _mapServer = mapServer;
+            _dungeonsServer = dungeonsServer;
             _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _logger = logger;
         }
 
@@ -33,10 +43,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
                 new RideModeStopPacket(client.Tamer.GeneralHandler, client.Partner.GeneralHandler).Serialize());
 
+            _dungeonsServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+
+            _dungeonsServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                new RideModeStopPacket(client.Tamer.GeneralHandler, client.Partner.GeneralHandler).Serialize());
+
             _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
                 new UpdateMovementSpeedPacket(client.Tamer).Serialize());
 
             _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                new RideModeStopPacket(client.Tamer.GeneralHandler, client.Partner.GeneralHandler).Serialize());
+
+            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+
+            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
                 new RideModeStopPacket(client.Tamer.GeneralHandler, client.Partner.GeneralHandler).Serialize());
 
             _logger.Verbose($"Character {client.TamerId} ended riding mode with " +

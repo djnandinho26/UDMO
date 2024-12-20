@@ -16,17 +16,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly PartyManager _partyManager;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
 
         public PartyLeaderChangePacketProcessor(
             PartyManager partyManager,
             MapServer mapServer,
             DungeonsServer dungeonServer,
+            EventServer eventServer,
+            PvpServer pvpServer,
             ILogger logger)
         {
             _partyManager = partyManager;
             _mapServer = mapServer;
             _dungeonServer = dungeonServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _logger = logger;
         }
 
@@ -51,7 +57,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
                 _dungeonServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
-                //_eventServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
+                _eventServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
+                _pvpServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(newLeaderSlot).Serialize());
 
                 _logger.Debug($"Tamer {client.TamerId} : {client.Tamer.Name} appointed party slot {newLeaderSlot} as leader.");
             }

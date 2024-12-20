@@ -24,6 +24,7 @@ using DigitalWorldOnline.GameHost;
 using MediatR;
 using Serilog;
 using DigitalWorldOnline.Commons.Enums;
+using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.GameHost.EventsServer;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
@@ -42,7 +43,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ISender _sender;
         private readonly IMapper _mapper;
 
-        public ComplementarInformationPacketProcessor(PartyManager partyManager, MapServer mapServer, DungeonsServer dungeonsServer,
+        public ComplementarInformationPacketProcessor(PartyManager partyManager, MapServer mapServer,
+            DungeonsServer dungeonsServer,
             EventServer eventServer, PvpServer pvpServer, AssetsLoader assets,
             ILogger logger, ISender sender, IMapper mapper)
         {
@@ -63,7 +65,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _logger.Debug($"Sending seal info packet for character {client.TamerId}...");
             client.Send(new SealsPacket(client.Tamer.SealList));
-
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
             if (client.Tamer.TamerShop?.Count > 0)
             {
                 _logger.Debug($"Recovering tamer shop items for character {client.TamerId}...");
@@ -129,9 +131,32 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             if (buffData != null)
                             {
                                 buffData.SetDuration(0, true);
+                                switch (mapConfig?.Type)
+                                {
+                                    case MapTypeEnum.Dungeon:
+                                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0)
+                                                .Serialize());
+                                        break;
 
-                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0).Serialize());
+                                    case MapTypeEnum.Event:
+                                        _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0)
+                                                .Serialize());
+                                        break;
+
+                                    case MapTypeEnum.Pvp:
+                                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0)
+                                                .Serialize());
+                                        break;
+
+                                    default:
+                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new UpdateBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0)
+                                                .Serialize());
+                                        break;
+                                }
                             }
                         }
                     });
@@ -171,7 +196,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _logger.Debug($"Sending tamer XAI resources packet for character {client.TamerId}...");
                 client.Send(new TamerXaiResourcesPacket(client.Tamer.XGauge, client.Tamer.XCrystals));
             }
-            
+
             if (!client.SentOnceDataSent)
             {
                 _logger.Debug($"Sending tamer relations packet for character {client.TamerId}...");
@@ -180,8 +205,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (!client.DungeonMap)
                 {
-                    var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
-
                     var channels = new Dictionary<byte, byte>();
 
                     var mapChannels = await _sender.Send(new ChannelsByMapIdQuery(client.Tamer.Location.MapId));
@@ -217,7 +240,24 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     if (guildMember.CharacterInfo == null)
                     {
-                        var guildMemberClient = _mapServer.FindClientByTamerId(guildMember.CharacterId);
+                        GameClient? guildMemberClient;
+                        switch (mapConfig?.Type)
+                        {
+                            case MapTypeEnum.Dungeon:
+                                guildMemberClient = _dungeonServer.FindClientByTamerId(guildMember.CharacterId);
+                                break;
+                            case MapTypeEnum.Event:
+                                guildMemberClient = _eventServer.FindClientByTamerId(guildMember.CharacterId);
+                                break;
+
+                            case MapTypeEnum.Pvp:
+                                guildMemberClient = _pvpServer.FindClientByTamerId(guildMember.CharacterId);
+                                break;
+
+                            default:
+                                guildMemberClient = _mapServer.FindClientByTamerId(guildMember.CharacterId);
+                                break;
+                        }
 
                         if (guildMemberClient != null)
                         {
@@ -241,6 +281,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             new GuildInformationPacket(client.Tamer.Guild).Serialize());
                         _dungeonServer.BroadcastForUniqueTamer(guildMember.CharacterId,
                             new GuildInformationPacket(client.Tamer.Guild).Serialize());
+                        _eventServer.BroadcastForUniqueTamer(guildMember.CharacterId,
+                            new GuildInformationPacket(client.Tamer.Guild).Serialize());
+                        _pvpServer.BroadcastForUniqueTamer(guildMember.CharacterId,
+                            new GuildInformationPacket(client.Tamer.Guild).Serialize());
                     }
                 }
 
@@ -259,7 +303,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 // _logger.Information($"Sending friend connection packet for character {friend.CharacterId}...");
                 _mapServer.BroadcastForUniqueTamer(friend.CharacterId,
                     new FriendConnectPacket(client.Tamer.Name).Serialize());
+                _eventServer.BroadcastForUniqueTamer(friend.CharacterId,
+                    new FriendConnectPacket(client.Tamer.Name).Serialize());
                 _dungeonServer.BroadcastForUniqueTamer(friend.CharacterId,
+                    new FriendConnectPacket(client.Tamer.Name).Serialize());
+                _pvpServer.BroadcastForUniqueTamer(friend.CharacterId,
                     new FriendConnectPacket(client.Tamer.Name).Serialize());
             });
 
@@ -290,33 +338,31 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             switch (mapTypeConfig!.Type)
             {
                 case MapTypeEnum.Dungeon:
-                    {
-
-                    }
+                {
+                }
                     break;
 
                 case MapTypeEnum.Event:
-                    {
-                        var map = _eventServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
+                {
+                    var map = _eventServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
 
-                        if (map != null)
-                            NotifyTamerKillSpawnEnteringMap(client, map);
-                    }
+                    if (map != null)
+                        NotifyTamerKillSpawnEnteringMap(client, map);
+                }
                     break;
 
                 case MapTypeEnum.Pvp:
-                    {
-
-                    }
+                {
+                }
                     break;
 
                 case MapTypeEnum.Default:
-                    {
-                        var map = _mapServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
+                {
+                    var map = _mapServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
 
-                        if (map != null)
-                            NotifyTamerKillSpawnEnteringMap(client, map);
-                    }
+                    if (map != null)
+                        NotifyTamerKillSpawnEnteringMap(client, map);
+                }
                     break;
             }
 

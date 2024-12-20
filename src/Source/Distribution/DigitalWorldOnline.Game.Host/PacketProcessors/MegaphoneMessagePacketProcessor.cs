@@ -51,8 +51,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _logger.Warning($"Item not found in slot {slot} for player {client.TamerId} megaphone.");
                 return;
             }
-
-            _mapServer.BroadcastGlobal(new ChatMessagePacket(message, ChatTypeEnum.Megaphone, client.Tamer.Name, 
+            client.SendToAll(new ChatMessagePacket(message, ChatTypeEnum.Megaphone, client.Tamer.Name, 
+                inventoryItem.ItemId, client.Tamer.Level).Serialize());
+            /*_mapServer.BroadcastGlobal(new ChatMessagePacket(message, ChatTypeEnum.Megaphone, client.Tamer.Name, 
                 inventoryItem.ItemId, client.Tamer.Level).Serialize());
 
             _dungeonServer.BroadcastGlobal(new ChatMessagePacket(message, ChatTypeEnum.Megaphone, client.Tamer.Name,
@@ -62,7 +63,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 inventoryItem.ItemId, client.Tamer.Level).Serialize());
 
             _pvpServer.BroadcastGlobal(new ChatMessagePacket(message, ChatTypeEnum.Megaphone, client.Tamer.Name,
-                inventoryItem.ItemId, client.Tamer.Level).Serialize());
+                inventoryItem.ItemId, client.Tamer.Level).Serialize());*/
 
             await _mapServer.CallDiscord(message, client, "ffffff", "P");
             _logger.Verbose($"Character {client.TamerId} sent megaphone with item {inventoryItem.ItemId} and message {message}.");

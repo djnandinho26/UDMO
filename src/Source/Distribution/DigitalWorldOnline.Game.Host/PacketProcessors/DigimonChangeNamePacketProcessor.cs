@@ -1,10 +1,13 @@
 ﻿using DigitalWorldOnline.Application.Separar.Commands.Update;
+using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Serilog;
 
@@ -16,17 +19,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
         private readonly ISender _sender;
 
         public DigimonChangeNamePacketProcessor(
             MapServer mapServer,
             DungeonsServer dungeonServer,
+            EventServer eventServer,
+            PvpServer pvpServer,
             ILogger logger,
             ISender sender)
         {
             _mapServer = mapServer;
             _dungeonServer = dungeonServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _logger = logger;
             _sender = sender;
         }
@@ -41,7 +50,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var digimonID = client.Tamer.Partner.Id;
 
             var inventoryItem = client.Tamer.Inventory.FindItemBySlot(itemSlot);
-
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
             if (inventoryItem != null)
             {
                 client.Tamer.Inventory.RemoveOrReduceItem(inventoryItem, 1, itemSlot);
@@ -49,15 +58,37 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 await _sender.Send(new ChangeDigimonNameByIdCommand(digimonID, newName));
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                
-                _mapServer.BroadcastForTamerViews(client, UtilitiesFunctions.GroupPackets(
-                    new UnloadTamerPacket(client.Tamer).Serialize(),
-                    new LoadTamerPacket(client.Tamer).Serialize()
-                ));
-                _dungeonServer.BroadcastForTamerViews(client.TamerId, UtilitiesFunctions.GroupPackets(
-                    new UnloadTamerPacket(client.Tamer).Serialize(),
-                    new LoadTamerPacket(client.Tamer).Serialize()
-                ));
+
+                switch (mapConfig?.Type)
+                {
+                    case MapTypeEnum.Dungeon:
+                        _dungeonServer.BroadcastForTamerViews(client.TamerId, UtilitiesFunctions.GroupPackets(
+                            new UnloadTamerPacket(client.Tamer).Serialize(),
+                            new LoadTamerPacket(client.Tamer).Serialize()
+                        ));
+                        break;
+
+                    case MapTypeEnum.Event:
+                        _eventServer.BroadcastForTamerViews(client, UtilitiesFunctions.GroupPackets(
+                            new UnloadTamerPacket(client.Tamer).Serialize(),
+                            new LoadTamerPacket(client.Tamer).Serialize()
+                        ));
+                        break;
+
+                    case MapTypeEnum.Pvp:
+                        _pvpServer.BroadcastForTamerViews(client, UtilitiesFunctions.GroupPackets(
+                            new UnloadTamerPacket(client.Tamer).Serialize(),
+                            new LoadTamerPacket(client.Tamer).Serialize()
+                        ));
+                        break;
+
+                    default:
+                        _mapServer.BroadcastForTamerViews(client, UtilitiesFunctions.GroupPackets(
+                            new UnloadTamerPacket(client.Tamer).Serialize(),
+                            new LoadTamerPacket(client.Tamer).Serialize()
+                        ));
+                        break;
+                }
                 //client.Send(new DigimonChangeNamePacket(CharacterChangeNameType.Sucess, itemSlot, oldName, newName));
                 //client.Send(new DigimonChangeNamePacket(CharacterChangeNameType.Complete, oldName, newName, itemSlot));
 
@@ -67,7 +98,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 _logger.Error($"Item nao encontrado !!");
             }
-
         }
     }
 }

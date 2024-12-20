@@ -10,6 +10,7 @@ using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -27,16 +28,27 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly PartyManager _partyManager;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
         private readonly ISender _sender;
         private readonly IConfiguration _configuration;
 
-        public PartyMemberLeavePacketProcessor(PartyManager partyManager, MapServer mapServer, DungeonsServer dungeonServer,
-            ILogger logger, ISender sender, IConfiguration configuration)
+        public PartyMemberLeavePacketProcessor(
+            PartyManager partyManager,
+            MapServer mapServer,
+            DungeonsServer dungeonServer,
+            EventServer eventServer,
+            PvpServer pvpServer,
+            ILogger logger, 
+            ISender sender,
+            IConfiguration configuration)
         {
             _partyManager = partyManager;
             _mapServer = mapServer;
             _dungeonServer = dungeonServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _logger = logger;
             _sender = sender;
             _configuration = configuration;
@@ -70,6 +82,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(sortedPlayer).Serialize());
                         _dungeonServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(sortedPlayer).Serialize());
+                        _eventServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(sortedPlayer).Serialize());
+                        _pvpServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyLeaderChangedPacket(sortedPlayer).Serialize());
                     }
                     else if (party.Members.Count <= 2)
                     {
@@ -92,6 +106,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             {
                                 party.RemoveMember(leaveTargetKey);
                                 _mapServer.BroadcastForUniqueTamer(target.Id, new PartyMemberLeavePacket(leaveTargetKey).Serialize());
+                                _eventServer.BroadcastForUniqueTamer(target.Id, new PartyMemberLeavePacket(leaveTargetKey).Serialize());
+                                _pvpServer.BroadcastForUniqueTamer(target.Id, new PartyMemberLeavePacket(leaveTargetKey).Serialize());
                                 continue;
                             }
                             else
@@ -149,12 +165,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         var partyMember = party[client.TamerId].Value;
 
-                        var leaveClient = _mapServer.FindClientByTamerId(partyMember.Id);
+                        var leaveClient = ((_mapServer.FindClientByTamerId(partyMember.Id) ?? _dungeonServer.FindClientByTamerId(partyMember.Id)) ??
+                                           _eventServer.FindClientByTamerId(partyMember.Id)) ?? _pvpServer.FindClientByTamerId(partyMember.Id);
 
-                        if (leaveClient == null) leaveClient = _dungeonServer.FindClientByTamerId(partyMember.Id);
-
-                        if (leaveClient != null)
-                            leaveClient.Send(new PartyMemberLeavePacket(leaveTargetKey).Serialize());
+                        leaveClient?.Send(new PartyMemberLeavePacket(leaveTargetKey).Serialize());
 
                         party.RemoveMember(leaveTargetKey);
 
@@ -201,14 +215,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                 dungeonClient.Tamer.Location.Y));
                         }
 
-                        foreach (var target in party.Members.Values)
+                        foreach (var targetClient in party.Members.Values.Select(target => ((_mapServer.FindClientByTamerId(target.Id) ?? _dungeonServer.FindClientByTamerId(target.Id)) ??
+                                     _eventServer.FindClientByTamerId(target.Id)) ?? _pvpServer.FindClientByTamerId(target.Id)).OfType<GameClient>())
                         {
-                            var targetClient = _mapServer.FindClientByTamerId(target.Id);
-
-                            if (targetClient == null) targetClient = _dungeonServer.FindClientByTamerId(target.Id);
-
-                            if (targetClient == null) continue;
-
                             targetClient.Send(new PartyMemberLeavePacket(leaveTargetKey).Serialize());
                         }
                     }

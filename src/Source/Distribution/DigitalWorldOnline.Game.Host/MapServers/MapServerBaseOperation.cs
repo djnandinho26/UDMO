@@ -4,6 +4,7 @@ using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Models;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Config;
+using DigitalWorldOnline.Commons.Models.Config.Events;
 using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Commons.Models.Summon;

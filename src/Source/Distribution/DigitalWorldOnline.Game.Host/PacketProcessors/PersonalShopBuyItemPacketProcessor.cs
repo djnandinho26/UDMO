@@ -1,7 +1,9 @@
 ﻿using AutoMapper;
 using DigitalWorldOnline.Application;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
+using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Extensions;
@@ -12,6 +14,7 @@ using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Packets.PersonalShop;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Serilog;
 
@@ -23,14 +26,28 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         private readonly AssetsLoader _assets;
         private readonly MapServer _mapServer;
+        private readonly DungeonsServer _dungeonsServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
         private readonly ISender _sender;
         private bool hasItem = false;
 
-        public PersonalShopPurchaseItemPacketProcessor(MapServer mapServer, AssetsLoader assets, ILogger logger, IMapper mapper, ISender sender)
+        public PersonalShopPurchaseItemPacketProcessor(
+            MapServer mapServer,
+            DungeonsServer dungeonsServer,
+            EventServer eventServer,
+            PvpServer pvpServer,
+            AssetsLoader assets,
+            ILogger logger,
+            IMapper mapper,
+            ISender sender)
         {
             _mapServer = mapServer;
+            _dungeonsServer = dungeonsServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _assets = assets;
             _logger = logger;
             _mapper = mapper;
@@ -54,10 +71,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             _logger.Information($"Searching Personal Shop {shopHandler}...");
             var PersonalShop = _mapServer.FindClientByTamerHandle(shopHandler);
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
 
             if (PersonalShop != null)
             {
-                _logger.Information($"boughtItemId: {boughtItemId} | boughtUnitPrice: {boughtUnitPrice} | boughtAmount: {boughtAmount}");
+                _logger.Information(
+                    $"boughtItemId: {boughtItemId} | boughtUnitPrice: {boughtUnitPrice} | boughtAmount: {boughtAmount}");
 
                 hasItem = false;
                 var totalValue = boughtUnitPrice * boughtAmount;
@@ -66,7 +85,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Tamer.Inventory.RemoveBits(totalValue);
 
                 client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
-                await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory.Id, client.Tamer.Inventory.Bits));
+                await _sender.Send(
+                    new UpdateItemListBitsCommand(client.Tamer.Inventory.Id, client.Tamer.Inventory.Bits));
 
                 /*var Slot = PersonalShop.Tamer.TamerShop.Items.FirstOrDefault(x => x.ItemId == boughtItemId);
                 PersonalShop.Tamer.TamerShop.Items[Slot.Slot].Amount -= boughtAmount;*/
@@ -78,12 +98,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _logger.Information($"Seller win {totalValuewithDescount} bits");
                 PersonalShop.Tamer.Inventory.AddBits(totalValuewithDescount);
 
-                PersonalShop.Send(new LoadInventoryPacket(PersonalShop.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
-                await _sender.Send(new UpdateItemListBitsCommand(PersonalShop.Tamer.Inventory.Id, PersonalShop.Tamer.Inventory.Bits));
+                PersonalShop.Send(new LoadInventoryPacket(PersonalShop.Tamer.Inventory, InventoryTypeEnum.Inventory)
+                    .Serialize());
+                await _sender.Send(new UpdateItemListBitsCommand(PersonalShop.Tamer.Inventory.Id,
+                    PersonalShop.Tamer.Inventory.Bits));
 
                 // ------------------------------------------------------------------------------------
 
-                _logger.Debug($"Tentando comprar Item em {PersonalShop.Tamer.ShopName} {shopHandler} » {shopHandler} {shopSlot} {boughtItemId} {boughtAmount} {boughtUnitPrice}.");
+                _logger.Debug(
+                    $"Tentando comprar Item em {PersonalShop.Tamer.ShopName} {shopHandler} » {shopHandler} {shopSlot} {boughtItemId} {boughtAmount} {boughtUnitPrice}.");
                 var newItem = new ItemModel(boughtItemId, boughtAmount);
                 newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == boughtItemId));
 
@@ -104,9 +127,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 _logger.Debug($"Sending consigned shop item list view packet...");
                 client.Send(new PersonalShopItemsViewPacket(PersonalShop.Tamer.TamerShop, PersonalShop.Tamer.ShopName));
-                PersonalShop.Send(new PersonalShopItemsViewPacket(PersonalShop.Tamer.TamerShop, PersonalShop.Tamer.ShopName));
+                PersonalShop.Send(new PersonalShopItemsViewPacket(PersonalShop.Tamer.TamerShop,
+                    PersonalShop.Tamer.ShopName));
 
-                PersonalShop.Send(new NoticeMessagePacket($"You sold {newItem.Amount}x {newItem.ItemInfo.Name} for {client.Tamer.Name}!"));
+                PersonalShop.Send(
+                    new NoticeMessagePacket(
+                        $"You sold {newItem.Amount}x {newItem.ItemInfo.Name} for {client.Tamer.Name}!"));
 
                 foreach (var item in PersonalShop.Tamer.TamerShop.Items.Where(x => x.ItemId > 0))
                 {
@@ -118,8 +144,32 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     PersonalShop.Send(new NoticeMessagePacket($"Your personal shop as been closed!"));
                     PersonalShop.Tamer.UpdateCurrentCondition(ConditionEnum.Default);
                     PersonalShop.Send(new PersonalShopPacket());
+                    switch (mapConfig?.Type)
+                    {
+                        case MapTypeEnum.Dungeon:
+                            _dungeonsServer.BroadcastForTamerViewsAndSelf(PersonalShop.TamerId,
+                                new SyncConditionPacket(PersonalShop.Tamer.GeneralHandler,
+                                    PersonalShop.Tamer.CurrentCondition).Serialize());
+                            break;
 
-                    _mapServer.BroadcastForTamerViewsAndSelf(PersonalShop.TamerId, new SyncConditionPacket(PersonalShop.Tamer.GeneralHandler, PersonalShop.Tamer.CurrentCondition).Serialize());
+                        case MapTypeEnum.Event:
+                            _eventServer.BroadcastForTamerViewsAndSelf(PersonalShop.TamerId,
+                                new SyncConditionPacket(PersonalShop.Tamer.GeneralHandler,
+                                    PersonalShop.Tamer.CurrentCondition).Serialize());
+                            break;
+
+                        case MapTypeEnum.Pvp:
+                            _pvpServer.BroadcastForTamerViewsAndSelf(PersonalShop.TamerId,
+                                new SyncConditionPacket(PersonalShop.Tamer.GeneralHandler,
+                                    PersonalShop.Tamer.CurrentCondition).Serialize());
+                            break;
+
+                        default:
+                            _mapServer.BroadcastForTamerViewsAndSelf(PersonalShop.TamerId,
+                                new SyncConditionPacket(PersonalShop.Tamer.GeneralHandler,
+                                    PersonalShop.Tamer.CurrentCondition).Serialize());
+                            break;
+                    }
                 }
             }
             else

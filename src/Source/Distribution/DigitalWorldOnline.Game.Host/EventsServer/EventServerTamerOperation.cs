@@ -1,4 +1,6 @@
-﻿using DigitalWorldOnline.Application.Separar.Commands.Update;
+﻿using System.Diagnostics;
+using DigitalWorldOnline.Application.Separar.Commands.Update;
+using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
@@ -7,26 +9,31 @@ using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Config;
 using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Models.Map;
+using DigitalWorldOnline.Commons.Models.Summon;
+using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.GameServer.Combat;
 using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
-
 using System.Text;
+using DigitalWorldOnline.Commons.Models.Config.Events;
 
 namespace DigitalWorldOnline.GameHost.EventsServer
 {
     public sealed partial class EventServer
     {
-        public Task TamerOperation(GameMap map)
+        public void TamerOperation(GameMap map)
         {
             if (!map.ConnectedTamers.Any())
             {
                 map.SetNoTamers();
-                return Task.CompletedTask;
+                return;
             }
+
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
             foreach (var tamer in map.ConnectedTamers)
             {
@@ -35,17 +42,42 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 if (client == null || !client.IsConnected || client.Partner == null)
                     continue;
 
+                CheckLocationDebuff(client);
+                //MapBuff(client);
+
                 GetInViewMobs(map, tamer);
+                GetInViewMobs(map, tamer, true);
 
                 ShowOrHideTamer(map, tamer);
+                ShowOrHideConsignedShop(map, tamer);
 
                 if (tamer.TargetMobs.Count > 0)
-                {
-                    _logger.Debug($"Target found !!");
                     PartnerAutoAttackMob(tamer);
+
+                if (tamer.TargetSummonMobs.Count > 0)
+                    PartnerAutoAttackSummon(tamer);
+
+                if (tamer.TargetPartner != null && client.PvpMap)
+                {
+                    _logger.Information($"Digimon Target found");
+
+                    if (tamer.Partner.Level <= 25 || tamer.TargetPartner.Level <= 25)
+                    {
+                        _logger.Information($"You cant attack noobs !!");
+                    }
+                    else
+                    {
+                        _logger.Information($"Calling PartnerAutoAttackPlayer");
+                        PartnerAutoAttackPlayer(tamer);
+                    }
                 }
                     
                 CheckTimeReward(client);
+
+                if (client.Tamer.AttendanceReward.LastRewardDate.Day < DateTime.Now.Day)
+                {
+                    CheckMonthlyReward(client);
+                }
 
                 tamer.AutoRegen();
                 tamer.ActiveEvolutionReduction();
@@ -63,11 +95,19 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                         BroadcastForTamerViewsAndSelf(tamer.Id, new RideModeStopPacket(tamer.GeneralHandler, tamer.Partner.GeneralHandler).Serialize());
                     }
 
+                    var buffToRemove = client.Tamer.Partner.BuffList.TamerBaseSkill();
+                    if (buffToRemove != null)
+                    {
+                        BroadcastForTamerViewsAndSelf(client.TamerId, new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
+                    }
+
+                    client.Tamer.RemovePartnerPassiveBuff();
+
                     map.BroadcastForTamerViewsAndSelf(tamer.Id,
                         new DigimonEvolutionSucessPacket(tamer.GeneralHandler,
-                        tamer.Partner.GeneralHandler,
-                        tamer.Partner.BaseType,
-                        DigimonEvolutionEffectEnum.Back).Serialize());
+                            tamer.Partner.GeneralHandler,
+                            tamer.Partner.BaseType,
+                            DigimonEvolutionEffectEnum.Back).Serialize());
 
                     var currentHp = client.Partner.CurrentHp;
                     var currentMaxHp = client.Partner.HP;
@@ -86,10 +126,165 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                         )
                     );
 
+                    client.Tamer.SetPartnerPassiveBuff();
+
                     client.Partner.AdjustHpAndDs(currentHp, currentMaxHp, currentDs, currentMaxDs);
 
+                    foreach (var buff in client.Tamer.Partner.BuffList.ActiveBuffs)
+                        buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
+                            x.SkillCode == buff.SkillId && buff.BuffInfo == null ||
+                            x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
+
                     client.Send(new UpdateStatusPacket(tamer));
-                    _sender.Send(new UpdateCharacterBasicInfoCommand(client.Tamer));
+
+                    if (client.Tamer.Partner.BuffList.TamerBaseSkill() != null)
+                    {
+                        var buffToApply = client.Tamer.Partner.BuffList.Buffs.Where(x => x.Duration == 0).ToList();
+
+                        buffToApply.ForEach(digimonBuffModel =>
+                        {
+                            BroadcastForTamerViewsAndSelf(client.Tamer.Id,
+                                new AddBuffPacket(client.Tamer.Partner.GeneralHandler, digimonBuffModel.BuffId,
+                                    digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
+                        });
+                    }
+
+                    var party = _partyManager.FindParty(client.TamerId);
+
+                    if (party != null)
+                    {
+                        party.UpdateMember(party[client.TamerId], client.Tamer);
+
+                        BroadcastForTargetTamers(party.GetMembersIdList(),
+                            new PartyMemberInfoPacket(party[client.TamerId]).Serialize());
+                    }
+
+                    _sender.Send(new UpdatePartnerCurrentTypeCommand(client.Partner));
+                    _sender.Send(new UpdateCharacterActiveEvolutionCommand(tamer.ActiveEvolution));
+                    _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
+                }
+
+                if (tamer.CheckExpiredItemsTime)
+                {
+                    tamer.SetLastExpiredItemsCheck();
+
+                    tamer.Inventory.EquippedItems.ForEach(item =>
+                    {
+                        if (item.ItemInfo != null && item.IsTemporary && item.Expired)
+                        {
+                            if (item.ItemInfo.UseTimeType == 2 || item.ItemInfo.UseTimeType == 3)
+                            {
+                                item.SetFirstExpired(false);
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabInven, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
+                            }
+                            else if (item.ItemInfo.UseTimeType == 4)
+                            {
+                                item.SetFirstExpired(false);
+                            }
+                            else
+                            {
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabInven, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
+                                tamer.Inventory.RemoveOrReduceItem(item, item.Amount);
+                            }
+                        }
+                    });
+
+                    tamer.Warehouse.EquippedItems.ForEach(item =>
+                    {
+                        if (item.ItemInfo != null && item.IsTemporary && item.Expired)
+                        {
+                            if (item.ItemInfo.UseTimeType == 2 || item.ItemInfo.UseTimeType == 3)
+                            {
+                                item.SetFirstExpired(false);
+
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabWarehouse, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
+                            }
+                            else
+                            {
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabWarehouse, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
+                                tamer.Warehouse.RemoveOrReduceItem(item, item.Amount);
+                            }
+                        }
+                    });
+
+                    tamer.AccountWarehouse?.EquippedItems.ForEach(item =>
+                    {
+                        if (item.ItemInfo != null && item.IsTemporary && item.Expired)
+                        {
+                            if (item.ItemInfo.UseTimeType == 2 || item.ItemInfo.UseTimeType == 3)
+                            {
+                                item.SetFirstExpired(false);
+
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabShareStash, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
+                            }
+                            else
+                            {
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabShareStash, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
+                                tamer.AccountWarehouse.RemoveOrReduceItem(item, item.Amount);
+                            }
+                        }
+                    });
+
+                    tamer.Equipment.EquippedItems.ForEach(item =>
+                    {
+                        if (item.ItemInfo != null && item.IsTemporary && item.Expired)
+                        {
+                            if (item.ItemInfo.UseTimeType == 2)
+                            {
+                                item.SetFirstExpired(false);
+
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabEquip, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
+                            }
+                            else
+                            {
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabEquip, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
+                                tamer.Equipment.RemoveOrReduceItem(item, item.Amount);
+                            }
+                        }
+                    });
+
+                    tamer.ChipSets.EquippedItems.ForEach(item =>
+                    {
+                        if (item.ItemInfo != null && item.IsTemporary && item.Expired)
+                        {
+                            if (item.ItemInfo.UseTimeType == 2)
+                            {
+                                item.SetFirstExpired(false);
+
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabChipset, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Quit));
+                            }
+                            else
+                            {
+                                client.Send(new ItemExpiredPacket(InventorySlotTypeEnum.TabChipset, item.Slot,
+                                    item.ItemId, ExpiredTypeEnum.Remove));
+                                tamer.ChipSets.RemoveOrReduceItem(item, item.Amount);
+                            }
+                        }
+                    });
+
+                    _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+                    _sender.Send(new UpdateItemsCommand(client.Tamer.Warehouse));
+
+                    if (client.Tamer.AccountWarehouse != null)
+                    {
+                        _sender.Send(new UpdateItemsCommand(client.Tamer.AccountWarehouse));
+                    }
+                    else
+                    {
+                        _logger.Debug($"Account warehouse for tamerId: {client.TamerId} with name: {client.Tamer.Name} is null");
+                    }
+
+                    _sender.Send(new UpdateItemsCommand(client.Tamer.Equipment));
+                    _sender.Send(new UpdateItemsCommand(client.Tamer.ChipSets));
                 }
 
                 if (tamer.CheckBuffsTime)
@@ -98,17 +293,21 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
                     if (tamer.BuffList.HasActiveBuffs)
                     {
-                        var buffsToRemove = tamer.BuffList.Buffs
-                            .Where(x => x.Expired)
-                            .ToList();
+                        var buffsToRemove = tamer.BuffList.Buffs.Where(x => x.Expired).ToList();
 
                         buffsToRemove.ForEach(buffToRemove =>
-                        { map.BroadcastForTamerViewsAndSelf(tamer.Id, new RemoveBuffPacket(tamer.GeneralHandler, buffToRemove.BuffId).Serialize()); });
+                        {
+                            tamer.BuffList.Remove(buffToRemove.BuffId);
+                            map.BroadcastForTamerViewsAndSelf(tamer.Id,
+                                new RemoveBuffPacket(tamer.GeneralHandler, buffToRemove.BuffId).Serialize());
+                        });
 
                         if (buffsToRemove.Any())
                         {
                             client?.Send(new UpdateStatusPacket(tamer));
-                            map.BroadcastForTargetTamers(map.TamersView[tamer.Id], new UpdateCurrentHPRatePacket(tamer.GeneralHandler, tamer.HpRate).Serialize());
+                            map.BroadcastForTargetTamers(tamer.Id,
+                                new UpdateCurrentHPRatePacket(tamer.GeneralHandler, tamer.HpRate).Serialize());
+                            _sender.Send(new UpdateCharacterBuffListCommand(tamer.BuffList));
                         }
                     }
 
@@ -118,15 +317,40 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                             .Where(x => x.Expired)
                             .ToList();
 
+
                         buffsToRemove.ForEach(buffToRemove =>
-                        { map.BroadcastForTamerViewsAndSelf(tamer.Id, new RemoveBuffPacket(tamer.Partner.GeneralHandler, buffToRemove.BuffId).Serialize()); });
+                        {
+                            tamer.Partner.BuffList.Remove(buffToRemove.BuffId);
+                            map.BroadcastForTamerViewsAndSelf(tamer.Id,
+                                new RemoveBuffPacket(tamer.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
+                        });
 
                         if (buffsToRemove.Any())
                         {
-
                             client?.Send(new UpdateStatusPacket(tamer));
-                            map.BroadcastForTargetTamers(map.TamersView[tamer.Id], new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate).Serialize());
+                            map.BroadcastForTargetTamers(tamer.Id,
+                                new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate)
+                                    .Serialize());
+                            _sender.Send(new UpdateDigimonBuffListCommand(tamer.Partner.BuffList));
                         }
+                    }
+
+                    if (tamer.HaveActiveCashSkill)
+                    {
+                        var buffsToRemove = tamer.ActiveSkill
+                            .Where(x => x.Expired && x.SkillId > 0 && x.Type == TamerSkillTypeEnum.Cash)
+                            .ToList();
+
+                        buffsToRemove.ForEach(buffToRemove =>
+                        {
+                            var activeSkill = tamer.ActiveSkill.FirstOrDefault(x => x.Id == buffToRemove.Id);
+
+                            activeSkill.SetTamerSkill(0, 0, TamerSkillTypeEnum.Normal);
+
+                            client?.Send(new ActiveTamerCashSkillExpire(activeSkill.SkillId));
+
+                            _sender.Send(new UpdateTamerSkillCooldownByIdCommand(activeSkill));
+                        });
                     }
                 }
 
@@ -134,40 +358,160 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 {
                     tamer.UpdateSyncResourcesTime();
 
-                    client?.Send(new UpdateCurrentResourcesPacket(tamer.GeneralHandler, (short)tamer.CurrentHp, (short)tamer.CurrentDs, (short)CharacterModel.Fatigue));
+                    client?.Send(new UpdateCurrentResourcesPacket(tamer.GeneralHandler, (short)tamer.CurrentHp, (short)tamer.CurrentDs, 0));
                     client?.Send(new UpdateCurrentResourcesPacket(tamer.Partner.GeneralHandler, (short)tamer.Partner.CurrentHp, (short)tamer.Partner.CurrentDs, 0));
                     client?.Send(new TamerXaiResourcesPacket(client.Tamer.XGauge, client.Tamer.XCrystals));
 
-                    map.BroadcastForTargetTamers(map.TamersView[tamer.Id], new UpdateCurrentHPRatePacket(tamer.GeneralHandler, tamer.HpRate).Serialize());
-                    map.BroadcastForTargetTamers(map.TamersView[tamer.Id], new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate).Serialize());
-                    map.BroadcastForTamerViewsAndSelf(tamer.Id, new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName).Serialize());
+                    map.BroadcastForTargetTamers(tamer.Id,
+                        new UpdateCurrentHPRatePacket(tamer.GeneralHandler, tamer.HpRate).Serialize());
+                    map.BroadcastForTargetTamers(tamer.Id,
+                        new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate).Serialize());
+                    map.BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName).Serialize());
+
+                    var party = _partyManager.FindParty(tamer.Id);
+
+                    if (party != null)
+                    {
+                        party.UpdateMember(party[tamer.Id], tamer);
+
+                        map.BroadcastForTargetTamers(party.GetMembersIdList(),
+                            new PartyMemberInfoPacket(party[tamer.Id]).Serialize());
+                    }
+
                 }
 
+                if (tamer.SaveResourcesTime)
+                {
+                    tamer.UpdateSaveResourcesTime();
+
+                    var subStopWatch = new Stopwatch();
+                    subStopWatch.Start();
+
+                    _sender.Send(new UpdateCharacterBasicInfoCommand(tamer));
+                    _sender.Send(new UpdateEvolutionCommand(tamer.Partner.CurrentEvolution));
+
+                    subStopWatch.Stop();
+
+                    if (subStopWatch.ElapsedMilliseconds >= 1500)
+                    {
+                        Console.WriteLine($"Save resources elapsed time: {subStopWatch.ElapsedMilliseconds}");
+                    }
+                }
+
+                if (tamer.ResetDailyQuestsTime)
+                {
+                    tamer.UpdateDailyQuestsSyncTime();
+
+                    var dailyQuestResetTime = _sender.Send(new DailyQuestResetTimeQuery());
+
+                    if (DateTime.Now >= dailyQuestResetTime.Result)
+                    {
+                        client?.Send(new QuestDailyUpdatePacket());
+                    }
+                }
             }
 
-            return Task.CompletedTask;
+            stopwatch.Stop();
+
+            var totalTime = stopwatch.Elapsed.TotalMilliseconds;
+
+            if (totalTime >= 1000)
+                Console.WriteLine($"TamersOperation ({map.ConnectedTamers.Count}): {totalTime}.");
         }
 
         private void GetInViewMobs(GameMap map, CharacterModel tamer)
         {
-            map.Mobs.ForEach(mob =>
+            List<long> mobsToAdd = new List<long>();
+            List<long> mobsToRemove = new List<long>();
+
+            // Criar uma cópia da lista de Mobs
+            List<MobConfigModel> mobsCopy = new List<MobConfigModel>(map.Mobs);
+
+            // Iterar sobre a cópia da lista
+            mobsCopy.ForEach(mob =>
             {
-                var distanceDifference = UtilitiesFunctions.CalculateDistance(
-                    tamer.Location.X,
-                    mob.CurrentLocation.X,
-                    tamer.Location.Y,
-                    mob.CurrentLocation.Y);
+                if (tamer.TempShowFullMap)
+                {
+                    if (!tamer.MobsInView.Contains(mob.Id))
+                        mobsToAdd.Add(mob.Id);
+                }
+                else
+                {
+                    var distanceDifference = UtilitiesFunctions.CalculateDistance(
+                        tamer.Location.X,
+                        mob.CurrentLocation.X,
+                        tamer.Location.Y,
+                        mob.CurrentLocation.Y);
 
-                if (distanceDifference <= _startToSee && !tamer.MobsInView.Contains(mob.Id))
-                    tamer.MobsInView.Add(mob.Id);
+                    if (distanceDifference <= _startToSee && !tamer.MobsInView.Contains(mob.Id))
+                        mobsToAdd.Add(mob.Id);
 
-                if (distanceDifference >= _stopSeeing && tamer.MobsInView.Contains(mob.Id))
-                    tamer.MobsInView.Remove(mob.Id);
+                    if (distanceDifference >= _stopSeeing && tamer.MobsInView.Contains(mob.Id))
+                        mobsToRemove.Add(mob.Id);
+                }
             });
+
+            // Adicionar e remover os IDs de Mob na lista tamer.MobsInView após a iteração
+            mobsToAdd.ForEach(id => tamer.MobsInView.Add(id));
+            mobsToRemove.ForEach(id => tamer.MobsInView.Remove(id));
         }
 
-        // ------------------------------------------------------------------------------------
+        private void GetInViewMobs(GameMap map, CharacterModel tamer, bool Summon)
+        {
+            List<long> mobsToAdd = new List<long>();
+            List<long> mobsToRemove = new List<long>();
 
+            // Criar uma cópia da lista de Mobs
+            List<SummonMobModel> mobsCopy = new List<SummonMobModel>(map.SummonMobs);
+
+            // Iterar sobre a cópia da lista
+            mobsCopy.ForEach(mob =>
+            {
+                if (tamer.TempShowFullMap)
+                {
+                    if (!tamer.MobsInView.Contains(mob.Id))
+                        mobsToAdd.Add(mob.Id);
+                }
+                else
+                {
+                    var distanceDifference = UtilitiesFunctions.CalculateDistance(
+                        tamer.Location.X,
+                        mob.CurrentLocation.X,
+                        tamer.Location.Y,
+                        mob.CurrentLocation.Y);
+
+                    if (distanceDifference <= _startToSee && !tamer.MobsInView.Contains(mob.Id))
+                        mobsToAdd.Add(mob.Id);
+
+                    if (distanceDifference >= _stopSeeing && tamer.MobsInView.Contains(mob.Id))
+                        mobsToRemove.Add(mob.Id);
+                }
+            });
+
+            // Adicionar e remover os IDs de Mob na lista tamer.MobsInView após a iteração
+            mobsToAdd.ForEach(id => tamer.MobsInView.Add(id));
+            mobsToRemove.ForEach(id => tamer.MobsInView.Remove(id));
+        }
+
+        /// <summary>
+        /// Updates the current partners handler values;
+        /// </summary>
+        /// <param name="mapId">Current map id</param>
+        /// <param name="digimons">Current digimons</param>
+        public void SetDigimonHandlers(int mapId, List<DigimonModel> digimons)
+        {
+            Maps.FirstOrDefault(x => x.MapId == mapId)?.SetDigimonHandlers(digimons);
+        }
+
+        // -----------------------------------------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Swaps the digimons current handler.
+        /// </summary>
+        /// <param name="mapId">Target map handler manager</param>
+        /// <param name="oldPartnerId">Old partner identifier</param>
+        /// <param name="newPartner">New partner</param>
         public void SwapDigimonHandlers(int mapId, DigimonModel oldPartner, DigimonModel newPartner)
         {
             Maps.FirstOrDefault(x => x.MapId == mapId)?.SwapDigimonHandlers(oldPartner, newPartner);
@@ -178,7 +522,123 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             Maps.FirstOrDefault(x => x.MapId == mapId && x.Channel == channel)?.SwapDigimonHandlers(oldPartner, newPartner);
         }
 
-        // ------------------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------------------------------------------------
+
+        private void CheckLocationDebuff(GameClient client)
+        {
+            if (client.Tamer.DebuffTime)
+            {
+                client.Tamer.UpdateDebuffTime();
+
+                // Verification for Dark Tower
+                if (client.Tamer.Location.MapId == 1109)
+                {
+                    var mapDebuff = client.Partner.DebuffList.ActiveBuffs.Where(x => x.BuffId == 50101);
+                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType)
+                        .EvolutionType;
+
+                    /*if (mapDebuff != null && (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie)
+                    {
+                        client.Tamer.ActiveEvolution.SetDs(0);
+                        client.Tamer.ActiveEvolution.SetXg(0);
+
+                        var buffToRemove = client.Partner.BuffList.TamerBaseSkill();
+
+                        if (buffToRemove != null)
+                        {
+                            BroadcastForTamerViewsAndSelf(client.TamerId, new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
+                        }
+
+                        client.Tamer.RemovePartnerPassiveBuff();
+
+                        BroadcastForTamerViewsAndSelf(client.TamerId, new DigimonEvolutionSucessPacket(client.Tamer.GeneralHandler,
+                            client.Partner.GeneralHandler, client.Partner.BaseType, DigimonEvolutionEffectEnum.Back).Serialize());
+
+                        var currentHp = client.Partner.CurrentHp;
+                        var currentMaxHp = client.Partner.HP;
+                        var currentDs = client.Partner.CurrentDs;
+                        var currentMaxDs = client.Partner.DS;
+
+                        client.Partner.UpdateCurrentType(client.Partner.BaseType);
+                        client.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(client.Partner.CurrentType));
+                        client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Partner.CurrentType, client.Partner.Level, client.Partner.Size));
+
+                        client.Tamer.SetPartnerPassiveBuff();
+
+                        client.Partner.AdjustHpAndDs(currentHp, currentMaxHp, currentDs, currentMaxDs);
+
+                        foreach (var buff in client.Partner.BuffList.ActiveBuffs)
+                            buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x => x.SkillCode == buff.SkillId && buff.BuffInfo == null || x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
+
+                        client.Send(new UpdateStatusPacket(client.Tamer));
+
+                        if (client.Partner.BuffList.TamerBaseSkill() != null)
+                        {
+                            var buffToApply = client.Partner.BuffList.Buffs.Where(x => x.Duration == 0).ToList();
+
+                            buffToApply.ForEach(buffToApply =>
+                            {
+                                BroadcastForTamerViewsAndSelf(client.Tamer.Id, new AddBuffPacket(client.Partner.GeneralHandler, buffToApply.BuffId, buffToApply.SkillId, (short)buffToApply.TypeN, 0).Serialize());
+                            });
+                        }
+
+                        var party = _partyManager.FindParty(client.TamerId);
+
+                        if (party != null)
+                        {
+                            party.UpdateMember(party[client.TamerId], client.Tamer);
+
+                            BroadcastForTargetTamers(party.GetMembersIdList(), new PartyMemberInfoPacket(party[client.TamerId]).Serialize());
+                        }
+
+                        _sender.Send(new UpdatePartnerCurrentTypeCommand(client.Partner));
+                        _sender.Send(new UpdateCharacterActiveEvolutionCommand(client.Tamer.ActiveEvolution));
+                        _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
+                    }*/
+                }
+
+                // Verifica Buff do PvpMap
+                var buff1 = client.Tamer.BuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == 40345);
+
+                if (buff1 != null)
+                {
+                    client.Tamer.BuffList.Buffs.Remove(buff1);
+
+                    client.Send(new UpdateStatusPacket(client.Tamer));
+                    client.Send(new RemoveBuffPacket(client.Tamer.GeneralHandler, buff1.BuffId).Serialize());
+                }
+
+                _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+
+            }
+
+        }
+
+        private async void MapBuff(GameClient client)
+        {
+            var buff = _assets.BuffInfo.Where(x => x.BuffId == 40327 || x.BuffId == 40350).ToList();
+
+            if (buff != null)
+            {
+                buff.ForEach(buffAsset =>
+                {
+                    if (!client.Tamer.BuffList.Buffs.Any(x => x.BuffId == buffAsset.BuffId))
+                    {
+                        var newCharacterBuff = CharacterBuffModel.Create(buffAsset.BuffId, buffAsset.SkillId, 2592000, 0);
+
+                        newCharacterBuff.SetBuffInfo(buffAsset);
+
+                        client.Tamer.BuffList.Buffs.Add(newCharacterBuff);
+
+                        BroadcastForTamerViewsAndSelf(client.TamerId, new AddBuffPacket(client.Tamer.GeneralHandler, buffAsset, 0, 0).Serialize());
+                    }
+                });
+
+                await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
+            }
+        }
+
+        // -----------------------------------------------------------------------------------------------------------------------
 
         private void ShowOrHideTamer(GameMap map, CharacterModel tamer)
         {
@@ -210,9 +670,15 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 if (targetClient != null)
                 {
                     targetClient.Send(new LoadTamerPacket(tamerToShow));
+                    targetClient.Send(new LoadBuffsPacket(tamerToShow));
+                    if (tamerToShow.InBattle)
+                    {
+                        targetClient.Send(new SetCombatOnPacket(tamerToShow.GeneralHandler));
+                        targetClient.Send(new SetCombatOnPacket(tamerToShow.Partner.GeneralHandler));
+                    }
 #if DEBUG
                     var serialized = SerializeShowTamer(tamerToShow);
-                    File.WriteAllText($"Shows\\Show{tamerToShow.Id}To{tamerToSeeId}_{DateTime.Now:dd_MM_yy_HH_mm_ss}.temp", serialized);
+                    //File.WriteAllText($"Shows\\Show{tamerToShow.Id}To{tamerToSeeId}_{DateTime.Now:dd_MM_yy_HH_mm_ss}.temp", serialized);
 #endif
                 }
             }
@@ -232,13 +698,13 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
 #if DEBUG
                     var serialized = SerializeHideTamer(tamerToHide);
-                    File.WriteAllText($"Hides\\Hide{tamerToHide.Id}To{tamerToBlindId}_{DateTime.Now:dd_MM_yy_HH_mm_ss}.temp", serialized);
+                    //File.WriteAllText($"Hides\\Hide{tamerToHide.Id}To{tamerToBlindId}_{DateTime.Now:dd_MM_yy_HH_mm_ss}.temp", serialized);
 #endif
                 }
             }
         }
 
-        // ------------------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------------------------------------------------
 
         private static string SerializeHideTamer(CharacterModel tamer)
         {
@@ -297,7 +763,109 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             return sb.ToString();
         }
 
-        // ------------------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------------------------------------------------
+
+        private void PartnerAutoAttackPlayer(CharacterModel tamer)
+        {
+            if (!tamer.Partner.AutoAttack || tamer.Partner.HP < 1)
+                return;
+
+            if (!tamer.Partner.IsAttacking && tamer.TargetPartner != null && tamer.TargetPartner.Alive)
+            {
+                tamer.Partner.SetEndAttacking(tamer.Partner.AS);
+                tamer.SetHidden(false);
+
+                if (!tamer.InBattle)
+                {
+                    _logger.Verbose($"Character {tamer.Id} engaged partner {tamer.TargetPartner.Id} - {tamer.TargetPartner.Name}.");
+
+                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
+
+                    tamer.StartBattle(tamer.TargetPartner);
+                }
+
+                if (!tamer.TargetPartner.Character.InBattle)
+                {
+                    BroadcastForTamerViewsAndSelf(tamer.Id, new SetCombatOnPacket(tamer.TargetPartner.Character.GeneralHandler).Serialize());
+
+                    tamer.TargetPartner.Character.StartBattle(tamer.Partner);
+                }
+
+                var missed = false;
+
+                if (missed)
+                {
+                    _logger.Warning(
+                        $"Partner {tamer.Partner.Id} missed hit on partner {tamer.TargetPartner.Id} - {tamer.TargetPartner.Name}.");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new MissHitPacket(tamer.Partner.GeneralHandler, tamer.TargetPartner.GeneralHandler)
+                            .Serialize());
+                }
+                else
+                {
+                    #region Hit Damage
+
+                    var critBonusMultiplier = 0.00;
+                    var blocked = false;
+                    var finalDmg = CalculateDamagePlayer(tamer, out critBonusMultiplier, out blocked);
+
+                    #endregion
+
+                    if (finalDmg <= 0) finalDmg = 1;
+                    if (finalDmg > tamer.TargetPartner.CurrentHp) finalDmg = tamer.TargetPartner.CurrentHp;
+
+                    var newHp = tamer.TargetPartner.ReceiveDamage(finalDmg);
+
+                    var hitType = blocked ? 2 : critBonusMultiplier > 0 ? 1 : 0;
+
+                    if (newHp > 0)
+                    {
+                        _logger.Warning(
+                            $"Partner {tamer.Partner.Id} inflicted {finalDmg} to partner {tamer.TargetPartner?.Id} - {tamer.TargetPartner?.Name}.");
+
+                        BroadcastForTamerViewsAndSelf(
+                            tamer.Id,
+                            new HitPacket(
+                                tamer.Partner.GeneralHandler,
+                                tamer.TargetPartner.GeneralHandler,
+                                finalDmg,
+                                tamer.TargetPartner.HP,
+                                newHp,
+                                hitType).Serialize());
+                    }
+                    else
+                    {
+                        _logger.Warning(
+                            $"Partner {tamer.Partner.Id} killed partner {tamer.TargetPartner?.Id} - {tamer.TargetPartner?.Name} with {finalDmg} damage.");
+
+                        BroadcastForTamerViewsAndSelf(
+                            tamer.Id,
+                            new KillOnHitPacket(
+                                tamer.Partner.GeneralHandler,
+                                tamer.TargetPartner.GeneralHandler,
+                                finalDmg,
+                                hitType).Serialize());
+
+                        tamer.TargetPartner.Character.Die();
+
+                        if (!EnemiesAttacking(tamer.Location.MapId, tamer.Partner.Id, tamer.Id))
+                        {
+                            tamer.StopBattle();
+
+                            BroadcastForTamerViewsAndSelf(
+                                tamer.Id,
+                                new SetCombatOffPacket(tamer.Partner.GeneralHandler).Serialize());
+                        }
+                    }
+                }
+
+                tamer.Partner.UpdateLastHitTime();
+            }
+
+            bool StopAttackPlayer = tamer.TargetPartner == null || !tamer.TargetPartner.Alive || tamer.Partner.HP < 1;
+
+            if (StopAttackPlayer) tamer.Partner?.StopAutoAttack();
+        }
 
         public void PartnerAutoAttackMob(CharacterModel tamer)
         {
@@ -309,18 +877,18 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 tamer.Partner.SetEndAttacking(tamer.Partner.AS);
                 tamer.SetHidden(false);
 
-                if (!tamer.InBattle && tamer.TargetMob != null)
+                if (!tamer.InBattle)
                 {
-                    _logger.Debug($"Character {tamer.Id} engaged {tamer.TargetMob.Id} - {tamer.TargetMob.Name}.");
+                    _logger.Information($"Character {tamer.Id} engaged {tamer.TargetMob.Id} - {tamer.TargetMob.Name}.");
                     BroadcastForTamerViewsAndSelf(tamer.Id,
                         new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
                     tamer.StartBattle(tamer.TargetMob);
                     tamer.Partner.StartAutoAttack();
                 }
 
-                if (!tamer.TargetMob.InBattle && tamer.TargetMob != null)
+                if (!tamer.TargetMob.InBattle)
                 {
-                    _logger.Debug($"Mob {tamer.TargetMob.Name} engaged battle with {tamer.Partner.Name}.");
+                    _logger.Information($"Mob {tamer.TargetMob.Name} engaged battle with {tamer.Partner.Name}.");
                     BroadcastForTamerViewsAndSelf(tamer.Id,
                         new SetCombatOnPacket(tamer.TargetMob.GeneralHandler).Serialize());
                     tamer.TargetMob.StartBattle(tamer);
@@ -409,7 +977,262 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             if (StopAttackMob) tamer.Partner?.StopAutoAttack();
         }
 
-        // ------------------------------------------------------------------------------------
+        public void PartnerAutoAttackSummon(CharacterModel tamer)
+        {
+            if (!tamer.Partner.AutoAttack)
+                return;
+
+            if (!tamer.Partner.IsAttacking && tamer.TargetSummonMob != null &&
+                tamer.TargetSummonMob.Alive & tamer.Partner.Alive)
+            {
+                tamer.Partner.SetEndAttacking(tamer.Partner.AS);
+                tamer.SetHidden(false);
+
+                if (!tamer.InBattle)
+                {
+                    _logger.Verbose(
+                        $"Character {tamer.Id} engaged {tamer.TargetSummonMob.Id} - {tamer.TargetSummonMob.Name}.");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SetCombatOnPacket(tamer.Partner.GeneralHandler).Serialize());
+                    tamer.StartBattle(tamer.TargetMob);
+                    tamer.Partner.StartAutoAttack();
+                }
+
+                if (!tamer.TargetSummonMob.InBattle)
+                {
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new SetCombatOnPacket(tamer.TargetSummonMob.GeneralHandler).Serialize());
+                    tamer.TargetSummonMob.StartBattle(tamer);
+                    tamer.Partner.StartAutoAttack();
+                }
+
+                var missed = false;
+
+                if (!tamer.GodMode)
+                {
+                    missed = tamer.CanMissHit(true);
+                }
+
+                if (missed)
+                {
+                    _logger.Verbose(
+                        $"Partner {tamer.Partner.Id} missed hit on {tamer.TargetSummonMob.Id} - {tamer.TargetSummonMob.Name}.");
+                    BroadcastForTamerViewsAndSelf(tamer.Id,
+                        new MissHitPacket(tamer.Partner.GeneralHandler, tamer.TargetSummonMob.GeneralHandler)
+                            .Serialize());
+                }
+                else
+                {
+                    #region Hit Damage
+
+                    var critBonusMultiplier = 0.00;
+                    var blocked = false;
+                    var finalDmg = tamer.GodMode
+                        ? tamer.TargetSummonMob.CurrentHP
+                        : CalculateDamageSummon(tamer, out critBonusMultiplier, out blocked);
+
+                    #endregion
+
+                    if (finalDmg <= 0) finalDmg = 1;
+                    if (finalDmg > tamer.TargetSummonMob.CurrentHP) finalDmg = tamer.TargetSummonMob.CurrentHP;
+
+                    var newHp = tamer.TargetSummonMob.ReceiveDamage(finalDmg, tamer.Id);
+
+                    var hitType = blocked ? 2 : critBonusMultiplier > 0 ? 1 : 0;
+
+                    if (newHp > 0)
+                    {
+                        _logger.Verbose(
+                            $"Partner {tamer.Partner.Id} inflicted {finalDmg} to mob {tamer.TargetSummonMob?.Id} - {tamer.TargetSummonMob?.Name}({tamer.TargetSummonMob?.Type}).");
+
+                        BroadcastForTamerViewsAndSelf(
+                            tamer.Id,
+                            new HitPacket(
+                                tamer.Partner.GeneralHandler,
+                                tamer.TargetSummonMob.GeneralHandler,
+                                finalDmg,
+                                tamer.TargetSummonMob.HPValue,
+                                newHp,
+                                hitType).Serialize());
+                    }
+                    else
+                    {
+                        _logger.Verbose(
+                            $"Partner {tamer.Partner.Id} killed mob {tamer.TargetSummonMob?.Id} - {tamer.TargetSummonMob?.Name}({tamer.TargetSummonMob?.Type}) with {finalDmg} damage.");
+
+                        BroadcastForTamerViewsAndSelf(
+                            tamer.Id,
+                            new KillOnHitPacket(
+                                tamer.Partner.GeneralHandler,
+                                tamer.TargetSummonMob.GeneralHandler,
+                                finalDmg,
+                                hitType).Serialize());
+
+                        tamer.TargetSummonMob?.Die();
+
+                        if (!MobsAttacking(tamer.Location.MapId, tamer.Id))
+                        {
+                            tamer.StopBattle(true);
+
+                            BroadcastForTamerViewsAndSelf(
+                                tamer.Id,
+                                new SetCombatOffPacket(tamer.Partner.GeneralHandler).Serialize());
+                        }
+                    }
+                }
+
+                tamer.Partner.UpdateLastHitTime();
+            }
+
+            bool StopAttackSummon = tamer.TargetSummonMob == null || tamer.TargetSummonMob.Dead;
+
+            if (StopAttackSummon) tamer.Partner?.StopAutoAttack();
+        }
+
+        // -----------------------------------------------------------------------------------------------------------------------
+
+        private ReceiveExpResult ReceiveTamerExp(CharacterModel tamer, long tamerExpToReceive)
+        {
+            var tamerResult = _expManager.ReceiveTamerExperience(tamerExpToReceive, tamer);
+
+            if (tamerResult.LevelGain > 0)
+            {
+                BroadcastForTamerViewsAndSelf(tamer.Id,
+                    new LevelUpPacket(tamer.GeneralHandler, tamer.Level).Serialize());
+
+                tamer.SetLevelStatus(_statusManager.GetTamerLevelStatus(tamer.Model, tamer.Level));
+
+                tamer.FullHeal();
+            }
+
+            return tamerResult;
+        }
+
+        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, MobConfigModel targetMob, long partnerExpToReceive)
+        {
+            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
+
+            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element, targetMob.ExpReward);
+
+            if (partnerResult.LevelGain > 0)
+            {
+                partner.SetBaseStatus(
+                    _statusManager.GetDigimonBaseStatus(partner.CurrentType, partner.Level, partner.Size));
+
+                BroadcastForTamerViewsAndSelf(partner.Character.Id,
+                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
+
+                partner.FullHeal();
+            }
+
+            return partnerResult;
+        }
+
+        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, SummonMobModel targetMob, long partnerExpToReceive)
+        {
+            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
+
+            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element,
+                targetMob.ExpReward);
+
+            if (partnerResult.LevelGain > 0)
+            {
+                partner.SetBaseStatus(
+                    _statusManager.GetDigimonBaseStatus(partner.CurrentType, partner.Level, partner.Size));
+
+                BroadcastForTamerViewsAndSelf(partner.Character.Id,
+                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
+
+                partner.FullHeal();
+            }
+
+            return partnerResult;
+        }
+
+        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, EventMobConfigModel targetMob, long partnerExpToReceive)
+        {
+            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
+
+            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element,
+                targetMob.ExpReward);
+
+            if (partnerResult.LevelGain > 0)
+            {
+                partner.SetBaseStatus(
+                    _statusManager.GetDigimonBaseStatus(partner.CurrentType, partner.Level, partner.Size));
+
+                BroadcastForTamerViewsAndSelf(partner.Character.Id,
+                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
+
+                partner.FullHeal();
+            }
+
+            return partnerResult;
+        }
+
+        // -----------------------------------------------------------------------------------------------------------------------
+
+        private static int CalculateDamagePlayer(CharacterModel tamer, out double critBonusMultiplier, out bool blocked)
+        {
+            var baseDamage = (tamer.Partner.AT / tamer.TargetPartner.DE * 150) + UtilitiesFunctions.RandomInt(5, 50);
+            if (baseDamage < 0) baseDamage = 0;
+
+            critBonusMultiplier = 0.00;
+            double critChance = tamer.Partner.CC / 100;
+
+            if (critChance >= UtilitiesFunctions.RandomDouble())
+            {
+                var vlrAtual = tamer.Partner.CD;
+                var bonusMax = 1.00; //TODO: externalizar?
+                var expMax = 10000; //TODO: externalizar?
+
+                critBonusMultiplier = (bonusMax * vlrAtual) / expMax;
+            }
+
+            blocked = tamer.TargetPartner.BL >= UtilitiesFunctions.RandomDouble();
+
+            var levelBonusMultiplier = tamer.Partner.Level > tamer.TargetPartner.Level
+                ? (0.01f * (tamer.Partner.Level - tamer.TargetPartner.Level))
+                : 0; //TODO: externalizar no portal
+
+            var attributeMultiplier = 0.00;
+
+            if (tamer.Partner.BaseInfo.Attribute.HasAttributeAdvantage(tamer.TargetPartner.BaseInfo.Attribute))
+            {
+                var vlrAtual = tamer.Partner.GetAttributeExperience();
+                var bonusMax = 1.00; //TODO: externalizar?
+                var expMax = 10000; //TODO: externalizar?
+
+                attributeMultiplier = (bonusMax * vlrAtual) / expMax;
+            }
+            else if (tamer.TargetPartner.BaseInfo.Attribute.HasAttributeAdvantage(tamer.Partner.BaseInfo.Attribute))
+            {
+                attributeMultiplier = -0.25;
+            }
+
+            var elementMultiplier = 0.00;
+
+            if (tamer.Partner.BaseInfo.Element.HasElementAdvantage(tamer.TargetPartner.BaseInfo.Element))
+            {
+                var vlrAtual = tamer.Partner.GetElementExperience();
+                var bonusMax = 0.5; //TODO: externalizar?
+                var expMax = 10000; //TODO: externalizar?
+
+                elementMultiplier = (bonusMax * vlrAtual) / expMax;
+            }
+            else if (tamer.TargetPartner.BaseInfo.Element.HasElementAdvantage(tamer.Partner.BaseInfo.Element))
+            {
+                elementMultiplier = -0.50;
+            }
+
+            baseDamage /= blocked ? 2 : 1;
+
+            return (int)Math.Floor(baseDamage +
+                                   (baseDamage * critBonusMultiplier) +
+                                   (baseDamage * levelBonusMultiplier) +
+                                   (baseDamage * attributeMultiplier) +
+                                   (baseDamage * elementMultiplier));
+        }
 
         private static int CalculateDamageMob(CharacterModel tamer, out double critBonusMultiplier, out bool blocked)
         {
@@ -492,56 +1315,103 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                                                (baseDamage * attributeMultiplier) + (baseDamage * elementMultiplier)));
         }
 
-        // ------------------------------------------------------------------------------------
-
-        private ReceiveExpResult ReceiveTamerExp(CharacterModel tamer, long tamerExpToReceive)
+        private static int CalculateDamageSummon(CharacterModel tamer, out double critBonusMultiplier, out bool blocked)
         {
-            var tamerResult = _expManager.ReceiveTamerExperience(tamerExpToReceive, tamer);
+            int baseDamage = tamer.Partner.AT - tamer.TargetSummonMob.DEValue;
 
-            if (tamerResult.LevelGain > 0)
+            if (baseDamage < tamer.Partner.AT * 0.5) // If Damage is less than 50% of AT
             {
-                BroadcastForTamerViewsAndSelf(tamer.Id,
-                    new LevelUpPacket(tamer.GeneralHandler, tamer.Level).Serialize());
-
-                tamer.SetLevelStatus(
-                    _statusManager.GetTamerLevelStatus(
-                        tamer.Model,
-                        tamer.Level
-                    )
-                );
-
-                tamer.FullHeal();
+                baseDamage = (int)(tamer.Partner.AT * 0.9); // give 90% of AT as Damage
             }
 
-            return tamerResult;
-        }
+            // -------------------------------------------------------------------------------
 
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, MobConfigModel targetMob, long partnerExpToReceive)
-        {
-            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
+            critBonusMultiplier = 0.00;
+            double critChance = tamer.Partner.CC / 100;
 
-            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element, targetMob.ExpReward);
-
-            if (partnerResult.LevelGain > 0)
+            if (critChance >= UtilitiesFunctions.RandomDouble())
             {
-                partner.SetBaseStatus(
-                    _statusManager.GetDigimonBaseStatus(
-                        partner.CurrentType,
-                        partner.Level,
-                        partner.Size
-                    )
-                );
+                blocked = false;
 
-                BroadcastForTamerViewsAndSelf(partner.Character.Id,
-                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
-
-                partner.FullHeal();
+                var critDamageMultiplier = tamer.Partner.CD / 100.0;
+                critBonusMultiplier = baseDamage * (critDamageMultiplier / 100);
             }
 
-            return partnerResult;
+            if (tamer.TargetSummonMob != null)
+            {
+                blocked = tamer.TargetSummonMob.BLValue >= UtilitiesFunctions.RandomDouble();
+            }
+            else
+            {
+                blocked = false;
+                return 0;
+            }
+
+            // -------------------------------------------------------------------------------
+
+            // Level
+            var levelBonusMultiplier = 0;
+
+            // Atributte
+            var attributeMultiplier = 0.00;
+            if (tamer.Partner.BaseInfo.Attribute.HasAttributeAdvantage(tamer.TargetMob.Attribute))
+            {
+                var attExp = tamer.Partner.GetAttributeExperience();
+                var attValue = tamer.Partner.ATT / 100.0;
+                var attValuePercent = attValue / 100.0;
+                var bonusMax = 1;
+                var expMax = 10000;
+
+                attributeMultiplier = ((bonusMax + attValuePercent) * attExp) / expMax;
+            }
+            else if (tamer.TargetMob.Attribute.HasAttributeAdvantage(tamer.Partner.BaseInfo.Attribute))
+            {
+                attributeMultiplier = -0.25;
+            }
+
+            // Element
+            var elementMultiplier = 0.00;
+            if (tamer.Partner.BaseInfo.Element.HasElementAdvantage(tamer.TargetMob.Element))
+            {
+                var vlrAtual = tamer.Partner.GetElementExperience();
+                var bonusMax = 1;
+                var expMax = 10000;
+
+                elementMultiplier = (bonusMax * vlrAtual) / expMax;
+            }
+            else if (tamer.TargetMob.Element.HasElementAdvantage(tamer.Partner.BaseInfo.Element))
+            {
+                elementMultiplier = -0.25;
+            }
+
+            // -------------------------------------------------------------------------------
+
+            if (blocked)
+                baseDamage /= 2;
+
+            return (int)Math.Max(1, Math.Floor(baseDamage + critBonusMultiplier +
+                                               (baseDamage * levelBonusMultiplier) +
+                                               (baseDamage * attributeMultiplier) + (baseDamage * elementMultiplier)));
         }
 
-        // ------------------------------------------------------------------------------------
+        // -----------------------------------------------------------------------------------------------------------------------
+
+        private void CheckMonthlyReward(GameClient client)
+        {
+            if (client.Tamer.AttendanceReward.ReedemRewards)
+            {
+                client.Tamer.AttendanceReward.CheckAndResetTotalDays();
+                client.Tamer.AttendanceReward.SetLastRewardDate();
+                client.Tamer.AttendanceReward.SetTotalDaysToToday();
+
+                if (client.Tamer.AttendanceReward.TotalDays < 29)
+                {
+                    ReedemReward(client);
+                }
+            }
+
+            client.Send(new TamerAttendancePacket(client.Tamer.AttendanceReward.TotalDays));
+        }
 
         private async void CheckTimeReward(GameClient client)
         {
@@ -697,5 +1567,43 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             }
         }
 
+        private void ReedemReward(GameClient client)
+        {
+            var rewardInfo =
+                _assets.MonthlyEvents.FirstOrDefault(x => x.CurrentDay == client.Tamer.AttendanceReward.TotalDays);
+
+            if (rewardInfo != null)
+            {
+                var newItem = new ItemModel();
+                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == rewardInfo.ItemId));
+
+                if (newItem.ItemInfo == null)
+                {
+                    _logger.Warning($"No item info found with ID {rewardInfo.ItemId} for tamer {client.TamerId}.");
+                    client.Send(
+                        new SystemMessagePacket($"No item info found with ID {rewardInfo.ItemId} by MonthEvent"));
+                    return;
+                }
+
+                newItem.ItemId = rewardInfo.ItemId;
+                newItem.Amount = rewardInfo.ItemCount;
+
+                if (newItem.IsTemporary)
+                    newItem.SetRemainingTime((uint)newItem.ItemInfo.UsageTimeMinutes);
+
+                newItem.EndDate = DateTime.Now.AddDays(7);
+
+                var itemClone = (ItemModel)newItem.Clone();
+
+                if (client.Tamer.GiftWarehouse.AddItemGiftStorage(newItem))
+                {
+                    _sender.Send(new UpdateItemsCommand(client.Tamer.GiftWarehouse));
+                    client.Send(new SystemMessagePacket(
+                        $"Added {newItem.ItemInfo.Name} x{newItem.Amount} to GiftStorage by MonthEvent"));
+                }
+
+                _sender.Send(new UpdateTamerAttendanceRewardCommand(client.Tamer.AttendanceReward));
+            }
+        }
     }
 }

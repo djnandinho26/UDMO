@@ -5,6 +5,7 @@ using DigitalWorldOnline.Commons.Model.Character;
 using DigitalWorldOnline.Commons.Models.Asset;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Models.Config;
+using DigitalWorldOnline.Commons.Models.Config.Events;
 using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Models.Events;
 using DigitalWorldOnline.Commons.Models.Mechanics;
@@ -267,6 +268,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         public string ShopName { get; private set; }
         public List<MobConfigModel> TargetMobs { get; private set; }
         public List<SummonMobModel> TargetSummonMobs { get; private set; }
+        public List<EventMobConfigModel> TargetEventMobs { get; private set; }
         public List<DigimonModel> TargetPartners { get; private set; }
         public int TargetHandler { get; private set; }
         public Location ViewLocation { get; private set; }
@@ -305,6 +307,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
             TargetPartners = new List<DigimonModel>();
             TargetMobs = new List<MobConfigModel>();
             TargetSummonMobs = new List<SummonMobModel>();
+            TargetEventMobs = new List<EventMobConfigModel>();
             MobsInView = new List<long>();
             RepurchaseList = new List<ItemModel>();
             AttendanceReward = new AttendanceRewardModel();

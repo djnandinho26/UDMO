@@ -289,22 +289,32 @@ namespace DigitalWorldOnline.Game
                 {
                     _logger.Debug(
                         $"Sending guild member disconnection packet for character {guildMember.CharacterId}...");
-                    _mapServer.BroadcastForUniqueTamer(guildMember.CharacterId,
-                        new GuildMemberDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
 
                     _logger.Debug(
                         $"Sending guild information packet for character {gameClientEvent.Client.TamerId}...");
+
+                    _mapServer.BroadcastForUniqueTamer(guildMember.CharacterId,
+                        new GuildMemberDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+
                     _mapServer.BroadcastForUniqueTamer(guildMember.CharacterId,
                         new GuildInformationPacket(gameClientEvent.Client.Tamer.Guild).Serialize());
 
-                    _logger.Debug(
-                        $"Sending guild member disconnection packet for character {guildMember.CharacterId}...");
                     _dungeonsServer.BroadcastForUniqueTamer(guildMember.CharacterId,
                         new GuildMemberDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
 
-                    _logger.Debug(
-                        $"Sending guild information packet for character {gameClientEvent.Client.TamerId}...");
                     _dungeonsServer.BroadcastForUniqueTamer(guildMember.CharacterId,
+                        new GuildInformationPacket(gameClientEvent.Client.Tamer.Guild).Serialize());
+
+                    _eventServer.BroadcastForUniqueTamer(guildMember.CharacterId,
+                        new GuildMemberDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+
+                    _eventServer.BroadcastForUniqueTamer(guildMember.CharacterId,
+                        new GuildInformationPacket(gameClientEvent.Client.Tamer.Guild).Serialize());
+
+                    _pvpServer.BroadcastForUniqueTamer(guildMember.CharacterId,
+                        new GuildMemberDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+
+                    _pvpServer.BroadcastForUniqueTamer(guildMember.CharacterId,
                         new GuildInformationPacket(gameClientEvent.Client.Tamer.Guild).Serialize());
                 }
             }
@@ -318,6 +328,10 @@ namespace DigitalWorldOnline.Game
                 _mapServer.BroadcastForUniqueTamer(friend.FriendId,
                     new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
                 _dungeonsServer.BroadcastForUniqueTamer(friend.FriendId,
+                    new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+                _eventServer.BroadcastForUniqueTamer(friend.FriendId,
+                    new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
+                _pvpServer.BroadcastForUniqueTamer(friend.FriendId,
                     new FriendDisconnectPacket(gameClientEvent.Client.Tamer.Name).Serialize());
             });
 
@@ -447,7 +461,7 @@ namespace DigitalWorldOnline.Game
             Task.Run(() => _eventServer.StartAsync(cancellationToken));
 
             Task.Run(() => _sender.Send(new UpdateCharacterFriendsCommand(null, false)));
-            
+
             return Task.CompletedTask;
         }
 
@@ -642,7 +656,8 @@ namespace DigitalWorldOnline.Game
                     _logger.Information($"Error total: {e.StackTrace}");
                 }
             });
-            _logger.Debug($"Added new information to all characters, Digimon count: {digimonCount}, Encyclopedia count: {encyclopediaCount}, Encyclopedia evolution count: {encyclopediaEvolutionCount}");
+            _logger.Debug(
+                $"Added new information to all characters, Digimon count: {digimonCount}, Encyclopedia count: {encyclopediaCount}, Encyclopedia evolution count: {encyclopediaEvolutionCount}");
             return Task.CompletedTask;
         }
     }

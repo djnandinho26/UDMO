@@ -1,6 +1,8 @@
 ﻿using DigitalWorldOnline.Application;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
+using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
@@ -14,6 +16,7 @@ using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Serilog;
 
@@ -27,6 +30,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly ExpManager _expManager;
         private readonly AssetsLoader _assets;
         private readonly MapServer _mapServer;
+        private readonly DungeonsServer _dungeonsServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
         private readonly ISender _sender;
 
@@ -35,12 +41,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             ExpManager expManager,
             AssetsLoader assets,
             MapServer mapServer,
+            DungeonsServer dungeonsServer,
+            EventServer eventServer,
+            PvpServer pvpServer,
             ILogger logger,
             ISender sender)
         {
             _statusManager = statusManager;
             _expManager = expManager;
             _mapServer = mapServer;
+            _dungeonsServer = dungeonsServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _assets = assets;
             _logger = logger;
             _sender = sender;
@@ -69,11 +81,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             QuestRewards(client, questInfo);
 
             var evolutionQuest = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?
-               .Lines.FirstOrDefault(y => y.UnlockQuestId == questId && y.UnlockItemSection == 0);
+                .Lines.FirstOrDefault(y => y.UnlockQuestId == questId && y.UnlockItemSection == 0);
 
             if (evolutionQuest != null)
             {
-                var targetEvolution = client.Tamer.Partner.Evolutions[evolutionQuest.SlotLevel -1];
+                var targetEvolution = client.Tamer.Partner.Evolutions[evolutionQuest.SlotLevel - 1];
 
                 if (targetEvolution != null)
                 {
@@ -81,15 +93,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     await _sender.Send(new UpdateEvolutionCommand(targetEvolution));
 
-                    _logger.Verbose($"Character {client.TamerId} unlocked evolution {targetEvolution.Type} on quest {questId} completion.");
+                    _logger.Verbose(
+                        $"Character {client.TamerId} unlocked evolution {targetEvolution.Type} on quest {questId} completion.");
 
-                    var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines.FirstOrDefault(x => x.Type == targetEvolution.Type);
+                    var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == client.Partner.BaseType)?.Lines
+                        .FirstOrDefault(x => x.Type == targetEvolution.Type);
 
-                    var encyclopedia = client.Tamer.Encyclopedia.First(x => x.DigimonEvolutionId == evoInfo.EvolutionId);
+                    var encyclopedia =
+                        client.Tamer.Encyclopedia.First(x => x.DigimonEvolutionId == evoInfo.EvolutionId);
 
                     if (encyclopedia != null)
                     {
-                        var encyclopediaEvolution = encyclopedia.Evolutions.First(x => x.DigimonBaseType == targetEvolution.Type);
+                        var encyclopediaEvolution =
+                            encyclopedia.Evolutions.First(x => x.DigimonBaseType == targetEvolution.Type);
 
                         encyclopediaEvolution.Unlock();
 
@@ -103,7 +119,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             await _sender.Send(new UpdateCharacterEncyclopediaCommand(encyclopedia));
                         }
                     }
-
                 }
             }
 
@@ -191,7 +206,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else
                 {
-                    _logger.Verbose($"Character {client.TamerId} delivered quest {questId} goal item {questGoal.GoalId} x{questGoal.GoalAmount}.");
+                    _logger.Verbose(
+                        $"Character {client.TamerId} delivered quest {questId} goal item {questGoal.GoalId} x{questGoal.GoalAmount}.");
                     client.Tamer.Inventory.RemoveOrReduceItem(item, questGoal.GoalAmount);
                 }
             }
@@ -213,7 +229,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else
                 {
-                    _logger.Verbose($"Character {client.TamerId} delivered quest {questId} supply item {questSupply.ItemId} x{questSupply.Amount}.");
+                    _logger.Verbose(
+                        $"Character {client.TamerId} delivered quest {questId} supply item {questSupply.ItemId} x{questSupply.Amount}.");
                     client.Tamer.Inventory.RemoveOrReduceItem(item, questSupply.Amount);
                 }
             }
@@ -227,21 +244,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 switch (questReward.RewardType)
                 {
                     case QuestRewardTypeEnum.MoneyReward:
-                        {
-                            QuestMoneyReward(client, questReward);
-                        }
+                    {
+                        QuestMoneyReward(client, questReward);
+                    }
                         break;
 
                     case QuestRewardTypeEnum.ExperienceReward:
-                        {
-                            QuestExpReward(client, questReward);
-                        }
+                    {
+                        QuestExpReward(client, questReward);
+                    }
                         break;
 
                     case QuestRewardTypeEnum.ItemReward:
-                        {
-                            QuestItemReward(client, questReward);
-                        }
+                    {
+                        QuestItemReward(client, questReward);
+                    }
                         break;
                 }
             }
@@ -274,7 +291,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else
                 {
-                    _logger.Verbose($"Character {client.TamerId} received quest {questReward.Quest.QuestId} item {rewardObject.Reward} x{rewardObject.Amount} reward.");
+                    _logger.Verbose(
+                        $"Character {client.TamerId} received quest {questReward.Quest.QuestId} item {rewardObject.Reward} x{rewardObject.Amount} reward.");
                 }
             });
         }
@@ -294,22 +312,42 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Send(
                     new ReceiveExpPacket(
                         tamerExpToReceive,
-                        0,//TODO: obter os bonus
+                        0, //TODO: obter os bonus
                         client.Tamer.CurrentExperience,
                         client.Partner.GeneralHandler,
                         partnerExpToReceive,
-                        0,//TODO: obter os bonus
+                        0, //TODO: obter os bonus
                         client.Partner.CurrentExperience,
                         client.Partner.CurrentEvolution.SkillExperience
                     )
                 );
+                var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
 
                 if (tamerResult.LevelGain > 0 || partnerResult.LevelGain > 0)
                 {
                     client.Send(new UpdateStatusPacket(client.Tamer));
+                    switch (mapConfig?.Type)
+                    {
+                        case MapTypeEnum.Dungeon:
+                            _dungeonsServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                            break;
 
-                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                        new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                        case MapTypeEnum.Event:
+                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                            break;
+
+                        case MapTypeEnum.Pvp:
+                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                            break;
+
+                        default:
+                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                new UpdateMovementSpeedPacket(client.Tamer).Serialize());
+                            break;
+                    }
                 }
 
                 if (tamerResult.Success)
@@ -338,7 +376,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         {
             questReward.RewardObjectList.ForEach(rewardObject =>
             {
-                _logger.Verbose($"Character {client.TamerId} received quest {questReward.Quest.QuestId} {rewardObject.Amount} bits reward.");
+                _logger.Verbose(
+                    $"Character {client.TamerId} received quest {questReward.Quest.QuestId} {rewardObject.Amount} bits reward.");
                 client.Tamer.Inventory.AddBits(rewardObject.Amount);
             });
         }
@@ -351,6 +390,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 _mapServer.BroadcastForTamerViewsAndSelf(tamer.Id,
                     new LevelUpPacket(tamer.GeneralHandler, tamer.Level).Serialize());
+                _dungeonsServer.BroadcastForTamerViewsAndSelf(tamer.Id,
+                    new LevelUpPacket(tamer.GeneralHandler, tamer.Level).Serialize());
+                _eventServer.BroadcastForTamerViewsAndSelf(tamer.Id,
+                    new LevelUpPacket(tamer.GeneralHandler, tamer.Level).Serialize());
+                _pvpServer.BroadcastForTamerViewsAndSelf(tamer.Id,
+                    new LevelUpPacket(tamer.GeneralHandler, tamer.Level).Serialize());
 
                 tamer.SetLevelStatus(
                     _statusManager.GetTamerLevelStatus(
@@ -361,6 +406,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 tamer.FullHeal();
             }
+
             return tamerResult;
         }
 
@@ -379,6 +425,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 );
 
                 _mapServer.BroadcastForTamerViewsAndSelf(partner.Character.Id,
+                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
+
+                _dungeonsServer.BroadcastForTamerViewsAndSelf(partner.Character.Id,
+                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
+
+                _eventServer.BroadcastForTamerViewsAndSelf(partner.Character.Id,
+                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
+
+                _pvpServer.BroadcastForTamerViewsAndSelf(partner.Character.Id,
                     new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
 
                 partner.FullHeal();

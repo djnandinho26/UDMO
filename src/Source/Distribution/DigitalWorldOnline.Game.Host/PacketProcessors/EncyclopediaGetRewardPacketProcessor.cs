@@ -37,11 +37,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             // Get digimon id
             var digimonId = packet.ReadUInt();
 
-            _logger.Information($"digimon Id {digimonId}");
+            // _logger.Information($"digimon Id {digimonId}");
             var evoInfo = _assets.EvolutionInfo.FirstOrDefault(x => x.Type == digimonId);
             if (evoInfo == null)
             {
-                _logger.Information($"Evo info not found for digimon {digimonId}");
+                // _logger.Information($"Evo info not found for digimon {digimonId}");
                 client.Send(new SystemMessagePacket($"Failed to receive reward."));
                 return;
             }
@@ -50,21 +50,21 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             if (encyclopedia == null)
             {
-                _logger.Information($"Failed to send encyclopedia reward to tamer {client.TamerId}, Player does not have this opened.");
+                // _logger.Information($"Failed to send encyclopedia reward to tamer {client.TamerId}, Player does not have this opened.");
                 client.Send(new SystemMessagePacket($"Failed to receive reward."));
                 return;
             }
 
             if (encyclopedia.IsRewardReceived)
             {
-                _logger.Information($"Tamer {client.TamerId}, Already received the reward.");
+                // _logger.Information($"Tamer {client.TamerId}, Already received the reward.");
                 client.Send(new SystemMessagePacket($"You have already received the reward."));
                 return;
             }
 
             if (!encyclopedia.IsRewardAllowed)
             {
-                _logger.Information($"Tamer {client.TamerId}, Is not allowed to take the item.");
+                // _logger.Information($"Tamer {client.TamerId}, Is not allowed to take the item.");
                 client.Send(new SystemMessagePacket($"Failed to receive reward."));
                 return;
             }
@@ -75,7 +75,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             if (newItem.ItemInfo == null)
             {
-                _logger.Information($"Failed to send encyclopedia reward to tamer {client.TamerId}.");
+                // _logger.Information($"Failed to send encyclopedia reward to tamer {client.TamerId}.");
                 client.Send(new SystemMessagePacket($"Failed to receive reward."));
                 return;
             }
@@ -91,17 +91,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 encyclopedia.SetRewardAllowed(false);
                 encyclopedia.SetRewardReceived();
-                _logger.Information($"Encyclopedia reward allowed: {encyclopedia.IsRewardAllowed.ToString()} | reward received: {encyclopedia.IsRewardReceived.ToString()} | id: {encyclopedia.Id.GetHashCode()}");
+                // _logger.Information($"Encyclopedia reward allowed: {encyclopedia.IsRewardAllowed.ToString()} | reward received: {encyclopedia.IsRewardReceived.ToString()} | id: {encyclopedia.Id.GetHashCode()}");
                 client.Send(new EncyclopediaReceiveRewardItemPacket(newItem, (int)digimonId));
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-                _logger.Information($"Passed item update packet on encyclopedia get reward {digimonId}");
+                // _logger.Information($"Passed item update packet on encyclopedia get reward {digimonId}");
                 await _sender.Send(new UpdateCharacterEncyclopediaCommand(encyclopedia));
                 
-                _logger.Information($"Passed encyclopedia update packet on encyclopedia get reward {digimonId}");
+                // _logger.Information($"Passed encyclopedia update packet on encyclopedia get reward {digimonId}");
             }
             else
             {
-                _logger.Information($"failed item pick packet on encyclopedia get reward {digimonId}");
+                // _logger.Information($"failed item pick packet on encyclopedia get reward {digimonId}");
                 client.Send(new PickItemFailPacket(PickItemFailReasonEnum.InventoryFull));
             }
         }

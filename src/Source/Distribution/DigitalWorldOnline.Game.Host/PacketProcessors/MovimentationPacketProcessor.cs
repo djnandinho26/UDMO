@@ -199,6 +199,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         _mapServer.BroadcastForUniqueTamer(member.Id, new PartyMemberMovimentationPacket(party[client.TamerId]).Serialize());
                         _dungeonServer.BroadcastForUniqueTamer(member.Id, new PartyMemberMovimentationPacket(party[client.TamerId]).Serialize());
                         _eventServer.BroadcastForUniqueTamer(member.Id, new PartyMemberMovimentationPacket(party[client.TamerId]).Serialize());
+                        _pvpServer.BroadcastForUniqueTamer(member.Id, new PartyMemberMovimentationPacket(party[client.TamerId]).Serialize());
                     });
             }
 

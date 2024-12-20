@@ -16,6 +16,7 @@ using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Commons.Writers;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
 using MediatR;
 using Serilog;
 
@@ -28,6 +29,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly StatusManager _statusManager;
         private readonly MapServer _mapServer;
         private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly AssetsLoader _assets;
         private readonly ILogger _logger;
         private readonly ISender _sender;
@@ -35,18 +38,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         public HatchSpiritEvolutionPacketProcessor(
             StatusManager statusManager,
             MapServer mapServer,
+            DungeonsServer dungeonsServer,
+            EventServer eventServer,
+            PvpServer pvpServer,
             AssetsLoader assets,
             ILogger logger,
-            ISender sender,
-            DungeonsServer dungeonsServer
+            ISender sender
         )
         {
             _statusManager = statusManager;
             _mapServer = mapServer;
+            _dungeonServer = dungeonsServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _assets = assets;
             _logger = logger;
             _sender = sender;
-            _dungeonServer = dungeonsServer;
         }
 
         public async Task Process(GameClient client, byte[] packetData)
@@ -178,6 +185,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _mapServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name,
                     newDigimon.BaseType, newDigimon.Size).Serialize());
                 _dungeonServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name,
+                    newDigimon.BaseType, newDigimon.Size).Serialize());
+                _eventServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name,
+                    newDigimon.BaseType, newDigimon.Size).Serialize());
+                _pvpServer.BroadcastGlobal(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name,
                     newDigimon.BaseType, newDigimon.Size).Serialize());
             }
 

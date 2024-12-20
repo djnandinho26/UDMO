@@ -80,11 +80,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     return;
                 }
 
-                if (client.PvpMap)
-                    //_pvpServer.RemoveClient(client);
-                    _mapServer.RemoveClient(client);
-                else
-                    _mapServer.RemoveClient(client);
+                _mapServer.RemoveClient(client);
+                _eventServer.RemoveClient(client);
 
                 var destination = waypoints.Regions.First();
 
@@ -98,7 +95,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 await _sender.Send(new UpdateCharacterStateCommand(client.TamerId, CharacterStateEnum.Loading));
 
                 client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
-                        mapId, destination.X, destination.Y));
+                    mapId, destination.X, destination.Y));
             }
             else
             {
@@ -116,33 +113,31 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                             for (int i = 0; i < 3; i++)
                             {
-
                                 switch (RemoveInfo.npcPortalsAsset[i].Type)
                                 {
                                     case NpcResourceTypeEnum.Money:
-                                        {
-                                            client.Tamer.Inventory.RemoveBits(RemoveInfo.npcPortalsAsset[i].ItemId);
+                                    {
+                                        client.Tamer.Inventory.RemoveBits(RemoveInfo.npcPortalsAsset[i].ItemId);
 
-                                            await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory));
-                                        }
+                                        await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory));
+                                    }
                                         break;
 
                                     case NpcResourceTypeEnum.Item:
+                                    {
+                                        var targeItem =
+                                            client.Tamer.Inventory.FindItemById(RemoveInfo.npcPortalsAsset[i].ItemId);
+
+                                        if (targeItem != null)
                                         {
-                                            var targeItem = client.Tamer.Inventory.FindItemById(RemoveInfo.npcPortalsAsset[i].ItemId);
-
-                                            if (targeItem != null)
-                                            {
-                                                client.Tamer.Inventory.RemoveOrReduceItem(targeItem, 1);
-                                                await _sender.Send(new UpdateItemCommand(targeItem));
-                                            }
-
+                                            client.Tamer.Inventory.RemoveOrReduceItem(targeItem, 1);
+                                            await _sender.Send(new UpdateItemCommand(targeItem));
                                         }
+                                    }
                                         break;
                                 }
                             }
                         }
-
                     }
                 }
 
@@ -155,17 +150,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     await _sender.Send(new UpdateDigimonLocationCommand(client.Tamer.Partner.Location));
 
                     client.Send(new LocalMapSwapPacket(client.Tamer.GeneralHandler, client.Tamer.Partner.GeneralHandler,
-                         portal.DestinationX, portal.DestinationY, portal.DestinationX, portal.DestinationY));
+                        portal.DestinationX, portal.DestinationY, portal.DestinationX, portal.DestinationY));
 
                     return;
                 }
 
-                if (client.PvpMap)
-                    //_pvpServer.RemoveClient(client);
-                    _mapServer.RemoveClient(client);
-                else
-                    _mapServer.RemoveClient(client);
-                
+                _mapServer.RemoveClient(client);
+                _eventServer.RemoveClient(client);
+
                 client.Tamer.NewLocation(portal.DestinationMapId, portal.DestinationX, portal.DestinationY);
                 await _sender.Send(new UpdateCharacterLocationCommand(client.Tamer.Location));
 
@@ -178,7 +170,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.SetGameQuit(false);
 
                 client.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
-                                client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y));
+                    client.Tamer.Location.MapId, client.Tamer.Location.X, client.Tamer.Location.Y));
 
                 var party = _partyManager.FindParty(client.TamerId);
 
@@ -195,14 +187,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (target.Id != client.Tamer.Id) targetClient.Send(new PartyMemberWarpGatePacket(party[client.TamerId], targetClient.Tamer).Serialize());
                     }*/
 
-                    _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
-                    _eventServer.BroadcastForTargetTamers(party.GetMembersIdList(), new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+                    _mapServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                        new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+                    _eventServer.BroadcastForTargetTamers(party.GetMembersIdList(),
+                        new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
                 }
             }
 
             //client.Send(new SendHandler(client.Tamer.GeneralHandler));
-
         }
     }
 }
-

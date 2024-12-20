@@ -34,7 +34,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly IMapper _mapper;
         private readonly IConfiguration _configuration;
 
-        public ChangeChannelSendProcessor(PartyManager partyManager, MapServer mapServer, EventServer eventServer, PvpServer pvpServer,
+        public ChangeChannelSendProcessor(PartyManager partyManager, MapServer mapServer, EventServer eventServer,
+            PvpServer pvpServer,
             ILogger logger, ISender sender, IMapper mapper, IConfiguration configuration)
         {
             _partyManager = partyManager;
@@ -96,12 +97,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 foreach (var target in party.Members.Values)
                 {
-                    if (target.Id != client.Tamer.Id) 
-                        _mapServer.BroadcastForTamerViewsAndSelf(client, new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
-
+                    if (target.Id != client.Tamer.Id)
+                    {
+                        _mapServer.BroadcastForTamerViewsAndSelf(client,
+                            new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+                        _eventServer.BroadcastForTamerViewsAndSelf(client,
+                            new PartyMemberWarpGatePacket(party[client.TamerId], client.Tamer).Serialize());
+                    }
                 }
             }
-
         }
     }
 }

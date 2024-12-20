@@ -27,36 +27,6 @@ namespace DigitalWorldOnline.GameHost.EventsServer
         private readonly int _stopSeeing = 8001;
 
         /// <summary>
-        /// The default hosted service "starting" method.
-        /// </summary>
-        /// <param name="cancellationToken">Control token for the operation</param>
-        public async Task StartAsync(CancellationToken cancellationToken)
-        {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                try
-                {
-                    await CleanMaps();
-                    await SearchNewMaps(cancellationToken);
-                    await GetMapObjects(cancellationToken);
-
-                    var tasks = new List<Task>();
-
-                    Maps.ForEach(map => { tasks.Add(RunMap(map)); });
-
-                    await Task.WhenAll(tasks);
-
-                    await Task.Delay(500, cancellationToken);
-                }
-                catch (Exception ex)
-                {
-                    _logger.Error($"Unexpected map exception: {ex.Message} {ex.StackTrace}");
-                    await Task.Delay(3000, cancellationToken);
-                }
-            }
-        }
-
-        /// <summary>
         /// Cleans unused running maps.
         /// </summary>
         public Task CleanMaps()
@@ -66,10 +36,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
             foreach (var map in mapsToRemove)
             {
-                _logger.Debug(
-                    $"Removing inactive instance for {map.Type} map {map.Id} CH {map.Channel} - {map.Name}...");
-                _logger.Information(
-                    $"Removing inactive instance for {map.Type} map {map.Id} CH {map.Channel} - {map.Name}...");
+                _logger.Information($"Removing inactive instance for {map.Type} map {map.Id} CH {map.Channel} - {map.Name}...");
                 Maps.Remove(map);
             }
 
@@ -104,8 +71,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                     if (!Maps.Any(x => x.Id == newMap.Id && x.Channel == _loadChannel))
                     {
                         newMap.Channel = _loadChannel;
-                        _logger.Information(
-                            $"Initializing new Channel for {newMap.Type} map {newMap.Id} Ch {_loadChannel} - {newMap.Name}...");
+                        _logger.Information($"Initializing new {newMap.Type} map {newMap.Id} Ch {_loadChannel} - {newMap.Name} ...");
                         Maps.Add(newMap);
                     }
                 }
@@ -127,7 +93,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                         if (newMap.Type == MapTypeEnum.Event)
                         {
                             newMap.Channel = client.Tamer.Channel;
-                            _logger.Information($"Initializing new Channel for {newMap.Type} map {newMap.Id} Ch {client.Tamer.Channel} - {newMap.Name}...");
+                            _logger.Information($"Initializing new {newMap.Type} map {newMap.Id} Ch {client.Tamer.Channel} - {newMap.Name} ...");
                             Maps.Add(newMap);
                         }
                     }
@@ -220,71 +186,33 @@ namespace DigitalWorldOnline.GameHost.EventsServer
         }
 
         /// <summary>
-        /// Gets the map latest mobs.
+        /// The default hosted service "starting" method.
         /// </summary>
-        /// <returns>The mobs collection</returns>
-        private async Task<List<MobConfigModel>> GetMapMobs(GameMap map, CancellationToken token)
+        /// <param name="cancellationToken">Control token for the operation</param>
+        public async Task StartAsync(CancellationToken cancellationToken)
         {
-            var mobList = new List<MobConfigModel>();
-
-            var mobs = _mapper.Map<List<MobConfigModel>>(await _sender.Send(new MapMobsByIdQuery(map.MapId), token));
-
-            if (!mobs.Any())
-                return mobList;
-
-            var id = 1;
-            while (mobList.Count < MobAmount)
+            while (!cancellationToken.IsCancellationRequested)
             {
-                mobs.ForEach(mob =>
+                try
                 {
-                    var newMob = (MobConfigModel)mob.Clone();
+                    await CleanMaps();
+                    await SearchNewMaps(cancellationToken);
+                    await GetMapObjects(cancellationToken);
 
-                    var location = _randomPoints.First(x => x.Free);
-                    location.UsePoint();
+                    var tasks = new List<Task>();
 
-                    newMob.SetLocation((short)map.MapId, location.X, location.Y);
-                    newMob.SetId(id);
-                    id++;
+                    Maps.ForEach(map => { tasks.Add(RunMap(map)); });
 
-                    mobList.Add(newMob);
-                });
-            }
+                    await Task.WhenAll(tasks);
 
-            return mobList;
-        }
-
-        /// <summary>
-        /// Gets the map latest mobs.
-        /// </summary>
-        /// <returns>The mobs collection</returns>
-        private async Task<List<EventMobConfigModel>> GetEventMapMobs(GameMap map, CancellationToken token)
-        {
-            var mobList = new List<EventMobConfigModel>();
-
-            var mobs = map.EventMobs;
-
-            if (!mobs.Any())
-                return mobList;
-
-            var id = 1;
-            while (mobList.Count < MobAmount)
-            {
-                mobs.ForEach(mob =>
+                    await Task.Delay(500, cancellationToken);
+                }
+                catch (Exception ex)
                 {
-                    var newMob = (EventMobConfigModel)mob.Clone();
-
-                    var location = _randomPoints.First(x => x.Free);
-                    location.UsePoint();
-
-                    newMob.SetLocation((short)map.MapId, location.X, location.Y);
-                    newMob.SetId(id);
-                    id++;
-
-                    mobList.Add(newMob);
-                });
+                    _logger.Error($"Unexpected map exception: {ex.Message} {ex.StackTrace}");
+                    await Task.Delay(3000, cancellationToken);
+                }
             }
-
-            return mobList;
         }
 
         /// <summary>
@@ -300,14 +228,6 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
                 var stopwatch = new Stopwatch();
                 stopwatch.Start();
-                /*if (!map.Initialized)
-                {
-                    var mobs = await GetMapMobs(map);
-                    var eventMobs = await GetEventMapMobs(map);
-                    map.RequestMobsUpdate(mobs);
-                    map.RequestMobsUpdate(eventMobs);
-                    map.UpdateMobsList();
-                }*/
 
                 var tasks = new List<Task>
                 {
@@ -343,7 +263,6 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 var map = Maps.FirstOrDefault(x =>
                     x.Clients.Exists(gameClient => gameClient.TamerId == client.Tamer.TargetTamerIdTP));
                 client.SetLoading();
-
                 client.Tamer.MobsInView.Clear();
                 map.AddClient(client);
                 client.Tamer.Revive();
@@ -359,7 +278,11 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 if (map != null)
                 {
                     client.Tamer.MobsInView.Clear();
+                    
+                    _logger.Information($"333333");
                     map.AddClient(client);
+                    
+                    _logger.Information($"444444");
                     client.Tamer.Revive();
                 }
                 else
@@ -368,7 +291,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                     {
                         var stopWatch = Stopwatch.StartNew();
                         var timeLimit = 15000;
-
+                        
                         while (map == null)
                         {
                             await Task.Delay(2500);
@@ -377,14 +300,14 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                                                            x.Channel == client.Tamer.Channel);
 
                             _loadChannel = client.Tamer.Channel;
-                            _logger.Warning($"Waiting event map {client.Tamer.Location.MapId} CH {_loadChannel} initialization.");
+                            _logger.Warning($"Waiting map {client.Tamer.Location.MapId} CH {_loadChannel} initialization.");
 
                             if (map == null)
                                 await SearchNewMaps(client);
 
                             if (stopWatch.ElapsedMilliseconds >= timeLimit)
                             {
-                                _logger.Warning($"The event map instance {client.Tamer.Location.MapId} CH {_loadChannel} has not been started, aborting process...");
+                                _logger.Warning($"The map instance {client.Tamer.Location.MapId} CH {_loadChannel} has not been started, aborting process...");
                                 //stopWatch.Stop();
                                 break;
                             }
@@ -398,6 +321,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                         else
                         {
                             client.Tamer.MobsInView.Clear();
+                            
                             map.AddClient(client);
                             client.Tamer.Revive();
                         }
@@ -424,6 +348,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                     client.Tamer.Partner.Location.Y
                 ).Serialize()
             );
+
             map?.RemoveClient(client);
         }
 
@@ -506,8 +431,6 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             map?.BroadcastForTargetTamers(map.TamersView[sourceId], packet);
         }
 
-        // ------------------------------------------------------------------------------------------------------------
-
         public void BroadcastForTamerViewsAndSelf(long sourceId, byte[] packet)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == sourceId));
@@ -523,14 +446,12 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             map?.BroadcastForTamerViewsAndSelf(client.TamerId, packet);
         }
 
-        // ------------------------------------------------------------------------------------------------------------
-
-        public void AddMapDrop(Drop drop, long sourceId, byte[] packet)
+        public void BroadcastForTamerViews(GameClient client, byte[] packet)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient =>
-                gameClient.TamerId == gameClient.TamerId && gameClient.Tamer.Channel == gameClient.Tamer.Channel));
+                gameClient.TamerId == client.TamerId && gameClient.Tamer.Channel == client.Tamer.Channel));
 
-            map?.BroadcastForTamerViewOnly(sourceId, packet);
+            map?.BroadcastForTamerViewOnly(client.TamerId, packet);
         }
 
         public void AddMapDrop(Drop drop, long tamerId)
@@ -578,6 +499,13 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
         // ----------------------------------------------------------------------------
 
+        public void AddSummonMob(short mapId, SummonMobModel summon, long tamerId)
+        {
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
+
+            map?.AddMobSumon(summon);
+        }
+
         public void AddSummonMobs(short mapId, SummonMobModel summon, long tamerId)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
@@ -609,6 +537,14 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
 
             return map?.SummonMobs.FirstOrDefault(x => x.GeneralHandler == handler);
+        }
+
+        public DigimonModel? GetEnemyByHandler(short mapId, int handler, long tamerId)
+        {
+            return Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId))?
+                .ConnectedTamers
+                .Select(x => x.Partner)
+                .FirstOrDefault(x => x.GeneralHandler == handler);
         }
 
         // ----------------------------------------------------------------------------
@@ -751,7 +687,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
             return targetMobs;
         }
-
+        
         // ----------------------------------------------------------------------------
 
         public List<EventMobConfigModel> GetMobsNearbyPartner(Location location, int range, long tamerId, bool Event)
@@ -832,16 +768,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             return map?.PlayersAttacking(partnerId) ?? false;
         }
 
-        public DigimonModel? GetEnemyByHandler(short mapId, int handler, long tamerId)
-        {
-            return Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId))?
-                .ConnectedTamers
-                .Select(x => x.Partner)
-                .FirstOrDefault(x => x.GeneralHandler == handler);
-        }
-
-        public async Task CallDiscord(string message, GameClient tamer, string coloured, string local,
-            string Channel = "1307444107836264608", bool custom = false)
+        public async Task CallDiscord(string message, GameClient tamer, string coloured, string local, string Channel = "1307444107836264608", bool custom = false)
         {
             var myChannel = Channel;
             var myToken = "2MTI4MTkwODExODMyNjA4NzY5MA.GeMDxn.tgxtNg8htbIEPcSJ0Hx3zIa0OvhY5LPFWSDYXw";

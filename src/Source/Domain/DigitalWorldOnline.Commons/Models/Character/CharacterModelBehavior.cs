@@ -16,6 +16,7 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
+using DigitalWorldOnline.Commons.Models.Config.Events;
 
 namespace DigitalWorldOnline.Commons.Models.Character
 {
@@ -215,6 +216,11 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// Returns the current character target mob.
         /// </summary>
         public SummonMobModel? TargetSummonMob => TargetSummonMobs.FirstOrDefault(x => x.GeneralHandler == _targetHandler);
+
+        /// <summary>
+        /// Returns the current character target mob.
+        /// </summary>
+        public EventMobConfigModel? TargetEventMob => TargetEventMobs.FirstOrDefault(x => x.GeneralHandler == _targetHandler);
 
         /// <summary>
         /// Returns the current character target partner.
@@ -634,6 +640,21 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
             if (!TargetSummonMobs.Any(x => x.Id == mobConfig.Id))
                 TargetSummonMobs.Add(mobConfig);
+
+            if (!InBattle)
+            {
+                _targetHandler = mobConfig.GeneralHandler;
+                InBattle = true;
+            }
+        }
+
+        public void StartBattle(EventMobConfigModel mobConfig)
+        {
+            if (TargetEventMobs == null)
+                TargetEventMobs = new List<EventMobConfigModel>();
+
+            if (!TargetEventMobs.Any(x => x.Id == mobConfig.Id))
+                TargetEventMobs.Add(mobConfig);
 
             if (!InBattle)
             {
