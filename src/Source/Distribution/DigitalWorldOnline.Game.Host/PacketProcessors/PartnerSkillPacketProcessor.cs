@@ -287,6 +287,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 // PVP SERVER -> ATTACK PLAYER
                 else if (_pvpServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId) != null)
                 {
+                    _logger.Information($"Getting digimon target !!");
+
                     var pvpPartner = _pvpServer.GetEnemyByHandler(client.Tamer.Location.MapId, targetHandler, client.TamerId);
 
                     var targetMobs = new List<MobConfigModel>();

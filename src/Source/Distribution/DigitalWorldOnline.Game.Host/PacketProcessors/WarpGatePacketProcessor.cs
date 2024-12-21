@@ -57,7 +57,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var portalId = packet.ReadInt();
 
-            _logger.Debug($"Using Normal PortalId: {portalId}");
+            _logger.Information($"Using Normal PortalId: {portalId}");
 
             var portal = _assets.Portal.FirstOrDefault(x => x.Id == portalId);
 
@@ -155,8 +155,18 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     return;
                 }
 
-                _mapServer.RemoveClient(client);
-                _eventServer.RemoveClient(client);
+                if (client.EventMap)
+                {
+                    _eventServer.RemoveClient(client);
+                }
+                else if (client.PvpMap)
+                {
+                    _pvpServer.RemoveClient(client);
+                }
+                else
+                {
+                    _mapServer.RemoveClient(client);
+                }
 
                 client.Tamer.NewLocation(portal.DestinationMapId, portal.DestinationX, portal.DestinationY);
                 await _sender.Send(new UpdateCharacterLocationCommand(client.Tamer.Location));

@@ -12,6 +12,7 @@ using DigitalWorldOnline.Commons.Packets.Chat;
 using MediatR;
 using Serilog;
 using DigitalWorldOnline.Commons.Models.Asset;
+using Microsoft.Identity.Client;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -71,6 +72,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (extraEvolution == null)
             {
                 _logger.Warning($"Extra Evolution Item not found for Item Craft !!");
+                return;
+            }
+
+            if (targetDigimon.Level != extraEvolution.RequiredLevel)
+            {
+                client.Send(new SystemMessagePacket($"Craft Failed ! Digimon {client.Partner.Name} level dont meet the requirements."));
+                _logger.Debug($"Digimon {client.Partner.Name} failed dont have the requeriments.");
                 return;
             }
 

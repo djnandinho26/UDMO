@@ -56,19 +56,10 @@ namespace DigitalWorldOnline.GameHost
                 if (tamer.TargetSummonMobs.Count > 0)
                     PartnerAutoAttackSummon(tamer);
 
-                if (tamer.TargetPartner != null && client.PvpMap)
+                if (tamer.TargetPartner != null)
                 {
-                    _logger.Information($"Digimon Target found");
-
-                    if (tamer.Partner.Level <= 25 || tamer.TargetPartner.Level <= 25)
-                    {
-                        _logger.Information($"You cant attack noobs !!");
-                    }
-                    else
-                    {
-                        _logger.Information($"Calling PartnerAutoAttackPlayer");
-                        PartnerAutoAttackPlayer(tamer);
-                    }
+                    tamer.Partner?.StopAutoAttack();
+                    tamer.StopBattle();
                 }
                     
                 CheckTimeReward(client);

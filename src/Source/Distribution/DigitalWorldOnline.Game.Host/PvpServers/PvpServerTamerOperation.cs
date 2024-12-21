@@ -47,8 +47,19 @@ namespace DigitalWorldOnline.GameHost
                 if (tamer.TargetMobs.Count > 0)
                     PartnerAutoAttackMob(tamer);
 
-                if (tamer.TargetPartner != null || tamer.TargetPartners.Count > 0)
-                    PartnerAutoAttackPlayer(tamer);
+                if (tamer.TargetPartners.Count > 0)
+                {
+                    _logger.Information($"Digimon Target found");
+
+                    if (tamer.Partner.Level <= 25 || tamer.TargetPartner.Level <= 25)
+                    {
+                        _logger.Information($"You cant attack noobs !!");
+                    }
+                    else
+                    {
+                        PartnerAutoAttackPlayer(tamer);
+                    }
+                }
 
                 tamer.AutoRegen();
                 tamer.ActiveEvolutionReduction();
