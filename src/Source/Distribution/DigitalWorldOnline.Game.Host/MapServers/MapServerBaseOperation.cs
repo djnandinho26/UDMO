@@ -149,16 +149,22 @@ namespace DigitalWorldOnline.GameHost
         {
             if (DateTime.Now > _lastMobsSearch)
             {
-                foreach (var map in Maps.Where(x => x.Initialized))
-                {
-                    var mapMobs =
-                        _mapper.Map<IList<MobConfigModel>>(await _sender.Send(new MapMobConfigsQuery(map.Id),
-                            cancellationToken));
+                // Take a snapshot of initialized maps
+                var initializedMaps = Maps.Where(x => x.Initialized).ToList();
 
+                foreach (var map in initializedMaps)
+                {
+                    // Fetch mob configurations for the map
+                    var mapMobs = _mapper.Map<IList<MobConfigModel>>(
+                        await _sender.Send(new MapMobConfigsQuery(map.Id), cancellationToken)
+                    );
+
+                    // Check if an update is necessary and apply it
                     if (map.RequestMobsUpdate(mapMobs))
                         map.UpdateMobsList();
                 }
 
+                // Update the mob search timestamp
                 _lastMobsSearch = DateTime.Now.AddSeconds(30);
             }
         }
@@ -171,7 +177,9 @@ namespace DigitalWorldOnline.GameHost
         {
             if (DateTime.Now > _lastConsignedShopsSearch)
             {
-                foreach (var map in Maps.Where(x => x.Initialized))
+                // Take a snapshot of initialized maps
+                var initializedMaps = Maps.Where(x => x.Initialized).ToList();
+                foreach (var map in initializedMaps)
                 {
                     if (map.Operating)
                         continue;

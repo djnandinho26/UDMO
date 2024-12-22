@@ -124,7 +124,10 @@ namespace DigitalWorldOnline.GameHost
         {
             if (DateTime.Now > _lastMobsSearch)
             {
-                foreach (var map in Maps.Where(x => x.Initialized))
+                // Take a snapshot of initialized maps
+                var initializedMaps = Maps.Where(x => x.Initialized).ToList();
+
+                foreach (var map in initializedMaps)
                 {
                     var mapMobs =
                         _mapper.Map<IList<MobConfigModel>>(await _sender.Send(new MapMobConfigsQuery(map.Id),

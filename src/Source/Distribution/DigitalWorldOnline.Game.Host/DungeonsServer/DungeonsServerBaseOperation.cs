@@ -238,7 +238,10 @@ namespace DigitalWorldOnline.GameHost
         /// <returns>The mobs collection</returns>
         private async Task GetMapMobs(CancellationToken cancellationToken)
         {
-            foreach (var map in Maps.Where(x => x.Initialized).ToList())
+            // Take a snapshot of initialized maps
+            var initializedMaps = Maps.Where(x => x.Initialized).ToList();
+
+            foreach (var map in initializedMaps)
             {
                 var mapMobs =
                     _mapper.Map<IList<MobConfigModel>>(await _sender.Send(new MapMobConfigsQuery(map.Id),
@@ -264,7 +267,10 @@ namespace DigitalWorldOnline.GameHost
 
         private async Task GetMapMobs()
         {
-            foreach (var map in Maps.Where(x => x.Initialized))
+            // Take a snapshot of initialized maps
+            var initializedMaps = Maps.Where(x => x.Initialized).ToList();
+
+            foreach (var map in initializedMaps)
             {
                 var mapMobs = _mapper.Map<IList<MobConfigModel>>(await _sender.Send(new MapMobConfigsQuery(map.Id)));
 
@@ -294,7 +300,9 @@ namespace DigitalWorldOnline.GameHost
         {
             if (DateTime.Now > _lastConsignedShopsSearch)
             {
-                foreach (var map in Maps.Where(x => x.Initialized))
+                // Take a snapshot of initialized maps
+                var initializedMaps = Maps.Where(x => x.Initialized).ToList();
+                foreach (var map in initializedMaps)
                 {
                     if (map.Operating)
                         continue;
