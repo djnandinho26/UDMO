@@ -7,6 +7,7 @@ using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Packets.Chat;
+using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.Items;
 using DigitalWorldOnline.Commons.Utils;
 using MediatR;
@@ -167,13 +168,24 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                     break;
 
-                case ItemListMovimentationEnum.WarehouseToInventory:
+                case ItemListMovimentationEnum.WarehouseToInventory: // fix duplicação
                     {
                         var srcSlot = originSlot - GeneralSizeEnum.WarehouseMinSlot.GetHashCode();
                         var dstSlot = destinationSlot - GeneralSizeEnum.InventoryMinSlot.GetHashCode();
 
                         var sourceItem = client.Tamer.Warehouse.FindItemBySlot(srcSlot);
                         var destItem = client.Tamer.Inventory.FindItemBySlot(dstSlot);
+
+                        // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
+                        if (sourceItem.Amount < amountToSplit)
+                        {
+                            //fazer logica para adicionar a blacklist
+                            //ou banir permanentemente
+
+                            //client.Send(new DisconnectUserPacket($"A quantidade solicitada excede a disponível no armazém.").Serialize());
+                            Console.WriteLine($"[ SISTEMA ] VOCE NAO TEM {amountToSplit} ITENS PARA DIVIDIR");
+                            break; // Encerra a operação
+                        }
 
                         if (destItem.ItemId > 0)
                         {
@@ -197,6 +209,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                     break;
 
+
                 case ItemListMovimentationEnum.WarehouseToAccountWarehouse:
                     {
                         var srcSlot = originSlot - GeneralSizeEnum.WarehouseMinSlot.GetHashCode();
@@ -204,6 +217,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         var sourceItem = client.Tamer.Warehouse.FindItemBySlot(srcSlot);
                         var destItem = client.Tamer.AccountWarehouse.FindItemBySlot(dstSlot);
+
+                        // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
+                        if (sourceItem.Amount < amountToSplit)
+                        {
+                            //fazer logica para adicionar a blacklist
+                            //ou banir permanentemente
+
+                            //client.Send(new DisconnectUserPacket($"A quantidade solicitada excede a disponível no armazém.").Serialize());
+                            Console.WriteLine($"[ SISTEMA ] VOCE NAO TEM {amountToSplit} ITENS PARA DIVIDIR");
+                            break; // Encerra a operação
+                        }
 
                         if (destItem.ItemId > 0)
                         {
@@ -265,6 +289,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         var sourceItem = client.Tamer.AccountWarehouse.FindItemBySlot(srcSlot);
                         var destItem = client.Tamer.Inventory.FindItemBySlot(dstSlot);
 
+                        // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
+                        if (sourceItem.Amount < amountToSplit)
+                        {
+                            //fazer logica para adicionar a blacklist
+                            //ou banir permanentemente
+
+                            //client.Send(new DisconnectUserPacket($"A quantidade solicitada excede a disponível no armazém.").Serialize());
+                            Console.WriteLine($"[ SISTEMA ] VOCE NAO TEM {amountToSplit} ITENS PARA DIVIDIR");
+                            break; // Encerra a operação
+                        }
+
                         if (destItem.ItemId > 0)
                         {
                             destItem.IncreaseAmount(amountToSplit);
@@ -288,12 +323,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     break;
 
                 case ItemListMovimentationEnum.AccountWarehouseToWarehouse:
-                    {
+                {
                         var srcSlot = originSlot - GeneralSizeEnum.AccountWarehouseMinSlot.GetHashCode();
                         var dstSlot = destinationSlot - GeneralSizeEnum.WarehouseMinSlot.GetHashCode();
 
                         var sourceItem = client.Tamer.AccountWarehouse.FindItemBySlot(srcSlot);
                         var destItem = client.Tamer.Warehouse.FindItemBySlot(dstSlot);
+
+                        // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
+                        if (sourceItem.Amount < amountToSplit)
+                        {
+                            //fazer logica para adicionar a blacklist
+                            //ou banir permanentemente
+
+                            //client.Send(new DisconnectUserPacket($"A quantidade solicitada excede a disponível no armazém.").Serialize());
+                            Console.WriteLine($"[ SISTEMA ] VOCE NAO TEM {amountToSplit} ITENS PARA DIVIDIR");
+                            break; // Encerra a operação
+                        }
 
                         if (destItem.ItemId > 0)
                         {
