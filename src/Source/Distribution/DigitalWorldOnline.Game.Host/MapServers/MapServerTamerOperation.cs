@@ -58,8 +58,8 @@ namespace DigitalWorldOnline.GameHost
 
                 if (tamer.TargetPartner != null)
                 {
-                    tamer.Partner?.StopAutoAttack();
                     tamer.StopBattle();
+                    tamer.Partner?.StopAutoAttack();
                 }
                     
                 CheckTimeReward(client);
