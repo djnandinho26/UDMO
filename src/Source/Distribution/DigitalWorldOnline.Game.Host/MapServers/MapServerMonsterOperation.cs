@@ -165,9 +165,20 @@ namespace DigitalWorldOnline.GameHost
                             )
                         ).ToList();
 
+                        var dot2 = mob.DebuffList.ActiveBuffs.Where(buff =>
+                            buff.BuffInfo.SkillInfo.Apply.Any(apply =>
+                                apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.DOT2
+                            )
+                        ).ToList();
+
                         if (debuff.Any())
                         {
                             CheckDebuff(map, mob, debuff);
+                            break;
+                        }
+                        else if (dot2.Any())
+                        {
+                            CheckDebuff(map, mob, dot2);
                             break;
                         }
                     }
@@ -452,6 +463,8 @@ namespace DigitalWorldOnline.GameHost
             // throw new NotImplementedException();
         }
 
+        // -----------------------------------------------------------------------------------------
+
         private static void CheckDebuff(GameMap map, MobConfigModel mob, List<MobDebuffModel> debuffs)
         {
             if (debuffs != null)
@@ -487,6 +500,8 @@ namespace DigitalWorldOnline.GameHost
                 }
             }
         }
+
+        // -----------------------------------------------------------------------------------------
 
         private static void TargetKillSpawn(GameMap map, MobConfigModel mob)
         {

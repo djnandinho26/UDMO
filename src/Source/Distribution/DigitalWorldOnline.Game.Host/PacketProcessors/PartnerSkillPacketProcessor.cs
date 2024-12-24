@@ -1293,10 +1293,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             var finalDmg = client.Tamer.GodMode ? targetMob.CurrentHP : CalculateDamageOrHeal(client, targetMob, skill, _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == skill.SkillId), skillSlot);
 
                             if (finalDmg != 0 && !client.Tamer.GodMode)
-                            {
                                 finalDmg = DebuffReductionDamage(client, finalDmg);
-                            }
-
+                            
                             if (finalDmg <= 0) finalDmg = 1;
                             if (finalDmg > targetMob.CurrentHP) finalDmg = targetMob.CurrentHP;
 
@@ -1306,23 +1304,126 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             {
                                 _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} damage with skill {skill.SkillId} in mob {targetMob?.Id} - {targetMob?.Name}.");
 
-                                _dungeonServer.BroadcastForTamerViewsAndSelf(
-                                    client.TamerId,
-                                    new CastSkillPacket(
-                                        skillSlot,
-                                        attackerHandler,
-                                        targetHandler).Serialize());
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new CastSkillPacket(skillSlot, attackerHandler, targetHandler).Serialize());
 
-                                _dungeonServer.BroadcastForTamerViewsAndSelf(
-                                    client.TamerId,
-                                    new SkillHitPacket(
-                                        attackerHandler,
-                                        targetMob.GeneralHandler,
-                                        skillSlot,
-                                        finalDmg,
-                                        targetMob.CurrentHpRate
-                                        ).Serialize());
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                    new SkillHitPacket(attackerHandler, targetMob.GeneralHandler, skillSlot, finalDmg, targetMob.CurrentHpRate).Serialize());
 
+                                var buffInfo = _assets.BuffInfo.FirstOrDefault(x => x.SkillCode == skill.SkillId || x.DigimonSkillCode == skill.SkillId);
+
+                                if (buffInfo != null)
+                                {
+                                    foreach (var type in buffInfo.SkillInfo.Apply)
+                                    {
+                                        switch (type.Attribute)
+                                        {
+                                            case SkillCodeApplyAttributeEnum.CrowdControl:
+                                                {
+                                                    var rand = new Random();
+
+                                                    if (UtilitiesFunctions.IncreasePerLevelStun.Contains(skill.SkillId))
+                                                    {
+
+                                                        if (type.Chance >= rand.Next(100))
+                                                        {
+                                                            var duration = UtilitiesFunctions.RemainingTimeSeconds((1 * client.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Partner.CurrentType).Skills[skillSlot].CurrentLevel));
+
+                                                            var newMobDebuff = MobDebuffModel.Create(buffInfo.BuffId, skill.SkillId, 0, (1 * client.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Partner.CurrentType).Skills[skillSlot].CurrentLevel));
+                                                            newMobDebuff.SetBuffInfo(buffInfo);
+
+                                                            var activeBuff = targetMob.DebuffList.Buffs.FirstOrDefault(x => x.BuffId == buffInfo.BuffId);
+
+                                                            if (activeBuff != null)
+                                                            {
+                                                                activeBuff.IncreaseEndDate((1 * client.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Partner.CurrentType).Skills[skillSlot].CurrentLevel));
+                                                            }
+                                                            else
+                                                            {
+                                                                targetMob.DebuffList.Buffs.Add(newMobDebuff);
+                                                            }
+
+                                                            if (targetMob.CurrentAction != Commons.Enums.Map.MobActionEnum.CrowdControl)
+                                                            {
+                                                                targetMob.UpdateCurrentAction(Commons.Enums.Map.MobActionEnum.CrowdControl);
+                                                            }
+
+                                                            Thread.Sleep(100);
+
+                                                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AddStunDebuffPacket(targetMob.GeneralHandler, newMobDebuff.BuffId, newMobDebuff.SkillId, duration).Serialize());
+                                                        }
+                                                    }
+                                                    else
+                                                    {
+                                                        if (type.Chance >= rand.Next(100))
+                                                        {
+                                                            var duration = UtilitiesFunctions.RemainingTimeSeconds(skill.TimeForCrowdControl());
+
+                                                            var newMobDebuff = MobDebuffModel.Create(buffInfo.BuffId, skill.SkillId, 0, skill.TimeForCrowdControl());
+                                                            newMobDebuff.SetBuffInfo(buffInfo);
+
+                                                            var activeBuff = targetMob.DebuffList.Buffs.FirstOrDefault(x => x.BuffId == buffInfo.BuffId);
+
+                                                            if (activeBuff != null)
+                                                            {
+                                                                activeBuff.IncreaseEndDate(skill.TimeForCrowdControl());
+                                                            }
+                                                            else
+                                                            {
+                                                                targetMob.DebuffList.Buffs.Add(newMobDebuff);
+                                                            }
+
+                                                            if (targetMob.CurrentAction != Commons.Enums.Map.MobActionEnum.CrowdControl)
+                                                            {
+                                                                targetMob.UpdateCurrentAction(Commons.Enums.Map.MobActionEnum.CrowdControl);
+                                                            }
+
+                                                            Thread.Sleep(100);
+
+                                                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AddStunDebuffPacket(targetMob.GeneralHandler, newMobDebuff.BuffId, newMobDebuff.SkillId, duration).Serialize());
+                                                        }
+
+                                                    }
+                                                }
+                                                break;
+
+                                            default:
+                                                {
+                                                    var rand = new Random();
+
+                                                    if (type.Chance >= rand.Next(100))
+                                                    {
+                                                        var duration = UtilitiesFunctions.RemainingTimeSeconds(buffInfo.TimeType);
+
+                                                        var newMobDebuff = MobDebuffModel.Create(buffInfo.BuffId, skill.SkillId, 0, buffInfo.TimeType);
+
+                                                        newMobDebuff.SetBuffInfo(buffInfo);
+
+                                                        var activeBuff = targetMob.DebuffList.Buffs.FirstOrDefault(x => x.BuffId == buffInfo.BuffId);
+
+                                                        if (activeBuff != null)
+                                                        {
+                                                            activeBuff.IncreaseEndDate(duration);
+                                                        }
+                                                        else
+                                                        {
+                                                            targetMob.DebuffList.Buffs.Add(newMobDebuff);
+                                                        }
+
+                                                        if (targetMob.CurrentAction != Commons.Enums.Map.MobActionEnum.CrowdControl)
+                                                        {
+                                                            targetMob.UpdateCurrentAction(Commons.Enums.Map.MobActionEnum.CrowdControl);
+                                                        }
+
+                                                        Thread.Sleep(100);
+
+                                                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AddStunDebuffPacket(targetMob.GeneralHandler, newMobDebuff.BuffId, newMobDebuff.SkillId, duration).Serialize());
+                                                    }
+                                                }
+                                                break;
+                                        }
+                                    }
+                                }
 
                             }
                             else
@@ -2108,6 +2209,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                 {
                                     foreach (var type in buffInfo.SkillInfo.Apply)
                                     {
+                                        _logger.Debug($"Searching Debuff !! {type.Attribute}");
+
                                         switch (type.Attribute)
                                         {
                                             case SkillCodeApplyAttributeEnum.CrowdControl:
@@ -2116,8 +2219,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                                                     if (UtilitiesFunctions.IncreasePerLevelStun.Contains(skill.SkillId))
                                                     {
-
-
 
                                                         if (type.Chance >= rand.Next(100))
                                                         {
@@ -2177,6 +2278,77 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                                             _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AddStunDebuffPacket(targetMob.GeneralHandler, newMobDebuff.BuffId, newMobDebuff.SkillId, duration).Serialize());
                                                         }
 
+                                                    }
+                                                }
+                                                break;
+
+                                            case SkillCodeApplyAttributeEnum.DOT2:
+                                                {
+                                                    var rand = new Random();
+
+                                                    if (type.Chance >= rand.Next(100))
+                                                    {
+                                                        var duration = UtilitiesFunctions.RemainingTimeSeconds(buffInfo.TimeType);
+
+                                                        var newMobDebuff = MobDebuffModel.Create(buffInfo.BuffId, skill.SkillId, 0, buffInfo.TimeType);
+
+                                                        newMobDebuff.SetBuffInfo(buffInfo);
+
+                                                        var activeBuff = targetMob.DebuffList.Buffs.FirstOrDefault(x => x.BuffId == buffInfo.BuffId);
+
+                                                        if (activeBuff != null)
+                                                        {
+                                                            activeBuff.IncreaseEndDate(duration);
+                                                        }
+                                                        else
+                                                        {
+                                                            targetMob.DebuffList.Buffs.Add(newMobDebuff);
+                                                        }
+
+                                                        if (targetMob.CurrentAction != Commons.Enums.Map.MobActionEnum.CrowdControl)
+                                                        {
+                                                            targetMob.UpdateCurrentAction(Commons.Enums.Map.MobActionEnum.CrowdControl);
+                                                        }
+
+                                                        Thread.Sleep(100);
+
+                                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AddStunDebuffPacket(targetMob.GeneralHandler, newMobDebuff.BuffId, newMobDebuff.SkillId, duration).Serialize());
+                                                    }
+
+                                                }
+                                                break;
+
+                                            default:
+                                                {
+                                                    var rand = new Random();
+
+                                                    if (type.Chance >= rand.Next(100))
+                                                    {
+                                                        var duration = UtilitiesFunctions.RemainingTimeSeconds(buffInfo.TimeType);
+
+                                                        var newMobDebuff = MobDebuffModel.Create(buffInfo.BuffId, skill.SkillId, 0, buffInfo.TimeType);
+
+                                                        newMobDebuff.SetBuffInfo(buffInfo);
+
+                                                        var activeBuff = targetMob.DebuffList.Buffs.FirstOrDefault(x => x.BuffId == buffInfo.BuffId);
+
+                                                        if (activeBuff != null)
+                                                        {
+                                                            activeBuff.IncreaseEndDate(duration);
+                                                        }
+                                                        else
+                                                        {
+                                                            targetMob.DebuffList.Buffs.Add(newMobDebuff);
+                                                        }
+
+                                                        if (targetMob.CurrentAction != Commons.Enums.Map.MobActionEnum.CrowdControl)
+                                                        {
+                                                            targetMob.UpdateCurrentAction(Commons.Enums.Map.MobActionEnum.CrowdControl);
+                                                        }
+
+                                                        Thread.Sleep(100);
+
+                                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AddStunDebuffPacket(targetMob.GeneralHandler, newMobDebuff.BuffId, newMobDebuff.SkillId, duration).Serialize());
                                                     }
                                                 }
                                                 break;

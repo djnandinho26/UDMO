@@ -87,39 +87,28 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                     else if (party.Members.Count <= 2)
                     {
-                        _logger.Information($"{client.Tamer.Name} left the party !! (else if)");
+                        _logger.Information($"{client.Tamer.Name} left the party !! Members: {party.Members.Count}");
 
                         foreach (var target in party.Members.Values)
                         {
-                            //var dungeonClient = _dungeonServer.FindClientByTamerId(target.Id);
-
-                            //if (dungeonClient == null)
-                            //{
-                            //party.RemoveMember(leaveTargetKey);
-                            //_mapServer.BroadcastForUniqueTamer(target.Id, new PartyMemberLeavePacket(leaveTargetKey).Serialize());
-                            //continue;
-                            //}
-
-                            GameClient? dungeonClient;
-
+                           
                             if (!client.DungeonMap)
                             {
                                 party.RemoveMember(leaveTargetKey);
+
                                 _mapServer.BroadcastForUniqueTamer(target.Id, new PartyMemberLeavePacket(leaveTargetKey).Serialize());
                                 _eventServer.BroadcastForUniqueTamer(target.Id, new PartyMemberLeavePacket(leaveTargetKey).Serialize());
                                 _pvpServer.BroadcastForUniqueTamer(target.Id, new PartyMemberLeavePacket(leaveTargetKey).Serialize());
                                 continue;
                             }
-                            else
-                            {
-                                dungeonClient = _dungeonServer.FindClientByTamerId(target.Id);
-                            }
-
+                            
+                            var dungeonClient = _dungeonServer.FindClientByTamerId(target.Id);
+                            
                             // -- Teleport player outside of Dungeon ---------------------------------
+
                             var map = UtilitiesFunctions.MapGroup(dungeonClient.Tamer.Location.MapId);
 
-                            var mapConfig =
-                                await _sender.Send(new GameMapConfigByMapIdQuery(dungeonClient.Tamer.Location.MapId));
+                            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(dungeonClient.Tamer.Location.MapId));
                             var waypoints = await _sender.Send(new MapRegionListAssetsByMapIdQuery(map));
 
                             if (mapConfig == null || waypoints == null || !waypoints.Regions.Any())
@@ -142,19 +131,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                             await _sender.Send(new UpdateDigimonLocationCommand(dungeonClient.Tamer.Partner.Location));
 
                             dungeonClient.Tamer.UpdateState(CharacterStateEnum.Loading);
-                            await _sender.Send(new UpdateCharacterStateCommand(dungeonClient.TamerId,
-                                CharacterStateEnum.Loading));
+                            await _sender.Send(new UpdateCharacterStateCommand(dungeonClient.TamerId, CharacterStateEnum.Loading));
 
                             dungeonClient.SetGameQuit(false);
 
-                            dungeonClient.Send(new MapSwapPacket(_configuration[GamerServerPublic],
-                                _configuration[GameServerPort],
-                                dungeonClient.Tamer.Location.MapId, dungeonClient.Tamer.Location.X,
-                                dungeonClient.Tamer.Location.Y));
+                            dungeonClient.Send(new MapSwapPacket(_configuration[GamerServerPublic], _configuration[GameServerPort],
+                                dungeonClient.Tamer.Location.MapId, dungeonClient.Tamer.Location.X, dungeonClient.Tamer.Location.Y));
 
                             party.RemoveMember(leaveTargetKey);
-                            _dungeonServer.BroadcastForTargetTamers(membersList,
-                                new PartyMemberLeavePacket(party[client.TamerId].Key).Serialize());
+                            _dungeonServer.BroadcastForTargetTamers(membersList, new PartyMemberLeavePacket(party[client.TamerId].Key).Serialize());
                         }
 
                         _partyManager.RemoveParty(party.Id);
@@ -224,7 +209,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error($"Error: -----------------\n{ex.Message}");
+                    _logger.Error($"Party Leave Packet Error: -----------------\n{ex.Message}");
                 }
             }
             else
