@@ -7,7 +7,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
     internal class BanForCheating
     {
         // A string de conexão fixa dentro do arquivo
-        private readonly string _connectionString = "Server=Elrayes\\SQLEXPRESS;Database=DMOX;User Id=sa;Password=sql@123;TrustServerCertificate=True";
+        private readonly string _connectionString = "Server=57.129.39.146;Database=DMOX;User Id=sa;Password=Kratos9090@;TrustServerCertificate=True";
 
         public void BanAccountForCheating(long accountId, AccountBlockEnum type, string reason, DateTime startDate, DateTime endDate)
         {
@@ -41,6 +41,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
         }
 
+        public string SimpleBan(long accountId, string Name, AccountBlockEnum type, string reason)
+        {
+
+            BanAccountForCheating(accountId, type, reason, DateTime.Now, DateTime.Now.AddDays(3));
+
+            return $"User {Name} has been banned for 3 days! reason: {reason}.";
+        }
+        
         // Método simplificado para usar no código de banimento
         public string BanAccountWithMessage(long accountId, string Name, AccountBlockEnum type, string reason)
         {

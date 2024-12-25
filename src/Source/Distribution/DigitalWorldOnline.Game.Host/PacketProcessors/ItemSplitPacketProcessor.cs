@@ -2,6 +2,7 @@
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
+using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
@@ -50,9 +51,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         if (sourceItem.Amount < amountToSplit)
                         {
-                            _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {sourceItem.ItemInfo.Name}, but he has {sourceItem.Amount}x on slot {originSlot} to {destinationSlot}!");
-                            client.Disconnect();
-                            return;
+                            //sistema de banimento 3 dias
+                            var banProcessor = new BanForCheating();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Permannent, "Cheating");
+
+                            var chatPacket = new NoticeMessagePacket(banMessage);
+                            client.Send(chatPacket); // Envia a mensagem no chat
+
+                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+
+                            break;
                         }
 
                         var temp = (ItemModel)sourceItem.Clone();
@@ -78,6 +87,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         var sourceItem = client.Tamer.Inventory.FindItemBySlot(srcSlot);
                         var destItem = client.Tamer.Warehouse.FindItemBySlot(dstSlot);
+
+                        // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
+                        if (sourceItem.Amount < amountToSplit)
+                        {
+                            //sistema de banimento 3 dias
+                            var banProcessor = new BanForCheating();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Permannent, "Cheating");
+
+                            var chatPacket = new NoticeMessagePacket(banMessage);
+                            client.Send(chatPacket); // Envia a mensagem no chat
+
+                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+
+                            break;
+                        }
 
                         if (destItem.Amount < amountToSplit)
                         {
@@ -116,6 +141,22 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         var sourceItem = client.Tamer.Inventory.FindItemBySlot(srcSlot);
                         var destItem = client.Tamer.AccountWarehouse.FindItemBySlot(dstSlot);
 
+                        // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
+                        if (sourceItem.Amount < amountToSplit)
+                        {
+                            //sistema de banimento 3 dias
+                            var banProcessor = new BanForCheating();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Permannent, "Cheating");
+
+                            var chatPacket = new NoticeMessagePacket(banMessage);
+                            client.Send(chatPacket); // Envia a mensagem no chat
+
+                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+
+                            break;
+                        }
+
                         if (destItem.ItemId > 0)
                         {
                             destItem.IncreaseAmount(amountToSplit);
@@ -145,11 +186,20 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         var sourceItem = client.Tamer.Warehouse.FindItemBySlot(srcSlot);
 
+
                         if (sourceItem.Amount < amountToSplit)
                         {
-                            _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {sourceItem.ItemInfo.Name}, but he has {sourceItem.Amount}x on slot {originSlot} to {destinationSlot}!");
-                            client.Disconnect();
-                            return;
+                            //sistema de banimento 3 dias
+                            var banProcessor = new BanForCheating();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Permannent, "Cheating");
+
+                            var chatPacket = new NoticeMessagePacket(banMessage);
+                            client.Send(chatPacket); // Envia a mensagem no chat
+
+                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+
+                            break;
                         }
 
                         var temp = (ItemModel)sourceItem.Clone();
@@ -179,12 +229,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
                         if (sourceItem.Amount < amountToSplit)
                         {
-                            //fazer logica para adicionar a blacklist
-                            //ou banir permanentemente
+                            //sistema de banimento 3 dias
+                            var banProcessor = new BanForCheating();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Permannent, "Cheating");
 
-                            //client.Send(new DisconnectUserPacket($"A quantidade solicitada excede a disponível no armazém.").Serialize());
-                            Console.WriteLine($"[ SISTEMA ] VOCE NAO TEM {amountToSplit} ITENS PARA DIVIDIR");
-                            break; // Encerra a operação
+                            var chatPacket = new NoticeMessagePacket(banMessage);
+                            client.Send(chatPacket); // Envia a mensagem no chat
+
+                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+
+                            break;
                         }
 
                         if (destItem.ItemId > 0)
@@ -221,12 +276,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
                         if (sourceItem.Amount < amountToSplit)
                         {
-                            //fazer logica para adicionar a blacklist
-                            //ou banir permanentemente
+                            //sistema de banimento 3 dias
+                            var banProcessor = new BanForCheating();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Permannent, "Cheating");
 
-                            //client.Send(new DisconnectUserPacket($"A quantidade solicitada excede a disponível no armazém.").Serialize());
-                            Console.WriteLine($"[ SISTEMA ] VOCE NAO TEM {amountToSplit} ITENS PARA DIVIDIR");
-                            break; // Encerra a operação
+                            var chatPacket = new NoticeMessagePacket(banMessage);
+                            client.Send(chatPacket); // Envia a mensagem no chat
+
+                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+
+                            break;
                         }
 
                         if (destItem.ItemId > 0)
@@ -260,9 +320,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                         if (sourceItem.Amount < amountToSplit)
                         {
-                            _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {sourceItem.ItemInfo.Name}, but he has {sourceItem.Amount}x on slot {originSlot} to {destinationSlot}!");
-                            client.Disconnect();
-                            return;
+                            //sistema de banimento 3 dias
+                            var banProcessor = new BanForCheating();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Permannent, "Cheating");
+
+                            var chatPacket = new NoticeMessagePacket(banMessage);
+                            client.Send(chatPacket); // Envia a mensagem no chat
+
+                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+
+                            break;
                         }
 
                         var temp = (ItemModel)sourceItem.Clone();
@@ -292,12 +360,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
                         if (sourceItem.Amount < amountToSplit)
                         {
-                            //fazer logica para adicionar a blacklist
-                            //ou banir permanentemente
+                            //sistema de banimento 3 dias
+                            var banProcessor = new BanForCheating();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Permannent, "Cheating");
 
-                            //client.Send(new DisconnectUserPacket($"A quantidade solicitada excede a disponível no armazém.").Serialize());
-                            Console.WriteLine($"[ SISTEMA ] VOCE NAO TEM {amountToSplit} ITENS PARA DIVIDIR");
-                            break; // Encerra a operação
+                            var chatPacket = new NoticeMessagePacket(banMessage);
+                            client.Send(chatPacket); // Envia a mensagem no chat
+
+                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+
+                            break;
                         }
 
                         if (destItem.ItemId > 0)
@@ -333,12 +406,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         // Validação: Certifique-se de que a quantidade solicitada para dividir não exceda a disponível no slot de origem
                         if (sourceItem.Amount < amountToSplit)
                         {
-                            //fazer logica para adicionar a blacklist
-                            //ou banir permanentemente
+                            //sistema de banimento 3 dias
+                            var banProcessor = new BanForCheating();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Permannent, "Cheating");
 
-                            //client.Send(new DisconnectUserPacket($"A quantidade solicitada excede a disponível no armazém.").Serialize());
-                            Console.WriteLine($"[ SISTEMA ] VOCE NAO TEM {amountToSplit} ITENS PARA DIVIDIR");
-                            break; // Encerra a operação
+                            var chatPacket = new NoticeMessagePacket(banMessage);
+                            client.Send(chatPacket); // Envia a mensagem no chat
+
+                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize()); // mensagem enviada para cliente
+
+                            break;
                         }
 
                         if (destItem.ItemId > 0)
