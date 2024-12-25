@@ -1185,6 +1185,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                     else
                                     {
                                         #region Hit Damage
+
                                         var critBonusMultiplier = 0.00;
                                         var blocked = false;
                                         var finalDmg = client.Tamer.GodMode ? targetMob.CurrentHP : CalculateFinalDamage(client, targetMob, out critBonusMultiplier, out blocked);
@@ -1193,9 +1194,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                         {
                                             finalDmg = DebuffReductionDamage(client, finalDmg);
                                         }
+
                                         #endregion
 
                                         #region Take Damage
+
                                         if (finalDmg <= 0) finalDmg = 1;
                                         if (finalDmg > targetMob.CurrentHP) finalDmg = targetMob.CurrentHP;
 
@@ -1207,15 +1210,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                         {
                                             _logger.Verbose($"Partner {client.Partner.Id} inflicted {finalDmg} to mob {targetMob?.Id} - {targetMob?.Name}({targetMob?.Type}).");
 
-                                            _mapServer.BroadcastForTamerViewsAndSelf(
-                                                client.TamerId,
-                                                new HitPacket(
-                                                    attackerHandler,
-                                                    targetHandler,
-                                                    finalDmg,
-                                                    targetMob.HPValue,
-                                                    newHp,
-                                                    hitType).Serialize());
+                                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HitPacket(attackerHandler, targetHandler, finalDmg, targetMob.HPValue, newHp, hitType).Serialize());
                                         }
                                         else
                                         {
@@ -1242,6 +1238,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                                     new SetCombatOffPacket(attackerHandler).Serialize());
                                             }
                                         }
+
                                         #endregion
                                     }
 

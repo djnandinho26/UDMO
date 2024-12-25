@@ -50,14 +50,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         public async Task Process(GameClient client, byte[] packetData)
         {
-            //_logger.Information($"Skill Request Packet 1327");
-
             var packet = new GamePacketReader(packetData);
 
             int SkillId = packet.ReadInt();
 
             _logger.Debug($"SkillId: {SkillId}");
+
             var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
             var tamerSkill = _assets.TamerSkills.FirstOrDefault(x => x.SkillId == SkillId);
 
             if (tamerSkill == null)
@@ -67,14 +67,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
             else
             {
-                var buffinfo = _assets.BuffInfo.FirstOrDefault(x => x.BuffId == tamerSkill?.BuffId);
-
-                if (buffinfo == null)
-                {
-                    _logger.Error($"buffinfo: {tamerSkill?.BuffId} not found in Asset.Buff !!");
-                    return;
-                }
-                else
+                if (tamerSkill.BuffId == 0)
                 {
                     var skillInfo = _assets.SkillInfo.FirstOrDefault(x => x.SkillId == tamerSkill.SkillCode);
 
@@ -87,27 +80,81 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     {
                         var TargetType = (SkillTargetTypeEnum)skillInfo.Target;
 
+                        _logger.Debug($"TamerSkill Type: {TargetType}");
+
                         switch (TargetType)
                         {
                             case SkillTargetTypeEnum.Tamer:
                                 break;
                             case SkillTargetTypeEnum.Digimon:
-                            {
-                                await TamerSkillUniqueTarget(client, SkillId, tamerSkill, buffinfo, skillInfo,
-                                    mapConfig);
-                            }
+                                {
+                                    //await TamerSkillUniqueTarget(client, SkillId, tamerSkill, buffinfo, skillInfo, mapConfig);
+                                }
                                 break;
                             case SkillTargetTypeEnum.Both:
                                 break;
                             case SkillTargetTypeEnum.Party:
-                            {
-                                await PartySkillSwitch(client, SkillId, tamerSkill, buffinfo, skillInfo, mapConfig);
-                            }
+                                {
+                                    //await PartySkillSwitch(client, SkillId, tamerSkill, buffinfo, skillInfo, mapConfig);
+                                }
+                                break;
+                            case SkillTargetTypeEnum.Mob:
+                                {
+                                    await TamerSkillOnMob(client, SkillId, tamerSkill, skillInfo, mapConfig);
+                                }
                                 break;
                             default:
                                 break;
                         }
                     }
+
+                }
+                else
+                {
+                    var buffinfo = _assets.BuffInfo.FirstOrDefault(x => x.BuffId == tamerSkill?.BuffId);
+
+                    if (buffinfo == null)
+                    {
+                        _logger.Error($"buffinfo: {tamerSkill?.BuffId} not found in Asset.Buff !!");
+                        return;
+                    }
+                    else
+                    {
+                        var skillInfo = _assets.SkillInfo.FirstOrDefault(x => x.SkillId == tamerSkill.SkillCode);
+
+                        if (skillInfo == null)
+                        {
+                            _logger.Error($"skillInfo: {SkillId} not found in Asset.SkillInfo !!");
+                            return;
+                        }
+                        else
+                        {
+                            var TargetType = (SkillTargetTypeEnum)skillInfo.Target;
+
+                            switch (TargetType)
+                            {
+                                case SkillTargetTypeEnum.Tamer:
+                                    break;
+                                case SkillTargetTypeEnum.Digimon:
+                                    {
+                                        await TamerSkillUniqueTarget(client, SkillId, tamerSkill, buffinfo, skillInfo,
+                                            mapConfig);
+                                    }
+                                    break;
+                                case SkillTargetTypeEnum.Both:
+                                    break;
+                                case SkillTargetTypeEnum.Party:
+                                    {
+                                        await PartySkillSwitch(client, SkillId, tamerSkill, buffinfo, skillInfo, mapConfig);
+                                    }
+                                    break;
+                                default:
+                                    break;
+                            }
+                        }
+
+                    }
+
                 }
             }
         }
@@ -731,6 +778,25 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     await _sender.Send(new UpdateTamerSkillCooldownByIdCommand(activeSkill));
                 }
             }
+        }
+
+        private async Task TamerSkillOnMob(GameClient client, int SkillId, TamerSkillAssetModel? targetSkill, SkillInfoAssetModel? TargetSkillInfo, MapConfigDTO? mapConfig)
+        {
+            var activeSkill = client.Tamer.ActiveSkill.FirstOrDefault(x => x.SkillId == SkillId);
+
+            if (activeSkill != null)
+            {
+                activeSkill.SetCooldown((int)(TargetSkillInfo.Cooldown / 1000.0));
+            }
+            else
+            {
+                activeSkill = client.Tamer.ActiveSkill.FirstOrDefault(x => x.SkillId == 0);
+                activeSkill.SetTamerSkill(SkillId, (int)(TargetSkillInfo.Cooldown / 1000.0), TamerSkillTypeEnum.Normal);
+            }
+
+            client.Send(new UpdateStatusPacket(client.Tamer));
+
+            await _sender.Send(new UpdateTamerSkillCooldownByIdCommand(activeSkill));
         }
     }
 }

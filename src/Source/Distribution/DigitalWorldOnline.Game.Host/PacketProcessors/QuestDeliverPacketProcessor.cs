@@ -303,11 +303,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             {
                 _logger.Verbose($"Character {client.TamerId} received quest {questReward.Quest.QuestId} exp reward.");
 
-                var tamerExpToReceive = rewardObject.Amount / 10; //TODO: +bonus
+                var tamerExpToReceive = rewardObject.Amount / 10;
                 var tamerResult = ReceiveTamerExp(client.Tamer, tamerExpToReceive);
 
-                var partnerExpToReceive = rewardObject.Amount; //TODO: +bonus
+                var partnerExpToReceive = rewardObject.Amount / 5;
                 var partnerResult = ReceivePartnerExp(client.Partner, partnerExpToReceive);
+
+                _logger.Verbose($"Tamer {client.TamerId}:{client.Tamer.Name} received TamerExp: {tamerExpToReceive} and PartnerExp: {partnerExpToReceive} from quest {questReward.Quest.QuestId}.");
 
                 client.Send(
                     new ReceiveExpPacket(
@@ -321,6 +323,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         client.Partner.CurrentEvolution.SkillExperience
                     )
                 );
+
                 var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
 
                 if (tamerResult.LevelGain > 0 || partnerResult.LevelGain > 0)

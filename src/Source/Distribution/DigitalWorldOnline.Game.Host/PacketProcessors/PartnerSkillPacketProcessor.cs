@@ -2094,7 +2094,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         targetMobs.Add(mob);
                     }
 
-                    _logger.Verbose($"Skill Type: {skillType}");
+                    _logger.Debug($"Skill Type: {skillType}");
 
                     if (targetMobs.Any())
                     {
@@ -2305,6 +2305,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                                                             targetMob.DebuffList.Buffs.Add(newMobDebuff);
                                                         }
 
+                                                        _logger.Debug($"TargetMob Action !! {targetMob.CurrentAction}");
+
                                                         if (targetMob.CurrentAction != Commons.Enums.Map.MobActionEnum.CrowdControl)
                                                         {
                                                             targetMob.UpdateCurrentAction(Commons.Enums.Map.MobActionEnum.CrowdControl);
@@ -2312,7 +2314,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                                                         Thread.Sleep(100);
 
-                                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new AddStunDebuffPacket(targetMob.GeneralHandler, newMobDebuff.BuffId, newMobDebuff.SkillId, duration).Serialize());
+                                                        //_logger.Information($"Sending Packet ...");
+                                                        //_logger.Information($"BuffId: {newMobDebuff.BuffId} | SkillCode: {newMobDebuff.SkillId} | Damage: ");
+
+                                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                            new AddDotDebuffPacket(attackerHandler, targetHandler, newMobDebuff.BuffId, targetMob.CurrentHpRate, 100, 0).Serialize());
                                                     }
 
                                                 }

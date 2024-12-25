@@ -160,25 +160,22 @@ namespace DigitalWorldOnline.GameHost
                 case MobActionEnum.CrowdControl:
                     {
                         var debuff = mob.DebuffList.ActiveBuffs.Where(buff =>
-                            buff.BuffInfo.SkillInfo.Apply.Any(apply =>
-                                apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.CrowdControl
-                            )
-                        ).ToList();
+                            buff.BuffInfo.SkillInfo.Apply.Any(apply => apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.CrowdControl)).ToList();
 
-                        var dot2 = mob.DebuffList.ActiveBuffs.Where(buff =>
+                        var dot = mob.DebuffList.ActiveBuffs.Where(buff =>
                             buff.BuffInfo.SkillInfo.Apply.Any(apply =>
-                                apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.DOT2
-                            )
-                        ).ToList();
+                            apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.DOT ||
+                            apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.DOT2
+                            )).ToList();
 
                         if (debuff.Any())
                         {
                             CheckDebuff(map, mob, debuff);
                             break;
                         }
-                        else if (dot2.Any())
+                        else if (dot.Any())
                         {
-                            CheckDebuff(map, mob, dot2);
+                            CheckDotDebuff(map, mob, dot);
                             break;
                         }
                     }
@@ -257,8 +254,7 @@ namespace DigitalWorldOnline.GameHost
                             }
                         }
 
-                        map.BroadcastForTargetTamers(mob.TamersViewing,
-                            new SyncConditionPacket(mob.GeneralHandler, ConditionEnum.Default).Serialize());
+                        map.BroadcastForTargetTamers(mob.TamersViewing, new SyncConditionPacket(mob.GeneralHandler, ConditionEnum.Default).Serialize());
                         mob.Move();
                         map.BroadcastForTargetTamers(mob.TamersViewing, new MobWalkPacket(mob).Serialize());
                     }
@@ -294,11 +290,7 @@ namespace DigitalWorldOnline.GameHost
                         if (mob.DebuffList.ActiveBuffs.Count > 0)
                         {
                             var debuff = mob.DebuffList.ActiveBuffs.Where(buff =>
-                                buff.BuffInfo.SkillInfo.Apply.Any(apply =>
-                                    apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.CrowdControl
-                                )
-                            ).ToList();
-
+                                buff.BuffInfo.SkillInfo.Apply.Any(apply => apply.Attribute == Commons.Enums.SkillCodeApplyAttributeEnum.CrowdControl)).ToList();
 
                             if (debuff.Any())
                             {
@@ -344,8 +336,7 @@ namespace DigitalWorldOnline.GameHost
                                 if (missed)
                                 {
                                     mob.UpdateLastHitTry();
-                                    map.BroadcastForTargetTamers(mob.TamersViewing,
-                                        new MissHitPacket(mob.GeneralHandler, mob.TargetHandler).Serialize());
+                                    map.BroadcastForTargetTamers(mob.TamersViewing, new MissHitPacket(mob.GeneralHandler, mob.TargetHandler).Serialize());
                                     mob.UpdateLastHit();
                                     break;
                                 }
@@ -365,8 +356,7 @@ namespace DigitalWorldOnline.GameHost
                                 if (targetTamer.TargetMobs.Count <= 1)
                                 {
                                     targetTamer.StopBattle();
-                                    map.BroadcastForTamerViewsAndSelf(targetTamer.Id,
-                                        new SetCombatOffPacket(targetTamer.Partner.GeneralHandler).Serialize());
+                                    map.BroadcastForTamerViewsAndSelf(targetTamer.Id, new SetCombatOffPacket(targetTamer.Partner.GeneralHandler).Serialize());
                                 }
                             }
                         }
@@ -497,6 +487,63 @@ namespace DigitalWorldOnline.GameHost
                             mob.DebuffList.Buffs.Remove(debuff);
                         }
                     }
+                }
+            }
+        }
+
+        private static void CheckDotDebuff(GameMap map, MobConfigModel mob, List<MobDebuffModel> debuffs)
+        {
+            //Console.WriteLine($"CheckDotDebuff (MapServer)!! {mob.CurrentAction}");
+
+            if (debuffs != null)
+            {
+                for (int i = 0; i < debuffs.Count; i++)
+                {
+                    var debuff = debuffs[i];
+
+                    if (debuff.DebuffExpired && mob.CurrentAction == MobActionEnum.CrowdControl)
+                    {
+                        debuffs.Remove(debuff);
+
+                        if (debuffs.Count == 0)
+                        {
+                            map.BroadcastForTargetTamers(mob.TamersViewing,
+                                new RemoveBuffPacket(mob.GeneralHandler, debuff.BuffId, 1).Serialize());
+
+                            mob.DebuffList.Buffs.Remove(debuff);
+
+                            mob.UpdateCurrentAction(MobActionEnum.Wait);
+                            mob.SetNextAction();
+                        }
+                        else
+                        {
+                            mob.DebuffList.Buffs.Remove(debuff);
+                        }
+                    }
+                    else if (!debuff.DebuffExpired && mob.CurrentAction == MobActionEnum.CrowdControl)
+                    {
+                        if (!mob.Dead && !mob.Chasing && mob.TargetAlive)
+                        {
+                            var diff = UtilitiesFunctions.CalculateDistance(
+                                mob.CurrentLocation.X, mob.Target.Location.X,
+                                mob.CurrentLocation.Y, mob.Target.Location.Y);
+
+                            if (diff <= 1900)
+                            {
+                                if (mob.Target != null)
+                                {
+                                    mob.UpdateCurrentAction(MobActionEnum.Wait);
+                                    mob.SetNextAction();
+                                }
+                            }
+                            else
+                            {
+                                map.ChaseTarget(mob);
+                            }
+                        }
+
+                    }
+
                 }
             }
         }
