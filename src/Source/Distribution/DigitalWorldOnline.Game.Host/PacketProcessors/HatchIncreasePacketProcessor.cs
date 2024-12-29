@@ -60,7 +60,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var npcId = packet.ReadInt();
             var dataTier = packet.ReadByte();
 
+            //_logger.Information($"Data Type: {dataTier} (0 - Low, 1 - Mid)");
+
             var targetItem = client.Tamer.Incubator.EggId;
+
+            if (targetItem == 0)
+            {
+                _logger.Error($"targetItem not found !!");
+                return;
+            }
+
+            var itemInfo = _assets.ItemInfo.FirstOrDefault(x => x.ItemId == targetItem);
+
+            if (itemInfo == null)
+            {
+                _logger.Error($"ItemInfo not found !!");
+                return;
+            }
 
             var hatchInfo = _assets.Hatchs.FirstOrDefault(x => x.ItemId == targetItem);
 
@@ -71,8 +87,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            var hatchConfig =
-                _configs.Hatchs.FirstOrDefault(x => x.Type.GetHashCode() == client.Tamer.Incubator.HatchLevel + 1);
+            var hatchConfig = _configs.Hatchs.FirstOrDefault(x => x.Type.GetHashCode() == client.Tamer.Incubator.HatchLevel + 1);
 
             if (hatchConfig == null)
             {
@@ -85,41 +100,33 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            if ((client.Tamer.Incubator.HatchLevel + 1) > hatchInfo.EggType && dataTier == 0 && hatchInfo.EggType > 0)
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
+            // Mid Data use verification
+            if ((client.Tamer.Incubator.HatchLevel + 1) > hatchInfo.LowClassLimitLevel && dataTier == 0)
             {
-                client.Send(new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler,
-                    HatchIncreaseResultEnum.Failled));
-                client.Send(new SystemMessagePacket($"Use MidData to continue. Failed forced!"));
+                client.Send(new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled));
+                client.Send(new SystemMessagePacket($"Data insert Failed ! Use MidData to continue ..."));
+                _logger.Information($"Data insert Failed ! Use MidData to continue ...");
                 return;
             }
 
             if (dataTier == 0)
             {
-                var success = client.Tamer.Inventory.RemoveOrReduceItemsBySection(hatchInfo.LowClassDataSection,
-                    hatchInfo.LowClassDataAmount);
+                //_logger.Information($"Using LowClass Data !!");
 
-                _logger.Debug(
-                    $"LowClassDataSection:{hatchInfo.LowClassDataSection} | LowClassDataAmount:{hatchInfo.LowClassDataAmount}");
-
-                if (targetItem == 0)
-                {
-                    //Console.WriteLine($"VOCE JA USOU TODAS AS DATAS");
-                    return;
-                }
+                var success = client.Tamer.Inventory.RemoveOrReduceItemsBySection(hatchInfo.LowClassDataSection, hatchInfo.LowClassDataAmount);
 
                 if (!success)
                 {
-                    client.Send(new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler,
-                        HatchIncreaseResultEnum.Failled));
-                    _logger.Error(
-                        $"Invalid low class data amount for egg {targetItem} and section {hatchInfo.LowClassDataSection}.");
-                    client.Send(new SystemMessagePacket(
-                        $"Invalid low class data amount for egg {targetItem} and section {hatchInfo.LowClassDataSection}."));
+                    client.Send(new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled));
+
+                    _logger.Error($"Invalid low class data amount for egg {targetItem} and section {hatchInfo.LowClassDataSection}.");
+                    client.Send(new SystemMessagePacket($"Invalid low class data amount for egg {targetItem} and section {hatchInfo.LowClassDataSection}."));
 
                     //sistema de banimento permanente
                     var banProcessor = new BanForCheating();
-                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name,
-                        AccountBlockEnum.Permannent, "Cheating");
+                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
 
                     var chatPacket = new NoticeMessagePacket(banMessage);
                     client.Send(chatPacket); // Envia a mensagem no chat
@@ -128,251 +135,328 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                     return;
                 }
-            }
-            else
-            {
-                var success = client.Tamer.Inventory.RemoveOrReduceItemsBySection(hatchInfo.MidClassDataSection,
-                    hatchInfo.MidClassDataAmount);
-                if (!success)
-                {
-                    client.Send(new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler,
-                        HatchIncreaseResultEnum.Failled));
-                    _logger.Error(
-                        $"Invalid mid class data amount for egg {targetItem} and section {hatchInfo.MidClassDataSection}.");
-                    client.Send(new SystemMessagePacket(
-                        $"Invalid mid class data amount for egg {targetItem} and section {hatchInfo.MidClassDataSection}."));
-                    return;
-                }
-            }
-
-            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
-            if (hatchInfo.LowClassBreakPoint == hatchInfo.MidClassBreakPoint ||
-                hatchInfo.EggType >= (client.Tamer.Incubator.HatchLevel + 1))
-            {
-                client.Tamer.Incubator.IncreaseLevel();
-                switch (mapConfig?.Type)
-                {
-                    case MapTypeEnum.Dungeon:
-                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                            new HatchIncreaseSucceedPacket(
-                                client.Tamer.GeneralHandler,
-                                client.Tamer.Incubator.HatchLevel
-                            ).Serialize()
-                        );
-                        break;
-
-                    case MapTypeEnum.Event:
-                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                            new HatchIncreaseSucceedPacket(
-                                client.Tamer.GeneralHandler,
-                                client.Tamer.Incubator.HatchLevel
-                            ).Serialize()
-                        );
-                        break;
-
-                    case MapTypeEnum.Pvp:
-                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                            new HatchIncreaseSucceedPacket(
-                                client.Tamer.GeneralHandler,
-                                client.Tamer.Incubator.HatchLevel
-                            ).Serialize()
-                        );
-                        break;
-
-                    default:
-                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                            new HatchIncreaseSucceedPacket(
-                                client.Tamer.GeneralHandler,
-                                client.Tamer.Incubator.HatchLevel
-                            ).Serialize()
-                        );
-                        break;
-                }
-            }
-            else
-            {
-                if (hatchConfig.SuccessChance >= UtilitiesFunctions.RandomDouble())
-                {
-                    client.Tamer.Incubator.IncreaseLevel();
-
-                    switch (mapConfig?.Type)
-                    {
-                        case MapTypeEnum.Dungeon:
-                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new HatchIncreaseSucceedPacket(
-                                    client.Tamer.GeneralHandler,
-                                    client.Tamer.Incubator.HatchLevel
-                                ).Serialize()
-                            );
-                            break;
-
-                        case MapTypeEnum.Event:
-                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new HatchIncreaseSucceedPacket(
-                                    client.Tamer.GeneralHandler,
-                                    client.Tamer.Incubator.HatchLevel
-                                ).Serialize()
-                            );
-                            break;
-
-                        case MapTypeEnum.Pvp:
-                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new HatchIncreaseSucceedPacket(
-                                    client.Tamer.GeneralHandler,
-                                    client.Tamer.Incubator.HatchLevel
-                                ).Serialize()
-                            );
-                            break;
-
-                        default:
-                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new HatchIncreaseSucceedPacket(
-                                    client.Tamer.GeneralHandler,
-                                    client.Tamer.Incubator.HatchLevel
-                                ).Serialize()
-                            );
-                            break;
-                    }
-
-                    _logger.Verbose(
-                        $"Character {client.TamerId} succeeded to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel} " +
-                        $"with data section {hatchInfo.LowClassDataSection} x{hatchInfo.LowClassDataAmount}.");
-                }
                 else
                 {
-                    if (hatchConfig.BreakChance >= UtilitiesFunctions.RandomDouble())
+                    if (client.Tamer.Incubator.HatchLevel < hatchInfo.MidClassBreakPoint && itemInfo.Class != 4 &&
+                        (hatchInfo.LowClassBreakPoint == hatchInfo.MidClassBreakPoint || hatchInfo.LowClassLimitLevel == hatchInfo.MidClassBreakPoint))
                     {
-                        if (client.Tamer.Incubator.BackupDiskId > 0)
+                        client.Tamer.Incubator.IncreaseLevel();
+
+                        switch (mapConfig?.Type)
                         {
-                            switch (mapConfig?.Type)
-                            {
-                                case MapTypeEnum.Dungeon:
-                                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new HatchIncreaseFailedPacket(
-                                            client.Tamer.GeneralHandler,
-                                            HatchIncreaseResultEnum.Backuped
-                                        ).Serialize()
-                                    );
-                                    break;
+                            case MapTypeEnum.Dungeon:
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                break;
 
-                                case MapTypeEnum.Event:
-                                    _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new HatchIncreaseFailedPacket(
-                                            client.Tamer.GeneralHandler,
-                                            HatchIncreaseResultEnum.Backuped
-                                        ).Serialize()
-                                    );
-                                    break;
+                            case MapTypeEnum.Event:
+                                _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId, new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                break;
 
-                                case MapTypeEnum.Pvp:
-                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new HatchIncreaseFailedPacket(
-                                            client.Tamer.GeneralHandler,
-                                            HatchIncreaseResultEnum.Backuped
-                                        ).Serialize()
-                                    );
-                                    break;
+                            case MapTypeEnum.Pvp:
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                break;
 
-                                default:
-                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new HatchIncreaseFailedPacket(
-                                            client.Tamer.GeneralHandler,
-                                            HatchIncreaseResultEnum.Backuped
-                                        ).Serialize()
-                                    );
-                                    break;
-                            }
-
-                            _logger.Verbose(
-                                $"Character {client.TamerId} failed to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel + 1} " +
-                                $"with data section {hatchInfo.MidClassDataSection} x{hatchInfo.MidClassDataAmount} and egg was saved by {client.Tamer.Incubator.BackupDiskId}.");
-                        }
-                        else
-                        {
-                            switch (mapConfig?.Type)
-                            {
-                                case MapTypeEnum.Dungeon:
-                                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new HatchIncreaseFailedPacket(
-                                            client.Tamer.GeneralHandler,
-                                            HatchIncreaseResultEnum.Broken
-                                        ).Serialize()
-                                    );
-                                    break;
-
-                                case MapTypeEnum.Event:
-                                    _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler,
-                                            HatchIncreaseResultEnum.Broken).Serialize()
-                                    );
-                                    break;
-
-                                case MapTypeEnum.Pvp:
-                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler,
-                                            HatchIncreaseResultEnum.Broken).Serialize()
-                                    );
-                                    break;
-
-                                default:
-                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler,
-                                            HatchIncreaseResultEnum.Broken).Serialize()
-                                    );
-                                    break;
-                            }
-
-                            _logger.Verbose(
-                                $"Character {client.TamerId} failed to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel + 1} " +
-                                $"with data section {hatchInfo.MidClassDataSection} x{hatchInfo.MidClassDataAmount} and egg has broken.");
-
-                            client.Tamer.Incubator.RemoveEgg();
+                            default:
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                break;
                         }
                     }
                     else
                     {
+                        _logger.Information($"Normal Egg !!");
+
+                        if (hatchConfig.SuccessChance >= UtilitiesFunctions.RandomDouble())
+                        {
+                            client.Tamer.Incubator.IncreaseLevel();
+
+                            switch (mapConfig?.Type)
+                            {
+                                case MapTypeEnum.Dungeon:
+                                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                    break;
+
+                                case MapTypeEnum.Event:
+                                    _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                    break;
+
+                                case MapTypeEnum.Pvp:
+                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                    break;
+
+                                default:
+                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                    break;
+                            }
+
+                            _logger.Verbose($"Tamer {client.TamerId}:{client.Tamer.Name} succeeded to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel}" +
+                                $"with data section {hatchInfo.LowClassDataSection} x{hatchInfo.LowClassDataAmount}.");
+                        }
+                        else
+                        {
+                            if (hatchConfig.BreakChance >= UtilitiesFunctions.RandomDouble())
+                            {
+                                if (client.Tamer.Incubator.BackupDiskId > 0)
+                                {
+                                    switch (mapConfig?.Type)
+                                    {
+                                        case MapTypeEnum.Dungeon:
+                                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Backuped).Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Event:
+                                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Backuped).Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Pvp:
+                                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Backuped).Serialize());
+                                            break;
+
+                                        default:
+                                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Backuped).Serialize());
+                                            break;
+                                    }
+
+                                    _logger.Verbose($"Character {client.TamerId} failed to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel + 1} " +
+                                        $"with data section {hatchInfo.MidClassDataSection} x{hatchInfo.MidClassDataAmount} and egg was saved by {client.Tamer.Incubator.BackupDiskId}.");
+                                }
+                                else
+                                {
+                                    switch (mapConfig?.Type)
+                                    {
+                                        case MapTypeEnum.Dungeon:
+                                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Broken).Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Event:
+                                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Broken).Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Pvp:
+                                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Broken).Serialize());
+                                            break;
+
+                                        default:
+                                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Broken).Serialize());
+                                            break;
+                                    }
+
+                                    _logger.Verbose($"Character {client.TamerId} failed to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel + 1} " +
+                                        $"with data section {hatchInfo.MidClassDataSection} x{hatchInfo.MidClassDataAmount} and egg has broken.");
+
+                                    client.Tamer.Incubator.RemoveEgg();
+                                }
+                            }
+                            else
+                            {
+                                switch (mapConfig?.Type)
+                                {
+                                    case MapTypeEnum.Dungeon:
+                                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled).Serialize());
+                                        break;
+
+                                    case MapTypeEnum.Event:
+                                        _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled).Serialize());
+                                        break;
+
+                                    case MapTypeEnum.Pvp:
+                                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled).Serialize());
+                                        break;
+
+                                    default:
+                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled).Serialize());
+                                        break;
+                                }
+
+                                _logger.Verbose($"Character {client.TamerId} failed to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel + 1} " +
+                                    $"with data section {hatchInfo.MidClassDataSection} x{hatchInfo.MidClassDataAmount}.");
+                            }
+                        }
+                    }
+                }
+            }
+            else
+            {
+                //_logger.Information($"Using MidClass Data !!");
+
+                var success = client.Tamer.Inventory.RemoveOrReduceItemsBySection(hatchInfo.MidClassDataSection, hatchInfo.MidClassDataAmount);
+
+                if (!success)
+                {
+                    client.Send(new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled));
+
+                    _logger.Error($"Invalid mid class data amount for egg {targetItem} and section {hatchInfo.MidClassDataSection}.");
+                    client.Send(new SystemMessagePacket($"Invalid mid class data amount for egg {targetItem} and section {hatchInfo.MidClassDataSection}."));
+                    return;
+                }
+                else
+                {
+                    if (client.Tamer.Incubator.HatchLevel < hatchInfo.MidClassBreakPoint && itemInfo.Class != 4)
+                    {
+                        //_logger.Information($"Perfect Egg !!");
+
+                        client.Tamer.Incubator.IncreaseLevel();
+
                         switch (mapConfig?.Type)
                         {
                             case MapTypeEnum.Dungeon:
-                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new HatchIncreaseFailedPacket(
-                                        client.Tamer.GeneralHandler,
-                                        HatchIncreaseResultEnum.Failled
-                                    ).Serialize()
-                                );
+                                _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId, new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
                                 break;
 
                             case MapTypeEnum.Event:
-                                _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new HatchIncreaseFailedPacket(
-                                        client.Tamer.GeneralHandler,
-                                        HatchIncreaseResultEnum.Failled
-                                    ).Serialize()
-                                );
+                                _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId, new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
                                 break;
 
                             case MapTypeEnum.Pvp:
-                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new HatchIncreaseFailedPacket(
-                                        client.Tamer.GeneralHandler,
-                                        HatchIncreaseResultEnum.Failled
-                                    ).Serialize()
-                                );
+                                _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId, new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
                                 break;
 
                             default:
-                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                    new HatchIncreaseFailedPacket(
-                                        client.Tamer.GeneralHandler,
-                                        HatchIncreaseResultEnum.Failled
-                                    ).Serialize()
-                                );
+                                _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId, new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
                                 break;
                         }
+                    }
+                    else
+                    {
+                        //_logger.Information($"Normal Egg !!");
 
-                        _logger.Verbose(
-                            $"Character {client.TamerId} failed to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel + 1} " +
-                            $"with data section {hatchInfo.MidClassDataSection} x{hatchInfo.MidClassDataAmount}.");
+                        if (hatchConfig.SuccessChance >= UtilitiesFunctions.RandomDouble())
+                        {
+                            client.Tamer.Incubator.IncreaseLevel();
+
+                            switch (mapConfig?.Type)
+                            {
+                                case MapTypeEnum.Dungeon:
+                                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                    break;
+
+                                case MapTypeEnum.Event:
+                                    _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                    break;
+
+                                case MapTypeEnum.Pvp:
+                                    _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                    break;
+
+                                default:
+                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                        new HatchIncreaseSucceedPacket(client.Tamer.GeneralHandler, client.Tamer.Incubator.HatchLevel).Serialize());
+                                    break;
+                            }
+
+                            _logger.Verbose($"Tamer {client.TamerId}:{client.Tamer.Name} succeeded to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel}" +
+                                $"with data section {hatchInfo.LowClassDataSection} x{hatchInfo.LowClassDataAmount}.");
+                        }
+                        else
+                        {
+                            if (hatchConfig.BreakChance >= UtilitiesFunctions.RandomDouble())
+                            {
+                                if (client.Tamer.Incubator.BackupDiskId > 0)
+                                {
+                                    switch (mapConfig?.Type)
+                                    {
+                                        case MapTypeEnum.Dungeon:
+                                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Backuped).Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Event:
+                                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Backuped).Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Pvp:
+                                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Backuped).Serialize());
+                                            break;
+
+                                        default:
+                                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Backuped).Serialize());
+                                            break;
+                                    }
+
+                                    _logger.Verbose($"Character {client.TamerId} failed to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel + 1} " +
+                                        $"with data section {hatchInfo.MidClassDataSection} x{hatchInfo.MidClassDataAmount} and egg was saved by {client.Tamer.Incubator.BackupDiskId}.");
+                                }
+                                else
+                                {
+                                    switch (mapConfig?.Type)
+                                    {
+                                        case MapTypeEnum.Dungeon:
+                                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Broken).Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Event:
+                                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Broken).Serialize());
+                                            break;
+
+                                        case MapTypeEnum.Pvp:
+                                            _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Broken).Serialize());
+                                            break;
+
+                                        default:
+                                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                                new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Broken).Serialize());
+                                            break;
+                                    }
+
+                                    _logger.Verbose($"Character {client.TamerId} failed to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel + 1} " +
+                                        $"with data section {hatchInfo.MidClassDataSection} x{hatchInfo.MidClassDataAmount} and egg has broken.");
+
+                                    client.Tamer.Incubator.RemoveEgg();
+                                }
+                            }
+                            else
+                            {
+                                switch (mapConfig?.Type)
+                                {
+                                    case MapTypeEnum.Dungeon:
+                                        _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled).Serialize());
+                                        break;
+
+                                    case MapTypeEnum.Event:
+                                        _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled).Serialize());
+                                        break;
+
+                                    case MapTypeEnum.Pvp:
+                                        _pvpServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled).Serialize());
+                                        break;
+
+                                    default:
+                                        _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
+                                            new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled).Serialize());
+                                        break;
+                                }
+
+                                _logger.Verbose($"Character {client.TamerId} failed to increase egg {targetItem} to level {client.Tamer.Incubator.HatchLevel + 1} " +
+                                    $"with data section {hatchInfo.MidClassDataSection} x{hatchInfo.MidClassDataAmount}.");
+                            }
+                        }
                     }
                 }
             }

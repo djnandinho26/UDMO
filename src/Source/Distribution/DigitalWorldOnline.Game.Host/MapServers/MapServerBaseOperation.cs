@@ -65,15 +65,14 @@ namespace DigitalWorldOnline.GameHost
             if (DateTime.Now > _lastMapsSearch)
             {
                 var mapsToLoad =
-                    _mapper.Map<List<GameMap>>(await _sender.Send(new GameMapsConfigQuery(MapTypeEnum.Default),
-                        cancellationToken));
+                    _mapper.Map<List<GameMap>>(await _sender.Send(new GameMapsConfigQuery(MapTypeEnum.Default), cancellationToken));
 
                 foreach (var newMap in mapsToLoad)
                 {
                     if (!Maps.Any(x => x.Id == newMap.Id && x.Channel == _loadChannel))
                     {
                         newMap.Channel = _loadChannel;
-                        _logger.Information($"Initializing new {newMap.Type} map {newMap.Id} Ch {_loadChannel} - {newMap.Name} ...");
+                        _logger.Information($"Initializing new {newMap.Type} map {newMap.MapId} Ch {_loadChannel} - {newMap.Name} ...");
                         Maps.Add(newMap);
                     }
                 }
@@ -94,8 +93,10 @@ namespace DigitalWorldOnline.GameHost
                     {
                         if (newMap.Type == MapTypeEnum.Default)
                         {
-                            newMap.Channel = client.Tamer.Channel;
-                            _logger.Information($"Initializing new {newMap.Type} map {newMap.Id} Ch {client.Tamer.Channel} - {newMap.Name} ...");
+                            //newMap.Channel = client.Tamer.Channel;
+                            newMap.Channel = _loadChannel;
+                            //_logger.Information($"Initializing new {newMap.Type} map {newMap.MapId} Ch {client.Tamer.Channel} - {newMap.Name} ...");
+                            _logger.Information($"Initializing new {newMap.Type} map {newMap.MapId} Ch {_loadChannel} - {newMap.Name} ...");
                             Maps.Add(newMap);
                         }
                     }

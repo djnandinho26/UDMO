@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using DigitalWorldOnline.Application;
+﻿using DigitalWorldOnline.Application;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
@@ -15,8 +14,9 @@ using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
 using DigitalWorldOnline.GameHost.EventsServer;
-using MediatR;
 using Microsoft.IdentityModel.Tokens;
+using AutoMapper;
+using MediatR;
 using Serilog;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
@@ -82,7 +82,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 if (character == null || character.Partner == null)
                 {
-                    _logger.Information($"Invalid character information for tamer id {account.LastPlayedCharacter}.");
+                    _logger.Error($"Invalid character information for tamer id {account.LastPlayedCharacter}.");
                     return;
                 }
 
@@ -124,7 +124,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
                         x.SkillCode == buff.SkillId || x.DigimonSkillCode == buff.SkillId));
 
-                _logger.Information($"Getting available channels...");
+                _logger.Debug($"Getting available channels...");
 
                 if (client.DungeonMap)
                 {
@@ -152,7 +152,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 client.SetSentOnceDataSent(character.InitialPacketSentOnceSent);
 
-                _logger.Information($"Updating character state...");
+                _logger.Debug($"Updating character state...");
                 await _sender.Send(new UpdateCharacterStateCommand(character.Id, CharacterStateEnum.Loading));
 
                 var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
@@ -246,22 +246,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
 
                 await ReceiveArenaPoints(client);
-                _logger.Information($"Received arena points for tamer {client.Tamer.Name}");
+                _logger.Debug($"Received arena points for tamer {client.Tamer.Name}");
                 
                 client.Send(new InitialInfoPacket(character, party));
-                _logger.Information($"Send initial packet for tamer {client.Tamer.Name}");
+                _logger.Debug($"Send initial packet for tamer {client.Tamer.Name}");
 
                 await _sender.Send(new ChangeTamerIdTPCommand(client.Tamer.Id, (int)0));
-                _logger.Information($"Send change tamer id tp for tamer {client.Tamer.Name}");
+                _logger.Debug($"Send change tamer id tp for tamer {client.Tamer.Name}");
 
-                _logger.Information($"Updating character channel...");
+                _logger.Debug($"Updating character channel...");
                 await _sender.Send(new UpdateCharacterChannelCommand(character.Id, character.Channel));
 
                 //_logger.Information($"***********************************************************************");
             }
             catch (Exception ex)
             {
-                _logger.Error($"[{account.LastPlayedCharacter}] An error occurred:\n {ex.Message}, Line: {ex.Source.ToString()}, Stacktrace: {ex.StackTrace.ToString()}", ex);
+                _logger.Error($"An error occurred for Player [{account.LastPlayedCharacter}]:\n {ex.Message}\nLine: {ex.Source.ToString()}\nStacktrace: {ex.StackTrace.ToString()}", ex);
+                _logger.Error($"Disconnecting Client");
                 client.Disconnect();
             }
         }

@@ -1997,31 +1997,34 @@ namespace DigitalWorldOnline.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
-                    b.Property<int>("EggType")
+                    b.Property<int>("ItemId")
                         .HasColumnType("int");
 
                     b.Property<int>("HatchType")
                         .HasColumnType("int");
 
-                    b.Property<int>("ItemId")
+                    b.Property<int>("LowClassDataSection")
                         .HasColumnType("int");
 
-                    b.Property<int>("LowClassBreakPoint")
+                    b.Property<int>("MidClassDataSection")
                         .HasColumnType("int");
 
                     b.Property<int>("LowClassDataAmount")
                         .HasColumnType("int");
 
-                    b.Property<int>("LowClassDataSection")
-                        .HasColumnType("int");
-
-                    b.Property<int>("MidClassBreakPoint")
-                        .HasColumnType("int");
-
                     b.Property<int>("MidClassDataAmount")
                         .HasColumnType("int");
 
-                    b.Property<int>("MidClassDataSection")
+                    b.Property<int>("LowClassLimitLevel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MidClassLimitLevel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("LowClassBreakPoint")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MidClassBreakPoint")
                         .HasColumnType("int");
 
                     b.HasKey("Id");

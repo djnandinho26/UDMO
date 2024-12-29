@@ -41,7 +41,17 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Assets
                 .Property(e => e.MidClassDataAmount)
                 .HasColumnType("int")
                 .IsRequired();
-            
+
+            builder
+                .Property(e => e.LowClassLimitLevel)
+                .HasColumnType("int")
+                .IsRequired();
+
+            builder
+                .Property(e => e.MidClassLimitLevel)
+                .HasColumnType("int")
+                .IsRequired();
+
             builder
                 .Property(e => e.LowClassBreakPoint)
                 .HasColumnType("int")
@@ -52,10 +62,6 @@ namespace DigitalWorldOnline.Infrastructure.ContextConfiguration.Assets
                 .HasColumnType("int")
                 .IsRequired();
 
-            builder
-                .Property(e => e.EggType)
-                .HasColumnType("int")
-                .IsRequired();
         }
     }
 }
