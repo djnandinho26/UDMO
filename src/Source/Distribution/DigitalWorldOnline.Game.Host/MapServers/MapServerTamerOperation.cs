@@ -1332,7 +1332,7 @@ namespace DigitalWorldOnline.GameHost
                 blocked = false;
 
                 var critDamageMultiplier = tamer.Partner.CD / 100.0;
-                critBonusMultiplier = baseDamage * critDamageMultiplier;
+                critBonusMultiplier = baseDamage * (critDamageMultiplier / 100);
             }
 
             if (tamer.TargetMob != null)
@@ -1413,7 +1413,7 @@ namespace DigitalWorldOnline.GameHost
                 blocked = false;
 
                 var critDamageMultiplier = tamer.Partner.CD / 100.0;
-                critBonusMultiplier = baseDamage * critDamageMultiplier;
+                critBonusMultiplier = baseDamage * (critDamageMultiplier / 100);
             }
 
             if (tamer.TargetSummonMob != null)
