@@ -654,7 +654,23 @@ namespace DigitalWorldOnline.Commons.Models.Base
 
             return slot > -1 ? RemoveOrReduceItemWithSlot(tempItem, slot) : RemoveOrReduceItemWithoutSlot(tempItem);
         }
+        public List<ItemModel> AddSlotsAll(byte amount = 1)
+        {
+            List<ItemModel> newSlots = new List<ItemModel>();
+            for (byte i = 0;i < amount;i++)
+            {
+                var newItemSlot = new ItemModel(Items.Max(x => x.Slot))
+                {
+                    ItemListId = Id
+                };
 
+                newSlots.Add(newItemSlot);
+                Items.Add(newItemSlot);
+                Size++;
+            }
+
+            return newSlots;
+        }
         public bool RemoveOrReduceItemWithSlot(ItemModel? itemToRemove, int slot)
         {
             if (itemToRemove == null || itemToRemove.Amount == 0 || itemToRemove.ItemId == 0)

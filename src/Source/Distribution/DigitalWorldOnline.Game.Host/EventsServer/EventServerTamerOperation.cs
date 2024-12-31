@@ -1108,11 +1108,14 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             return tamerResult;
         }
 
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, MobConfigModel targetMob, long partnerExpToReceive)
+        private ReceiveExpResult ReceivePartnerExp(GameClient client,DigimonModel partner, MobConfigModel targetMob, long partnerExpToReceive)
         {
-            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
+            var attributeExp = partner.GetAttributeExperience();
+            var elementExp = partner.GetElementExperience();
+            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive,partner);
 
-            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element, targetMob.ExpReward);
+            if (attributeExp < 10000) _expManager.ReceiveAttributeExperience(client,partner,targetMob.Attribute,targetMob.ExpReward);
+            if (elementExp < 10000) _expManager.ReceiveElementExperience(client,partner,targetMob.Element,targetMob.ExpReward);
 
             if (partnerResult.LevelGain > 0)
             {
@@ -1128,12 +1131,15 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             return partnerResult;
         }
 
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, SummonMobModel targetMob, long partnerExpToReceive)
+        private ReceiveExpResult ReceivePartnerExp(GameClient client, DigimonModel partner, SummonMobModel targetMob, long partnerExpToReceive)
         {
             var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
 
-            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element,
-                targetMob.ExpReward);
+            var attributeExp = partner.GetAttributeExperience();
+            var elementExp = partner.GetElementExperience();
+
+            if (attributeExp < 10000) _expManager.ReceiveAttributeExperience(client,partner,targetMob.Attribute,targetMob.ExpReward);
+            if (elementExp < 10000) _expManager.ReceiveElementExperience(client,partner,targetMob.Element,targetMob.ExpReward);
 
             if (partnerResult.LevelGain > 0)
             {
@@ -1149,12 +1155,14 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             return partnerResult;
         }
 
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, EventMobConfigModel targetMob, long partnerExpToReceive)
+        private ReceiveExpResult ReceivePartnerExp(GameClient client,DigimonModel partner, EventMobConfigModel targetMob, long partnerExpToReceive)
         {
-            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
+            var attributeExp = partner.GetAttributeExperience();
+            var elementExp = partner.GetElementExperience();
+            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive,partner);
 
-            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element,
-                targetMob.ExpReward);
+            if (attributeExp < 10000) _expManager.ReceiveAttributeExperience(client,partner,targetMob.Attribute,targetMob.ExpReward);
+            if (elementExp < 10000) _expManager.ReceiveElementExperience(client,partner,targetMob.Element,targetMob.ExpReward);
 
             if (partnerResult.LevelGain > 0)
             {
@@ -1253,7 +1261,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 blocked = false;
 
                 var critDamageMultiplier = tamer.Partner.CD / 100.0;
-                critBonusMultiplier = baseDamage * (critDamageMultiplier / 100);
+                critBonusMultiplier = baseDamage * critDamageMultiplier;
             }
 
             if (tamer.TargetMob != null)
@@ -1334,7 +1342,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                 blocked = false;
 
                 var critDamageMultiplier = tamer.Partner.CD / 100.0;
-                critBonusMultiplier = baseDamage * (critDamageMultiplier / 100);
+                critBonusMultiplier = baseDamage * critDamageMultiplier;
             }
 
             if (tamer.TargetSummonMob != null)

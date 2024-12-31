@@ -1,7 +1,9 @@
 ﻿using DigitalWorldOnline.Application;
+using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Config;
+using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Models.Summon;
 using DigitalWorldOnline.Commons.Utils;
@@ -185,52 +187,156 @@ namespace DigitalWorldOnline.Game.Managers
         }
 
         internal void ReceiveAttributeExperience(
+            GameClient client,
             DigimonModel partner,
             DigimonAttributeEnum targetAttribute,
+            MobExpRewardConfigModel expReward)
+        {
+            short experience = 0;
+
+            if (partner.BaseInfo.Attribute.HasAttributeAdvantage(targetAttribute))
+            {
+                _logger.Verbose($"Partner {partner.Id} received {expReward.NatureExperience} nature exp.");
+                experience = (short)(expReward.NatureExperience / 2);
+            }
+            else if (targetAttribute.HasAttributeAdvantage(partner.BaseInfo.Attribute))
+            {
+                _logger.Verbose($"Partner {partner.Id} lost 25 nature exp.");
+                experience = (short)(expReward.NatureExperience * 2);
+            }
+            else
+            {
+                _logger.Verbose($"Partner {partner.Id} received {expReward.NatureExperience / 2} attribute exp.");
+                experience = (short)expReward.NatureExperience;
+            }
+
+            int currentExp = partner.GetAttributeExperience();
+            int maxExpGain = Math.Max(0,10000 - currentExp);
+
+            if (experience > maxExpGain)
+            {
+                experience = (short)maxExpGain;
+            }
+
+            partner.ReceiveNatureExp(experience);
+            
+            var a = Enum.Parse(typeof(DigimonAttributePacketEnum),partner.BaseInfo.Attribute.ToString());
+
+            if (partner.BaseInfo.Attribute != DigimonAttributeEnum.Data)
+            {
+                client.Send(new NatureExpPacket(0,(byte)(int)a,experience));
+            }
+        }
+
+        internal void ReceiveAttributeExperience(
+            GameClient client,
+            DigimonModel partner,
+            DigimonAttributeEnum targetAttribute,
+            SummonMobExpRewardModel expReward)
+        {
+            short experience = 0;
+
+            if (partner.BaseInfo.Attribute.HasAttributeAdvantage(targetAttribute))
+            {
+                experience = (short)(expReward.NatureExperience / 2);
+            }
+            else if (targetAttribute.HasAttributeAdvantage(partner.BaseInfo.Attribute))
+            {
+                experience = (short)(expReward.NatureExperience * 2);
+            }
+            else
+            {
+                experience = (short)expReward.NatureExperience;
+            }
+
+            int currentExp = partner.GetAttributeExperience();
+            int maxExpGain = Math.Max(0,10000 - currentExp);
+
+            if (experience > maxExpGain)
+            {
+                experience = (short)maxExpGain;
+            }
+
+            partner.ReceiveNatureExp(experience);
+            
+            var a = Enum.Parse(typeof(DigimonAttributePacketEnum),partner.BaseInfo.Attribute.ToString());
+            if (partner.BaseInfo.Attribute != DigimonAttributeEnum.Data)
+            {
+                client.Send(new NatureExpPacket(0,(byte)(int)a,experience));
+            }
+
+        }
+
+
+        internal void ReceiveElementExperience(
+            GameClient client,
+            DigimonModel partner,
             DigimonElementEnum targetElement,
             MobExpRewardConfigModel expReward)
         {
-            if (partner.BaseInfo.Attribute.HasAttributeAdvantage(targetAttribute))
-            {
-                _logger.Verbose($"Partner {partner.Id} received {expReward.NatureExperience} nature exp.");
-                partner.ReceiveNatureExp(expReward.NatureExperience);
-            }
+            short experience = 0;
 
             if (partner.BaseInfo.Element.HasElementAdvantage(targetElement))
             {
-                _logger.Verbose($"Partner {partner.Id} received {expReward.ElementExperience} element exp.");
-                partner.ReceiveElementExp(expReward.ElementExperience);
+                experience = (short)(expReward.ElementExperience / 2);
+            }
+            else if (targetElement.HasElementAdvantage(partner.BaseInfo.Element))
+            {
+                experience = (short)(expReward.ElementExperience * 2);
+            }
+            else
+            {
+                experience = (short)expReward.ElementExperience;
             }
 
-            if (partner.BaseInfo.Element == targetElement)
+            int currentExp = partner.GetElementExperience();
+            int maxExpGain = Math.Max(0,10000 - currentExp);
+
+            if (experience > maxExpGain)
             {
-                _logger.Verbose($"Partner {partner.Id} received {expReward.ElementExperience / 2} element exp.");
-                partner.ReceiveElementExp((short)(expReward.ElementExperience / 2));
+                experience = (short)maxExpGain;
             }
+
+            partner.ReceiveElementExp(experience);
+            
+            var e = Enum.Parse(typeof(DigimonElementPacketEnum),partner.BaseInfo.Element.ToString());
+            client.Send(new NatureExpPacket(1,(byte)(int)e,experience));
+
         }
-        internal void ReceiveAttributeExperience(
-           DigimonModel partner,
-           DigimonAttributeEnum targetAttribute,
-           DigimonElementEnum targetElement,
-           SummonMobExpRewardModel expReward)
+
+
+        internal void ReceiveElementExperience(
+            GameClient client,
+            DigimonModel partner,
+            DigimonElementEnum targetElement,
+            SummonMobExpRewardModel expReward)
         {
-            if (partner.BaseInfo.Attribute.HasAttributeAdvantage(targetAttribute))
-            {
-                _logger.Verbose($"Partner {partner.Id} received {expReward.NatureExperience} nature exp.");
-                partner.ReceiveNatureExp(expReward.NatureExperience);
-            }
+            short experience = 0;
 
             if (partner.BaseInfo.Element.HasElementAdvantage(targetElement))
             {
-                _logger.Verbose($"Partner {partner.Id} received {expReward.ElementExperience} element exp.");
-                partner.ReceiveElementExp(expReward.ElementExperience);
+                experience = (short)(expReward.ElementExperience / 2);
+            }
+            else if (targetElement.HasElementAdvantage(partner.BaseInfo.Element))
+            {
+                experience = (short)(expReward.ElementExperience * 2);
+            }
+            else
+            {
+                experience = (short)expReward.ElementExperience;
             }
 
-            if (partner.BaseInfo.Element == targetElement)
+            int currentExp = partner.GetElementExperience();
+            int maxExpGain = Math.Max(0,10000 - currentExp);
+
+            if (experience > maxExpGain)
             {
-                _logger.Verbose($"Partner {partner.Id} received {expReward.ElementExperience / 2} element exp.");
-                partner.ReceiveElementExp((short)(expReward.ElementExperience / 2));
+                experience = (short)maxExpGain;
             }
+
+            partner.ReceiveElementExp(experience);
+            var e = Enum.Parse(typeof(DigimonElementPacketEnum),partner.BaseInfo.Element.ToString());
+            client.Send(new NatureExpPacket(1,(byte)(int)e,experience));
         }
     }
 }

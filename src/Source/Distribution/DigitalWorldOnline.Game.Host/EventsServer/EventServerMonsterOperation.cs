@@ -744,7 +744,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                     bonusDigimonExp = 0;
                 }
 
-                var partnerResult = ReceivePartnerExp(targetClient.Partner, mob, partnerExpToReceive);
+                var partnerResult = ReceivePartnerExp(targetClient,targetClient.Partner, mob, partnerExpToReceive);
 
                 if (bonusDigimonExp > 0) digimonExp = digimonExp - bonusDigimonExp;
 
@@ -894,7 +894,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                     //if (partnerExpToReceive > 100) partnerExpToReceive += UtilitiesFunctions.RandomInt(-15, 15);
 
                     tamerResult = ReceiveTamerExp(partyMemberClient.Tamer, tamerExpToReceive);
-                    partnerResult = ReceivePartnerExp(partyMemberClient.Partner, mob, partnerExpToReceive);
+                    partnerResult = ReceivePartnerExp(targetClient,partyMemberClient.Partner, mob, partnerExpToReceive);
 
                     // ------------------------------------------------------------------------------------------------------
 
@@ -975,7 +975,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                     partnerExpToReceive = (long)(basePartnerExp * expBonusMultiplier);
 
                     tamerResult = ReceiveTamerExp(partyMemberClient.Tamer, tamerExpToReceive);
-                    partnerResult = ReceivePartnerExp(partyMemberClient.Partner, mob, partnerExpToReceive);
+                    partnerResult = ReceivePartnerExp(targetClient,partyMemberClient.Partner, mob, partnerExpToReceive);
 
                     partyMemberClient.Send(
                         new PartyReceiveExpPacket(
@@ -1913,7 +1913,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                     bonusDigimonExp = 0;
                 }
 
-                var partnerResult = ReceivePartnerExp(targetClient.Partner, mob, partnerExpToReceive);
+                var partnerResult = ReceivePartnerExp(targetClient,targetClient.Partner, mob, partnerExpToReceive);
 
                 if (bonusDigimonExp > 0) digimonExp = digimonExp - bonusDigimonExp;
 
@@ -2385,7 +2385,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                     partnerExpToReceive = (long)(basePartnerExp * expBonusMultiplier);
 
                     tamerResult = ReceiveTamerExp(partyMemberClient.Tamer, tamerExpToReceive);
-                    partnerResult = ReceivePartnerExp(partyMemberClient.Partner, mob, partnerExpToReceive);
+                    partnerResult = ReceivePartnerExp(targetClient,partyMemberClient.Partner, mob, partnerExpToReceive);
 
                     partyMemberClient.Send(
                         new PartyReceiveExpPacket(
@@ -2783,7 +2783,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
                     bonusDigimonExp = 0;
                 }
 
-                var partnerResult = ReceivePartnerExp(targetClient.Partner, mob, partnerExpToReceive);
+                var partnerResult = ReceivePartnerExp(targetClient,targetClient.Partner, mob, partnerExpToReceive);
 
                 if (bonusDigimonExp > 0) digimonExp = digimonExp - bonusDigimonExp;
 

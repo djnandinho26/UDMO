@@ -114,12 +114,6 @@ namespace DigitalWorldOnline.GameHost
 
                                 targetClient?.Send(new LoadMobsPacket(mob));
                             }
-                            else
-                            {
-                                var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == nearTamer);
-
-                                targetClient?.Send(new LoadMobsPacket(mob, true));
-                            }
                         });
                     }
 
@@ -751,7 +745,113 @@ namespace DigitalWorldOnline.GameHost
                 DropReward(map, mob);
         }
 
-        private void ExperienceReward(GameMap map, MobConfigModel mob)
+        private long BonusPartnerExp(GameMap map,MobConfigModel mob)
+        {
+            long totalPartnerExp = 0;
+
+            foreach (var tamer in mob.TargetTamers)
+            {
+                var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == tamer?.Id);
+                if (targetClient == null)
+                    continue;
+
+                double expBonusMultiplier = tamer.BonusEXP / 100.0 + targetClient.ServerExperience / 100.0;
+                double levelDifference = mob.Level - tamer.Partner.Level;
+
+                long partnerExpToReceive = (long)CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.DigimonExperience);
+                long finalExp = (long)(partnerExpToReceive * expBonusMultiplier);
+
+                totalPartnerExp += (finalExp - partnerExpToReceive); 
+
+
+            }
+
+            return totalPartnerExp;
+        }
+
+
+
+
+        private long BonusTamerExp(GameMap map,SummonMobModel mob)
+        {
+            long totalTamerExp = 0; 
+
+            foreach (var tamer in mob.TargetTamers)
+            {
+                var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == tamer?.Id);
+                if (targetClient == null)
+                    continue;
+
+
+                double expBonusMultiplier = tamer.BonusEXP / 100.0 + targetClient.ServerExperience / 100.0;
+                double levelDifference = mob.Level - tamer.Partner.Level;
+
+
+                long tamerExpToReceive = (long)CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.TamerExperience);
+
+                long finalExp = (long)(tamerExpToReceive * expBonusMultiplier);
+
+
+                totalTamerExp += (finalExp - tamerExpToReceive);
+            }
+
+            return totalTamerExp;
+        }
+
+
+        private long BonusPartnerExp(GameMap map,SummonMobModel mob)
+        {
+            long totalPartnerExp = 0; 
+
+            foreach (var tamer in mob.TargetTamers)
+            {
+                var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == tamer?.Id);
+                if (targetClient == null)
+                    continue;
+
+                double expBonusMultiplier = tamer.BonusEXP / 100.0 + targetClient.ServerExperience / 100.0;
+                double levelDifference = mob.Level - tamer.Partner.Level;
+
+                long partnerExpToReceive = (long)CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.DigimonExperience);
+                long finalExp = (long)(partnerExpToReceive * expBonusMultiplier);
+
+   
+
+                totalPartnerExp += (finalExp - partnerExpToReceive); 
+
+
+            }
+
+            return totalPartnerExp;
+        }
+
+
+
+
+        private long BonusTamerExp(GameMap map,MobConfigModel mob)
+        {
+            long totalTamerExp = 0; 
+
+            foreach (var tamer in mob.TargetTamers)
+            {
+                var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == tamer?.Id);
+                if (targetClient == null)
+                    continue;
+
+                double expBonusMultiplier = tamer.BonusEXP / 100.0 + targetClient.ServerExperience / 100.0;
+
+                long tamerExpToReceive = (long)CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.TamerExperience);
+
+                long finalExp = (long)(tamerExpToReceive * expBonusMultiplier);
+
+                totalTamerExp += (finalExp - tamerExpToReceive);
+            }
+
+            return totalTamerExp;
+        }
+
+
+        private void ExperienceReward(GameMap map,MobConfigModel mob)
         {
             if (mob.ExpReward == null)
                 return;
@@ -761,82 +861,49 @@ namespace DigitalWorldOnline.GameHost
             foreach (var tamer in mob.TargetTamers)
             {
                 var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == tamer?.Id);
-
                 if (targetClient == null)
                     continue;
 
-                // ------------------------------------------------------------------------------------------------------
-
-                long baseTamerExp = mob.ExpReward.TamerExperience; // Mob Tamer Exp
-                long basePartnerExp = mob.ExpReward.DigimonExperience; // Mob Digimon Exp
-
-                var serverMultiplier = targetClient.ServerExperience / 100.0; // Server Exp Multiplier
-                var playerMultiplier = tamer.BonusEXP / 100.0; // Bonus Exp (Booster) Multiplier
-
-                double expBonusMultiplier = playerMultiplier + serverMultiplier;
-
-                var tamerExp = (long)(baseTamerExp * serverMultiplier); // Tamer Server Exp
-                var bonusExp = (long)(baseTamerExp * playerMultiplier); // Tamer Booster Exp
-
-                var digimonExp = (long)(basePartnerExp * serverMultiplier); // Digimon Server Exp
-                var bonusDigimonExp = (long)(basePartnerExp * playerMultiplier); // Digimon Booster Exp
-
-                // ------------------------------------------------------------------------------------------------------
-
-                var tamerExpToReceive = (long)(CalculateExperience(tamer.Partner.Level, mob.Level, baseTamerExp) *
-                                               expBonusMultiplier);
-
-                if (CalculateExperience(tamer.Partner.Level, mob.Level, baseTamerExp) == 0)
-                {
+                var tamerExpToReceive = (long)(CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.TamerExperience));
+                if (CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.TamerExperience) == 0)
                     tamerExpToReceive = 0;
-                    tamerExp = 0;
-                    bonusExp = 0;
-                }
 
-                var tamerResult = ReceiveTamerExp(targetClient.Tamer, tamerExpToReceive);
+                if (tamerExpToReceive > 100) tamerExpToReceive += UtilitiesFunctions.RandomInt(-35,45);
+                var tamerResult = ReceiveTamerExp(targetClient.Tamer,tamerExpToReceive);
 
-                if (bonusExp > 0) tamerExp = tamerExp - bonusExp;
+                var partnerExpToReceive = (long)(CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.DigimonExperience));
 
-                // ------------------------------------------------------------------------------------------------------
 
-                var partnerExpToReceive = (long)(CalculateExperience(tamer.Partner.Level, mob.Level, basePartnerExp) *
-                                                 expBonusMultiplier);
 
-                if (CalculateExperience(tamer.Partner.Level, mob.Level, basePartnerExp) == 0)
-                {
+                if (CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.DigimonExperience) == 0)
                     partnerExpToReceive = 0;
-                    digimonExp = 0;
-                    bonusDigimonExp = 0;
-                }
 
-                var partnerResult = ReceivePartnerExp(targetClient.Partner, mob, partnerExpToReceive);
+                if (partnerExpToReceive > 100) partnerExpToReceive += UtilitiesFunctions.RandomInt(-35,45);
+                var partnerResult = ReceivePartnerExp(targetClient,targetClient.Partner,mob,partnerExpToReceive);
 
-                if (bonusDigimonExp > 0) digimonExp = digimonExp - bonusDigimonExp;
+                var totalTamerExp = BonusTamerExp(map,mob);
 
-                // ------------------------------------------------------------------------------------------------------
+                var bonusTamerExp = ReceiveBonusTamerExp(targetClient.Tamer,totalTamerExp);
 
-                if (targetClient.Partner.CurrentEvolution.SkillMastery < 30)
-                {
-                    var skillExp = mob.ExpReward.SkillExperience * (int)serverMultiplier;
-                    tamer.Partner.ReceiveSkillExp(skillExp);
-                }
+                var totalPartnerExp = BonusPartnerExp(map,mob);
 
-                // ------------------------------------------------------------------------------------------------------
+                var bonusPartnerExp = ReceiveBonusPartnerExp(targetClient.Partner,mob,totalPartnerExp);
+
 
                 targetClient.Send(
                     new ReceiveExpPacket(
-                        tamerExp, // Tamer Exp (BaseExp * ServerExp)
-                        bonusExp, // Tamer Bonus Exp (BaseExp * PlayerBonusExp)
-                        targetClient.Tamer.CurrentExperience, // Final Tamer Exp
-                        targetClient.Partner.GeneralHandler, // -- Partner Handler
-                        digimonExp, // Partner Exp
-                        bonusDigimonExp, // Bonus Partner Exp
-                        targetClient.Partner.CurrentExperience, // Final Partner Exp
-                        targetClient.Partner.CurrentEvolution.SkillExperience // Skill Exp
+                        tamerExpToReceive,
+                        totalTamerExp,
+                        targetClient.Tamer.CurrentExperience,
+                        targetClient.Partner.GeneralHandler,
+                        partnerExpToReceive,
+                        totalPartnerExp,
+                        targetClient.Partner.CurrentExperience,
+                        targetClient.Partner.CurrentEvolution.SkillExperience
                     )
                 );
 
-                SkillExpReward(map, targetClient);
+                SkillExpReward(map,targetClient);
 
                 if (tamerResult.LevelGain > 0 || partnerResult.LevelGain > 0)
                 {
@@ -849,8 +916,7 @@ namespace DigitalWorldOnline.GameHost
                 _sender.Send(new UpdateCharacterExperienceCommand(tamer));
                 _sender.Send(new UpdateDigimonExperienceCommand(tamer.Partner));
 
-                PartyExperienceReward(map, mob, partyIdList, targetClient, tamerExpToReceive, tamerResult,
-                    partnerExpToReceive, partnerResult);
+                PartyExperienceReward(map,mob,partyIdList,targetClient,tamerExpToReceive,tamerResult,partnerExpToReceive,partnerResult);
             }
 
             partyIdList.Clear();
@@ -920,8 +986,9 @@ namespace DigitalWorldOnline.GameHost
             long partnerExpToReceive,
             ReceiveExpResult partnerResult)
         {
-            var party = _partyManager.FindParty(targetClient.TamerId);
+            if (targetClient == null) throw new ArgumentNullException(nameof(targetClient));
 
+            var party = _partyManager.FindParty(targetClient.TamerId);
             if (party != null && !partyIdList.Contains(party.Id))
             {
                 partyIdList.Add(party.Id);
@@ -929,54 +996,30 @@ namespace DigitalWorldOnline.GameHost
                 foreach (var partyMemberId in party.Members.Values.Select(x => x.Id))
                 {
                     var partyMemberClient = map.Clients.FirstOrDefault(x => x.TamerId == partyMemberId);
-
                     if (partyMemberClient == null || partyMemberId == targetClient.TamerId)
                         continue;
 
-                    // ------------------------------------------------------------------------------------------------------
+                    var totalTamerExp = BonusTamerExp(map,mob) / 2;
+                    var bonusTamerExp = ReceiveBonusTamerExp(partyMemberClient.Tamer,totalTamerExp);
 
-                    // Multiplicadores de experiência
-                    var serverMultiplier = partyMemberClient.ServerExperience / 100.0;
-                    var playerMultiplier = partyMemberClient.Tamer.BonusEXP / 100.0;
-
-                    // Aplicar o multiplicador de 80% para membros que não mataram o mob
-                    long baseTamerExp = mob.ExpReward.TamerExperience;
-                    long basePartnerExp = mob.ExpReward.DigimonExperience;
-
-                    if (partyMemberClient.TamerId != targetClient.TamerId)
-                    {
-                        baseTamerExp = (long)(baseTamerExp * 0.80);
-                        basePartnerExp = (long)(basePartnerExp * 0.80);
-                    }
-
-                    // Aplicar o multiplicador de bônus de experiência
-                    double expBonusMultiplier = playerMultiplier + serverMultiplier;
-
-                    tamerExpToReceive = (long)(baseTamerExp * expBonusMultiplier);
-                    partnerExpToReceive = (long)(basePartnerExp * expBonusMultiplier);
-
-                    //if (tamerExpToReceive > 100) tamerExpToReceive += UtilitiesFunctions.RandomInt(-15, 15);
-                    //if (partnerExpToReceive > 100) partnerExpToReceive += UtilitiesFunctions.RandomInt(-15, 15);
-
-                    tamerResult = ReceiveTamerExp(partyMemberClient.Tamer, tamerExpToReceive);
-                    partnerResult = ReceivePartnerExp(partyMemberClient.Partner, mob, partnerExpToReceive);
-
-                    // ------------------------------------------------------------------------------------------------------
+                    var totalPartnerExp = BonusPartnerExp(map,mob) / 2;
+                    var localPartnerResult = ReceivePartnerExp(targetClient,partyMemberClient.Partner,mob,totalPartnerExp);
 
                     partyMemberClient.Send(
                         new PartyReceiveExpPacket(
-                            tamerExpToReceive, // Tamer Exp
-                            0, // Bonus Exp
+                            tamerExpToReceive,
+                            totalTamerExp,//TODO: obter os bonus
                             partyMemberClient.Tamer.CurrentExperience,
                             partyMemberClient.Partner.GeneralHandler,
-                            partnerExpToReceive, // Partner Exp
-                            0, // Bonus Partner Exp
+                            partnerExpToReceive,
+                            totalPartnerExp,//TODO: obter os bonus
                             partyMemberClient.Partner.CurrentExperience,
                             partyMemberClient.Partner.CurrentEvolution.SkillExperience,
-                            targetClient.Tamer.Name
+                            targetClient.Tamer.Name            // partySourceName
                         ));
 
-                    if (tamerResult.LevelGain > 0 || partnerResult.LevelGain > 0)
+
+                    if (tamerResult.LevelGain > 0 || localPartnerResult.LevelGain > 0)
                     {
                         targetClient.Send(new UpdateStatusPacket(targetClient.Tamer));
 
@@ -988,24 +1031,19 @@ namespace DigitalWorldOnline.GameHost
                     await _sender.Send(new UpdateDigimonExperienceCommand(partyMemberClient.Partner));
                 }
             }
-            else
-            {
-                //_logger.Information($"Exp gained without party");
-            }
         }
 
         private async Task PartyExperienceReward(
-            GameMap map,
-            SummonMobModel mob,
-            List<int> partyIdList,
-            GameClient? targetClient,
-            long tamerExpToReceive,
-            ReceiveExpResult tamerResult,
-            long partnerExpToReceive,
-            ReceiveExpResult partnerResult)
+          GameMap map,
+          SummonMobModel mob,
+          List<int> partyIdList,
+          GameClient? targetClient,
+           long tamerExpToReceive,
+           ReceiveExpResult tamerResult,
+           long partnerExpToReceive,
+           ReceiveExpResult partnerResult)
         {
             var party = _partyManager.FindParty(targetClient.TamerId);
-
             if (party != null && !partyIdList.Contains(party.Id))
             {
                 partyIdList.Add(party.Id);
@@ -1013,46 +1051,26 @@ namespace DigitalWorldOnline.GameHost
                 foreach (var partyMemberId in party.Members.Values.Select(x => x.Id))
                 {
                     var partyMemberClient = map.Clients.FirstOrDefault(x => x.TamerId == partyMemberId);
-
                     if (partyMemberClient == null || partyMemberId == targetClient.TamerId)
                         continue;
 
-                    // ------------------------------------------------------------------------------------------------------
+                    var totalTamerExp = BonusTamerExp(map,mob) / 2;
+                    var bonusTamerExp = ReceiveBonusTamerExp(partyMemberClient.Tamer,totalTamerExp);
 
-                    // Multiplicadores de experiência
-                    var serverMultiplier = partyMemberClient.ServerExperience / 100.0;
-                    var playerMultiplier = partyMemberClient.Tamer.BonusEXP / 100.0;
-
-                    // Aplicar o multiplicador de 80% para membros que não mataram o mob
-                    long baseTamerExp = mob.ExpReward.TamerExperience;
-                    long basePartnerExp = mob.ExpReward.DigimonExperience;
-
-                    if (partyMemberClient.TamerId != targetClient.TamerId)
-                    {
-                        baseTamerExp = (long)(baseTamerExp * 0.80);
-                        basePartnerExp = (long)(basePartnerExp * 0.80);
-                    }
-
-                    // Aplicar o multiplicador de bônus de experiência
-                    double expBonusMultiplier = playerMultiplier + serverMultiplier;
-
-                    tamerExpToReceive = (long)(baseTamerExp * expBonusMultiplier);
-                    partnerExpToReceive = (long)(basePartnerExp * expBonusMultiplier);
-
-                    tamerResult = ReceiveTamerExp(partyMemberClient.Tamer, tamerExpToReceive);
-                    partnerResult = ReceivePartnerExp(partyMemberClient.Partner, mob, partnerExpToReceive);
+                    var totalPartnerExp = BonusPartnerExp(map,mob) / 2;
+                    var localPartnerResult = ReceivePartnerExp(targetClient,partyMemberClient.Partner,mob,totalPartnerExp);
 
                     partyMemberClient.Send(
                         new PartyReceiveExpPacket(
                             tamerExpToReceive,
-                            0,
+                            totalTamerExp,//TODO: obter os bonus
                             partyMemberClient.Tamer.CurrentExperience,
                             partyMemberClient.Partner.GeneralHandler,
                             partnerExpToReceive,
-                            0,
+                            totalPartnerExp,//TODO: obter os bonus
                             partyMemberClient.Partner.CurrentExperience,
                             partyMemberClient.Partner.CurrentEvolution.SkillExperience,
-                            targetClient.Tamer.Name
+                            targetClient.Tamer.Name            // partySourceName
                         ));
 
                     if (tamerResult.LevelGain > 0 || partnerResult.LevelGain > 0)
@@ -1921,7 +1939,7 @@ namespace DigitalWorldOnline.GameHost
                 DropReward(map, mob);
         }
 
-        private void ExperienceReward(GameMap map, SummonMobModel mob)
+        private void ExperienceReward(GameMap map,SummonMobModel mob)
         {
             if (mob.ExpReward == null)
                 return;
@@ -1931,80 +1949,50 @@ namespace DigitalWorldOnline.GameHost
             foreach (var tamer in mob.TargetTamers)
             {
                 var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == tamer?.Id);
-
                 if (targetClient == null)
                     continue;
 
-                // ------------------------------------------------------------------------------------------------------
-
-                long baseTamerExp = mob.ExpReward.TamerExperience; // Mob Tamer Exp
-                long basePartnerExp = mob.ExpReward.DigimonExperience; // Mob Digimon Exp
-
-                var serverMultiplier = targetClient.ServerExperience / 100.0; // Server Exp Multiplier
-                var playerMultiplier = tamer.BonusEXP / 100.0; // Bonus Exp (Booster) Multiplier
-
-                double expBonusMultiplier = playerMultiplier + serverMultiplier;
-
-                var tamerExp = (long)(baseTamerExp * serverMultiplier); // Tamer Server Exp
-                var bonusExp = (long)(baseTamerExp * playerMultiplier); // Tamer Booster Exp
-
-                var digimonExp = (long)(basePartnerExp * serverMultiplier); // Digimon Server Exp
-                var bonusDigimonExp = (long)(basePartnerExp * playerMultiplier); // Digimon Booster Exp
-
-                // ------------------------------------------------------------------------------------------------------
-
-                var tamerExpToReceive = (long)(CalculateExperience(tamer.Partner.Level, mob.Level, baseTamerExp) *
-                                               expBonusMultiplier);
-
-                if (CalculateExperience(tamer.Partner.Level, mob.Level, baseTamerExp) == 0)
-                {
+                var tamerExpToReceive = (long)(CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.TamerExperience)); //TODO: +bonus
+                if (CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.TamerExperience) == 0)
                     tamerExpToReceive = 0;
-                    tamerExp = 0;
-                    bonusExp = 0;
-                }
 
-                var tamerResult = ReceiveTamerExp(targetClient.Tamer, tamerExpToReceive);
+                if (tamerExpToReceive > 100) tamerExpToReceive += UtilitiesFunctions.RandomInt(-35,45);
+                var tamerResult = ReceiveTamerExp(targetClient.Tamer,tamerExpToReceive);
 
-                if (bonusExp > 0) tamerExp = tamerExp - bonusExp;
+                var partnerExpToReceive = (long)(CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.DigimonExperience));
 
-                // ------------------------------------------------------------------------------------------------------
 
-                var partnerExpToReceive = (long)(CalculateExperience(tamer.Partner.Level, mob.Level, basePartnerExp) *
-                                                 expBonusMultiplier);
 
-                if (CalculateExperience(tamer.Partner.Level, mob.Level, basePartnerExp) == 0)
-                {
+                if (CalculateExperience(tamer.Partner.Level,mob.Level,mob.ExpReward.DigimonExperience) == 0)
                     partnerExpToReceive = 0;
-                    digimonExp = 0;
-                    bonusDigimonExp = 0;
-                }
 
-                var partnerResult = ReceivePartnerExp(targetClient.Partner, mob, partnerExpToReceive);
+                if (partnerExpToReceive > 100) partnerExpToReceive += UtilitiesFunctions.RandomInt(-35,45);
+                var partnerResult = ReceivePartnerExp(targetClient,targetClient.Partner,mob,partnerExpToReceive);
 
-                if (bonusDigimonExp > 0) digimonExp = digimonExp - bonusDigimonExp;
+                var totalTamerExp = BonusTamerExp(map,mob);
 
-                // ------------------------------------------------------------------------------------------------------
+                var bonusTamerExp = ReceiveBonusTamerExp(targetClient.Tamer,totalTamerExp);
 
-                if (targetClient.Partner.CurrentEvolution.SkillMastery < 30)
-                {
-                    var skillExp = mob.ExpReward.SkillExperience * (int)serverMultiplier;
-                    tamer.Partner.ReceiveSkillExp(skillExp);
-                }
+                var totalPartnerExp = BonusPartnerExp(map,mob);
+
+                var bonusPartnerExp = ReceiveBonusPartnerExp(targetClient.Partner,mob,totalPartnerExp);
+
 
                 targetClient.Send(
                     new ReceiveExpPacket(
-                        tamerExp,
-                        bonusExp,
+                        tamerExpToReceive,
+                        totalTamerExp,
                         targetClient.Tamer.CurrentExperience,
                         targetClient.Partner.GeneralHandler,
-                        digimonExp,
-                        bonusDigimonExp,
+                        partnerExpToReceive,
+                        totalPartnerExp,
                         targetClient.Partner.CurrentExperience,
                         targetClient.Partner.CurrentEvolution.SkillExperience
                     )
                 );
 
-                SkillExpReward(map, targetClient);
+                //TODO: importar o DMBase e tratar isso
+                SkillExpReward(map,targetClient);
 
                 if (tamerResult.LevelGain > 0 || partnerResult.LevelGain > 0)
                 {
@@ -2017,8 +2005,7 @@ namespace DigitalWorldOnline.GameHost
                 _sender.Send(new UpdateCharacterExperienceCommand(tamer));
                 _sender.Send(new UpdateDigimonExperienceCommand(tamer.Partner));
 
-                PartyExperienceReward(map, mob, partyIdList, targetClient, tamerExpToReceive, tamerResult,
-                    partnerExpToReceive, partnerResult);
+                PartyExperienceReward(map,mob,partyIdList,targetClient,tamerExpToReceive,tamerResult,partnerExpToReceive,partnerResult);
             }
 
             partyIdList.Clear();

@@ -763,118 +763,129 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             }
         }
 
-        private async Task SummonMonster(GameClient client, short itemSlot, ItemModel targetItem,
-            SummonModel? SummonInfo)
-        {
-            if (!SummonInfo.Maps.Contains(client.Tamer.Location.MapId))
-            {
-                client.Send(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type,
-                    ItemConsumeFailEnum.InvalidArea));
-            }
-            else
-            {
-                var count = 0;
+  private async Task SummonMonster(GameClient client,short itemSlot,ItemModel targetItem,SummonModel? SummonInfo)
+  {
+      if (!SummonInfo.Maps.Contains(client.Tamer.Location.MapId))
+      {
+          client.Send(new ItemConsumeFailPacket(itemSlot,targetItem.ItemInfo.Type,ItemConsumeFailEnum.InvalidArea));
 
-                foreach (var mobToAdd in SummonInfo.SummonedMobs)
-                {
-                    count++;
 
-                    var mob = (SummonMobModel)mobToAdd.Clone();
+      }
+      else
+      {
+          var count = 0;
 
-                    if (mob?.Location?.X != 0 && mob?.Location?.Y != 0)
-                    {
-                        var diff = UtilitiesFunctions.CalculateDistance(mob.Location.X, client.Tamer.Location.X,
-                            mob.Location.Y, client.Tamer.Location.Y);
+          foreach (var mobToAdd in SummonInfo.SummonedMobs)
+          {
+              count++;
 
-                        if (diff > 5000)
-                        {
-                            client.Send(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type,
-                                ItemConsumeFailEnum.InvalidArea));
-                            break;
-                        }
-                        else if (count == 1)
-                        {
-                            client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
-                            await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+              var mob = (SummonMobModel)mobToAdd.Clone();
+              mob.TamersViewing.Clear();
 
-                            client.Send(UtilitiesFunctions.GroupPackets(
-                                new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                                new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory)
-                                    .Serialize()));
-                        }
-                    }
-                    else
-                    {
-                        client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
-                        await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
+              if (mob?.Location?.X != 0 && mob?.Location?.Y != 0)
+              {
+                  var diff = UtilitiesFunctions.CalculateDistance(mob.Location.X,client.Tamer.Location.X,mob.Location.Y,client.Tamer.Location.Y);
 
-                        client.Send(UtilitiesFunctions.GroupPackets(
-                            new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                            new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()));
-                    }
+                  if (diff > 5000)
+                  {
+                      client.Send(new ItemConsumeFailPacket(itemSlot,targetItem.ItemInfo.Type,ItemConsumeFailEnum.InvalidArea));
+                      break;
+                  }
+                  else if (count == 1)
+                  {
+                      client.Tamer.Inventory.RemoveOrReduceItem(targetItem,1);
+                      await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
-                    int radius = 500; // Ajuste este valor para controlar a dispersão dos chefes
-                    var random = new Random();
+                      client.Send(
+                    UtilitiesFunctions.GroupPackets(
+                        new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler,itemSlot).Serialize(),
+                        new LoadInventoryPacket(client.Tamer.Inventory,InventoryTypeEnum.Inventory).Serialize()
+                    )
 
-                    // Gerando valores aleatórios para deslocamento em X e Y
-                    int xOffset = random.Next(-radius, radius + 1);
-                    int yOffset = random.Next(-radius, radius + 1);
+                );
 
-                    // Calculando as novas coordenadas do chefe de raid
-                    int bossX = client.Tamer.Location.X + xOffset;
-                    int bossY = client.Tamer.Location.Y + yOffset;
+                  }
+              }
+              else
+              {
 
-                    if (client.DungeonMap)
-                    {
-                        var map = _dungeonServer.Maps.FirstOrDefault(x =>
-                            x.Clients.Exists(x => x.TamerId == client.TamerId));
+                  client.Tamer.Inventory.RemoveOrReduceItem(targetItem,1);
+                  await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
-                        var mobId = map.SummonMobs.Count + 1;
+                  client.Send(
+                UtilitiesFunctions.GroupPackets(
+                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler,itemSlot).Serialize(),
+                    new LoadInventoryPacket(client.Tamer.Inventory,InventoryTypeEnum.Inventory).Serialize()
+                )
 
-                        mob.SetId(mobId);
+            );
 
-                        if (mob?.Location?.X != 0 && mob?.Location?.Y != 0)
-                        {
-                            bossX = mob.Location.X;
-                            bossY = mob.Location.Y;
+              }
 
-                            mob.SetLocation(client.Tamer.Location.MapId, bossX, bossY);
-                        }
-                        else
-                        {
-                            mob.SetLocation(client.Tamer.Location.MapId, bossX, bossY);
-                        }
+              int radius = 500; // Ajuste este valor para controlar a dispersão dos chefes
+              var random = new Random();
 
-                        mob.SetDuration();
-                        mob.SetTargetSummonHandle(client.Tamer.GeneralHandler);
-                        _dungeonServer.AddSummonMobs(client.Tamer.Location.MapId, mob, client.TamerId);
-                    }
-                    else
-                    {
-                        var map = _mapServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
-                        var mobId = map.SummonMobs.Count + 1;
+              // Gerando valores aleatórios para deslocamento em X e Y
+              int xOffset = random.Next(-radius,radius + 1);
+              int yOffset = random.Next(-radius,radius + 1);
 
-                        mob.SetId(mobId);
+              // Calculando as novas coordenadas do chefe de raid
+              int bossX = client.Tamer.Location.X + xOffset;
+              int bossY = client.Tamer.Location.Y + yOffset;
 
-                        if (mob?.Location?.X != 0 && mob?.Location?.Y != 0)
-                        {
-                            bossX = mob.Location.X;
-                            bossY = mob.Location.Y;
+              if (client.DungeonMap)
+              {
+                  var map = _dungeonServer.Maps.FirstOrDefault(x => x.Clients.Exists(x => x.TamerId == client.TamerId));
 
-                            mob.SetLocation(client.Tamer.Location.MapId, bossX, bossY);
-                        }
-                        else
-                        {
-                            mob.SetLocation(client.Tamer.Location.MapId, bossX, bossY);
-                        }
+                  var mobId = map.SummonMobs.Count + 1;
 
-                        mob.SetDuration();
-                        mob.SetTargetSummonHandle(client.Tamer.GeneralHandler);
-                        _mapServer.AddSummonMobs(client.Tamer.Location.MapId, mob, client.TamerId);
-                    }
-                }
-            }
-        }
+                  mob.SetId(mobId);
+
+                  if (mob?.Location?.X != 0 && mob?.Location?.Y != 0)
+                  {
+                      bossX = mob.Location.X;
+                      bossY = mob.Location.Y;
+
+                      mob.SetLocation(client.Tamer.Location.MapId,bossX,bossY);
+                  }
+                  else
+                  {
+                      mob.SetLocation(client.Tamer.Location.MapId,bossX,bossY);
+
+                  }
+
+                  mob.SetDuration();
+                  mob.SetTargetSummonHandle(client.Tamer.GeneralHandler);
+                  _dungeonServer.AddSummonMobs(client.Tamer.Location.MapId,mob,client.TamerId);
+              }
+              else
+              {
+                  var map = _mapServer.Maps.FirstOrDefault(x => x.MapId == client.Tamer.Location.MapId);
+                  var mobId = map.SummonMobs.Count + 1;
+
+                  mob.SetId(mobId);
+
+                  if (mob?.Location?.X != 0 && mob?.Location?.Y != 0)
+                  {
+                      bossX = mob.Location.X;
+                      bossY = mob.Location.Y;
+
+                      mob.SetLocation(client.Tamer.Location.MapId,bossX,bossY);
+                  }
+                  else
+                  {
+                      mob.SetLocation(client.Tamer.Location.MapId,bossX,bossY);
+
+                  }
+
+                  mob.SetDuration();
+                  mob.SetTargetSummonHandle(client.Tamer.GeneralHandler);
+                  _mapServer.AddSummonMobs(client.Tamer.Location.MapId,mob);
+
+              }
+          }
+      }
+  }
 
         private async Task ConsumeAchievement(GameClient client, short itemSlot, ItemModel targetItem)
         {
@@ -1596,42 +1607,66 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             );
         }
 
-        private async Task IncreaseWarehouseSlots(GameClient client, short itemSlot, ItemModel targetItem)
+        private async Task IncreaseWarehouseSlots(GameClient client,short itemSlot,ItemModel targetItem)
         {
-            var newSlot = client.Tamer.Warehouse.AddSlot();
+            const int MaxWarehouseSize = 245;
 
-            _logger.Verbose(
-                $"Character {client.TamerId} used {targetItem.ItemId} to expand warehouse slots to {client.Tamer.Warehouse.Size}.");
+            var currentSize = client.Tamer.Warehouse.Size;
 
-            client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
+            int slotsToAdd = Math.Min((int)targetItem.Amount,MaxWarehouseSize - currentSize);
+
+            if (slotsToAdd <= 0)
+            {
+                _logger.Warning($"Character {client.TamerId} tried to expand warehouse but already reached the limit of {MaxWarehouseSize} slots.");
+                return;
+            }
+
+            var newSlot = client.Tamer.Warehouse.AddSlotsAll((byte)slotsToAdd);
+
+            _logger.Verbose($"Character {client.TamerId} used {targetItem.ItemId} to expand warehouse slots to {client.Tamer.Warehouse.Size}.");
+
+            client.Tamer.Inventory.RemoveOrReduceItem(targetItem,slotsToAdd);
 
             await _sender.Send(new UpdateItemCommand(targetItem));
-            await _sender.Send(new AddInventorySlotCommand(newSlot));
+            await _sender.Send(new AddInventorySlotsCommand(newSlot));
 
             client.Send(
                 UtilitiesFunctions.GroupPackets(
-                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                    new LoadInventoryPacket(client.Tamer.Warehouse, InventoryTypeEnum.Warehouse).Serialize()
+                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler,itemSlot).Serialize(),
+                    new LoadInventoryPacket(client.Tamer.Warehouse,InventoryTypeEnum.Warehouse).Serialize(),
+                    new LoadInventoryPacket(client.Tamer.Inventory,InventoryTypeEnum.Inventory).Serialize()
                 )
             );
         }
 
-        private async Task IncreaseInventorySlots(GameClient client, short itemSlot, ItemModel targetItem)
+        private async Task IncreaseInventorySlots(GameClient client,short itemSlot,ItemModel targetItem)
         {
-            var newSlot = client.Tamer.Inventory.AddSlot();
+            const int MaxInventorySize = 150;
 
-            _logger.Verbose(
-                $"Character {client.TamerId} used {targetItem.ItemId} to expand inventory slots to {client.Tamer.Inventory.Size}.");
 
-            client.Tamer.Inventory.RemoveOrReduceItem(targetItem, 1);
+            var currentSize = client.Tamer.Inventory.Size;
+
+            int slotsToAdd = Math.Min((int)targetItem.Amount,MaxInventorySize - currentSize);
+
+            if (slotsToAdd <= 0)
+            {
+                _logger.Warning($"Character {client.TamerId} tried to expand inventory but already reached the limit of {MaxInventorySize} slots.");
+                return;
+            }
+
+            var newSlot = client.Tamer.Inventory.AddSlotsAll((byte)slotsToAdd);
+
+            _logger.Verbose($"Character {client.TamerId} used {targetItem.ItemId} to expand inventory slots to {client.Tamer.Inventory.Size}.");
+
+            client.Tamer.Inventory.RemoveOrReduceItem(targetItem,slotsToAdd);
 
             await _sender.Send(new UpdateItemCommand(targetItem));
-            await _sender.Send(new AddInventorySlotCommand(newSlot));
+            await _sender.Send(new AddInventorySlotsCommand(newSlot));
 
             client.Send(
                 UtilitiesFunctions.GroupPackets(
-                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler, itemSlot).Serialize(),
-                    new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize()
+                    new ItemConsumeSuccessPacket(client.Tamer.GeneralHandler,itemSlot).Serialize(),
+                    new LoadInventoryPacket(client.Tamer.Inventory,InventoryTypeEnum.Inventory).Serialize()
                 )
             );
         }

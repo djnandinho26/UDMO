@@ -7,7 +7,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
     internal class BanForCheating
     {
         // A string de conexão fixa dentro do arquivo
-        private readonly string _connectionString = "Server=57.129.39.146;Database=DMOX;User Id=sa;Password=Kratos9090@;TrustServerCertificate=True";
+        private readonly string _connectionString = "Server=DESKTOP-COAQJGK\\SQLEXPRESS;Database=DMOX;User Id=sa;Password=@E4l9r1a9y9e6s;TrustServerCertificate=True";
 
         public void BanAccountForCheating(long accountId, AccountBlockEnum type, string reason, DateTime startDate, DateTime endDate)
         {

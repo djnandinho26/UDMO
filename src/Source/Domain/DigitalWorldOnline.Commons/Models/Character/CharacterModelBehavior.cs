@@ -408,11 +408,26 @@ namespace DigitalWorldOnline.Commons.Models.Character
         public bool HaveActiveCashSkill =>
             ActiveSkill.FirstOrDefault(x => x.Type == TamerSkillTypeEnum.Cash || x.SkillId > 0) != null;
 
+        public bool IsSpecialMapActive { get; set; }
+
         /// <summary>
         /// Returns true if the active evolution has broken.
         /// </summary>
-        public bool BreakEvolution => (ActiveEvolution.DsPerSecond > 0 && CurrentDs == 0) ||
-                                      (ActiveEvolution.XgPerSecond > 0 && XGauge == 0);
+        public bool BreakEvolution
+        {
+            get
+            {
+                if (IsSpecialMapActive)
+                {
+                    return true;
+                }
+                else
+                {
+                    return (ActiveEvolution.DsPerSecond > 0 && CurrentDs == 0) ||
+                           (ActiveEvolution.XgPerSecond > 0 && XGauge == 0);
+                }
+            }
+        }
 
         /// <summary>
         /// Informs if the tamer has an equipped XAI.

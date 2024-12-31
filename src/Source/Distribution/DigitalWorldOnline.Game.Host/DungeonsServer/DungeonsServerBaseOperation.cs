@@ -645,7 +645,7 @@ namespace DigitalWorldOnline.GameHost
 
         public void AddSummonMobs(short mapId, SummonMobModel summon, long tamerId)
         {
-            var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));
+            var map = Maps.FirstOrDefault(x => x.Clients.Exists(x => x.TamerId == tamerId));
 
             map?.AddMob(summon);
         }

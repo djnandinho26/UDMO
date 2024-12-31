@@ -3605,7 +3605,7 @@ namespace DigitalWorldOnline.Game
 
                     mob.SetDuration();
                     mob.SetTargetSummonHandle(client.Tamer.GeneralHandler);
-                    _mapServer.AddSummonMobs(client.Tamer.Location.MapId, mob, client.TamerId);
+                    _mapServer.AddSummonMobs(client.Tamer.Location.MapId,mob);
                 }
             }
         }

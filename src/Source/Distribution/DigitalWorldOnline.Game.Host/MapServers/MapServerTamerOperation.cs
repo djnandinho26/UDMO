@@ -43,7 +43,7 @@ namespace DigitalWorldOnline.GameHost
 
                 CheckLocationDebuff(client);
                 //MapBuff(client);
-
+                DarkTowerBreakEvolution(client);
                 GetInViewMobs(map, tamer);
                 GetInViewMobs(map, tamer, true);
 
@@ -604,6 +604,26 @@ namespace DigitalWorldOnline.GameHost
 
         }
 
+        public async void DarkTowerBreakEvolution(GameClient client)
+        {
+            var partner = client.Tamer.Partner;
+            var evolutionType = _assets.DigimonBaseInfo
+                .First(x => x.Type == partner.CurrentType)
+                .EvolutionType;
+
+            if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie &&
+                (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Capsule)
+            {
+                await Task.Delay(5000);
+                client.Tamer.IsSpecialMapActive = client.Tamer.Location.MapId >= 1109 && client.Tamer.Location.MapId <= 1112;
+
+            }
+            else
+            {
+                client.Tamer.IsSpecialMapActive = false;
+            }
+        }
+
         private async void MapBuff(GameClient client)
         {
             var buff = _assets.BuffInfo.Where(x => x.BuffId == 40327 || x.BuffId == 40350).ToList();
@@ -1080,16 +1100,42 @@ namespace DigitalWorldOnline.GameHost
 
         // -----------------------------------------------------------------------------------------------------------------------
 
-        private ReceiveExpResult ReceiveTamerExp(CharacterModel tamer, long tamerExpToReceive)
+        private ReceiveExpResult ReceiveBonusTamerExp(CharacterModel tamer,long totalTamerExp)
         {
-            var tamerResult = _expManager.ReceiveTamerExperience(tamerExpToReceive, tamer);
+            var tamerResult = _expManager.ReceiveTamerExperience(totalTamerExp,tamer);
 
             if (tamerResult.LevelGain > 0)
             {
                 BroadcastForTamerViewsAndSelf(tamer.Id,
-                    new LevelUpPacket(tamer.GeneralHandler, tamer.Level).Serialize());
+                    new LevelUpPacket(tamer.GeneralHandler,tamer.Level).Serialize());
 
-                tamer.SetLevelStatus(_statusManager.GetTamerLevelStatus(tamer.Model, tamer.Level));
+                tamer.SetLevelStatus(
+                    _statusManager.GetTamerLevelStatus(
+                        tamer.Model,
+                        tamer.Level
+                    )
+                );
+
+                tamer.FullHeal();
+            }
+
+            return tamerResult;
+        }
+        private ReceiveExpResult ReceiveTamerExp(CharacterModel tamer,long tamerExpToReceive)
+        {
+            var tamerResult = _expManager.ReceiveTamerExperience(tamerExpToReceive,tamer);
+
+            if (tamerResult.LevelGain > 0)
+            {
+                BroadcastForTamerViewsAndSelf(tamer.Id,
+                    new LevelUpPacket(tamer.GeneralHandler,tamer.Level).Serialize());
+
+                tamer.SetLevelStatus(
+                    _statusManager.GetTamerLevelStatus(
+                        tamer.Model,
+                        tamer.Level
+                    )
+                );
 
                 tamer.FullHeal();
             }
@@ -1097,19 +1143,54 @@ namespace DigitalWorldOnline.GameHost
             return tamerResult;
         }
 
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, MobConfigModel targetMob, long partnerExpToReceive)
-        {
-            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
 
-            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element, targetMob.ExpReward);
+        private ReceiveExpResult ReceiveBonusPartnerExp(DigimonModel partner,MobConfigModel targetMob,long totalPartnerExp)
+        {
+            var partnerResult = _expManager.ReceiveDigimonExperience(totalPartnerExp,partner);
 
             if (partnerResult.LevelGain > 0)
             {
                 partner.SetBaseStatus(
-                    _statusManager.GetDigimonBaseStatus(partner.CurrentType, partner.Level, partner.Size));
+                    _statusManager.GetDigimonBaseStatus(
+                        partner.CurrentType,
+                        partner.Level,
+                        partner.Size
+                    )
+                );
 
                 BroadcastForTamerViewsAndSelf(partner.Character.Id,
-                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
+                    new LevelUpPacket(partner.GeneralHandler,partner.Level).Serialize());
+
+                partner.FullHeal();
+            }
+            return partnerResult;
+        }
+
+        private ReceiveExpResult ReceivePartnerExp(GameClient client,DigimonModel partner,MobConfigModel targetMob,long partnerExpToReceive)
+        {
+            var attributeExp = partner.GetAttributeExperience();
+            var elementExp = partner.GetElementExperience();
+
+            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive,partner);
+
+            if (attributeExp < 10000) _expManager.ReceiveAttributeExperience(client,partner,targetMob.Attribute,targetMob.ExpReward);
+            if (elementExp < 10000) _expManager.ReceiveElementExperience(client,partner,targetMob.Element,targetMob.ExpReward);
+
+
+            partner.ReceiveSkillExp(targetMob.ExpReward.SkillExperience);
+
+            if (partnerResult.LevelGain > 0)
+            {
+                partner.SetBaseStatus(
+                    _statusManager.GetDigimonBaseStatus(
+                        partner.CurrentType,
+                        partner.Level,
+                        partner.Size
+                    )
+                );
+
+                BroadcastForTamerViewsAndSelf(partner.Character.Id,
+                    new LevelUpPacket(partner.GeneralHandler,partner.Level).Serialize());
 
                 partner.FullHeal();
             }
@@ -1117,24 +1198,54 @@ namespace DigitalWorldOnline.GameHost
             return partnerResult;
         }
 
-        private ReceiveExpResult ReceivePartnerExp(DigimonModel partner, SummonMobModel targetMob, long partnerExpToReceive)
+        private ReceiveExpResult ReceivePartnerExp(GameClient client,DigimonModel partner,SummonMobModel targetMob,long partnerExpToReceive)
         {
-            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive, partner);
+            var attributeExp = partner.GetAttributeExperience();
+            var elementExp = partner.GetElementExperience();
+            var partnerResult = _expManager.ReceiveDigimonExperience(partnerExpToReceive,partner);
 
-            _expManager.ReceiveAttributeExperience(partner, targetMob.Attribute, targetMob.Element,
-                targetMob.ExpReward);
+            if (attributeExp < 10000) _expManager.ReceiveAttributeExperience(client,partner,targetMob.Attribute,targetMob.ExpReward);
+            if (elementExp < 10000) _expManager.ReceiveElementExperience(client,partner,targetMob.Element,targetMob.ExpReward);
+
+            partner.ReceiveSkillExp(targetMob.ExpReward.SkillExperience);
 
             if (partnerResult.LevelGain > 0)
             {
                 partner.SetBaseStatus(
-                    _statusManager.GetDigimonBaseStatus(partner.CurrentType, partner.Level, partner.Size));
+                    _statusManager.GetDigimonBaseStatus(
+                        partner.CurrentType,
+                        partner.Level,
+                        partner.Size
+                    )
+                );
 
                 BroadcastForTamerViewsAndSelf(partner.Character.Id,
-                    new LevelUpPacket(partner.GeneralHandler, partner.Level).Serialize());
+                    new LevelUpPacket(partner.GeneralHandler,partner.Level).Serialize());
 
                 partner.FullHeal();
             }
 
+            return partnerResult;
+        }
+        private ReceiveExpResult ReceiveBonusPartnerExp(DigimonModel partner,SummonMobModel targetMob,long totalPartnerExp)
+        {
+            var partnerResult = _expManager.ReceiveDigimonExperience(totalPartnerExp,partner);
+
+            if (partnerResult.LevelGain > 0)
+            {
+                partner.SetBaseStatus(
+                    _statusManager.GetDigimonBaseStatus(
+                        partner.CurrentType,
+                        partner.Level,
+                        partner.Size
+                    )
+                );
+
+                BroadcastForTamerViewsAndSelf(partner.Character.Id,
+                    new LevelUpPacket(partner.GeneralHandler,partner.Level).Serialize());
+
+                partner.FullHeal();
+            }
             return partnerResult;
         }
 
@@ -1221,7 +1332,7 @@ namespace DigitalWorldOnline.GameHost
                 blocked = false;
 
                 var critDamageMultiplier = tamer.Partner.CD / 100.0;
-                critBonusMultiplier = baseDamage * (critDamageMultiplier / 100);
+                critBonusMultiplier = baseDamage * critDamageMultiplier;
             }
 
             if (tamer.TargetMob != null)
@@ -1302,7 +1413,7 @@ namespace DigitalWorldOnline.GameHost
                 blocked = false;
 
                 var critDamageMultiplier = tamer.Partner.CD / 100.0;
-                critBonusMultiplier = baseDamage * (critDamageMultiplier / 100);
+                critBonusMultiplier = baseDamage * critDamageMultiplier;
             }
 
             if (tamer.TargetSummonMob != null)
