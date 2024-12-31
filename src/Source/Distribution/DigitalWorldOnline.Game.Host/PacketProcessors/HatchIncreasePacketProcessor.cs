@@ -103,13 +103,13 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
 
             // Mid Data use verification
-            if ((client.Tamer.Incubator.HatchLevel + 1) > hatchInfo.LowClassLimitLevel && dataTier == 0)
+            /*if ((client.Tamer.Incubator.HatchLevel + 1) > hatchInfo.LowClassLimitLevel && dataTier == 0)
             {
                 client.Send(new HatchIncreaseFailedPacket(client.Tamer.GeneralHandler, HatchIncreaseResultEnum.Failled));
                 client.Send(new SystemMessagePacket($"Data insert Failed ! Use MidData to continue ..."));
                 _logger.Information($"Data insert Failed ! Use MidData to continue ...");
                 return;
-            }
+            }*/
 
             if (dataTier == 0)
             {
@@ -163,7 +163,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     }
                     else
                     {
-                        _logger.Information($"Normal Egg !!");
+                        _logger.Debug($"Normal Egg !!");
 
                         if (hatchConfig.SuccessChance >= UtilitiesFunctions.RandomDouble())
                         {

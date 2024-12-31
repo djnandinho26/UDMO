@@ -34,6 +34,8 @@ namespace DigitalWorldOnline.Game.Managers
             _logger = logger;
         }
 
+        // --------------------------------------------------------------------------------------------
+
         public ReceiveExpResult ReceiveMaxTamerExperience(CharacterModel tamer)
         {
             if (tamer.Level >= (int)GeneralSizeEnum.TamerLevelMax) return new ReceiveExpResult(0, false);
@@ -104,6 +106,8 @@ namespace DigitalWorldOnline.Game.Managers
 
             return new ReceiveExpResult(levelGain, true);
         }
+
+        // --------------------------------------------------------------------------------------------
 
         public ReceiveExpResult ReceiveDigimonExperience(long receivedExp, DigimonModel digimon)
         {
@@ -186,17 +190,15 @@ namespace DigitalWorldOnline.Game.Managers
             return new ReceiveExpResult(levelGain, true);
         }
 
-        internal void ReceiveAttributeExperience(
-            GameClient client,
-            DigimonModel partner,
-            DigimonAttributeEnum targetAttribute,
-            MobExpRewardConfigModel expReward)
+        // --------------------------------------------------------------------------------------------
+
+        internal void ReceiveAttributeExperience(GameClient client, DigimonModel partner, DigimonAttributeEnum targetAttribute, MobExpRewardConfigModel expReward)
         {
             short experience = 0;
 
             if (partner.BaseInfo.Attribute.HasAttributeAdvantage(targetAttribute))
             {
-                _logger.Verbose($"Partner {partner.Id} received {expReward.NatureExperience} nature exp.");
+                _logger.Verbose($"Partner {partner.Id} received {expReward.NatureExperience / 2} nature exp.");
                 experience = (short)(expReward.NatureExperience / 2);
             }
             else if (targetAttribute.HasAttributeAdvantage(partner.BaseInfo.Attribute))
@@ -206,7 +208,7 @@ namespace DigitalWorldOnline.Game.Managers
             }
             else
             {
-                _logger.Verbose($"Partner {partner.Id} received {expReward.NatureExperience / 2} attribute exp.");
+                _logger.Verbose($"Partner {partner.Id} received {expReward.NatureExperience} nature exp.");
                 experience = (short)expReward.NatureExperience;
             }
 
@@ -228,11 +230,7 @@ namespace DigitalWorldOnline.Game.Managers
             }
         }
 
-        internal void ReceiveAttributeExperience(
-            GameClient client,
-            DigimonModel partner,
-            DigimonAttributeEnum targetAttribute,
-            SummonMobExpRewardModel expReward)
+        internal void ReceiveAttributeExperience(GameClient client, DigimonModel partner, DigimonAttributeEnum targetAttribute, SummonMobExpRewardModel expReward)
         {
             short experience = 0;
 
@@ -267,12 +265,9 @@ namespace DigitalWorldOnline.Game.Managers
 
         }
 
+        // --------------------------------------------------------------------------------------------
 
-        internal void ReceiveElementExperience(
-            GameClient client,
-            DigimonModel partner,
-            DigimonElementEnum targetElement,
-            MobExpRewardConfigModel expReward)
+        internal void ReceiveElementExperience(GameClient client, DigimonModel partner, DigimonElementEnum targetElement, MobExpRewardConfigModel expReward)
         {
             short experience = 0;
 
@@ -305,11 +300,7 @@ namespace DigitalWorldOnline.Game.Managers
         }
 
 
-        internal void ReceiveElementExperience(
-            GameClient client,
-            DigimonModel partner,
-            DigimonElementEnum targetElement,
-            SummonMobExpRewardModel expReward)
+        internal void ReceiveElementExperience(GameClient client, DigimonModel partner, DigimonElementEnum targetElement, SummonMobExpRewardModel expReward)
         {
             short experience = 0;
 
@@ -338,5 +329,7 @@ namespace DigitalWorldOnline.Game.Managers
             var e = Enum.Parse(typeof(DigimonElementPacketEnum),partner.BaseInfo.Element.ToString());
             client.Send(new NatureExpPacket(1,(byte)(int)e,experience));
         }
+
+        // --------------------------------------------------------------------------------------------
     }
 }

@@ -671,6 +671,7 @@ namespace DigitalWorldOnline.Commons.Models.Base
 
             return newSlots;
         }
+
         public bool RemoveOrReduceItemWithSlot(ItemModel? itemToRemove, int slot)
         {
             if (itemToRemove == null || itemToRemove.Amount == 0 || itemToRemove.ItemId == 0)

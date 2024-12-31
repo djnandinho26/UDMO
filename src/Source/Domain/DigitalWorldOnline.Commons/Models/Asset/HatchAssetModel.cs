@@ -14,8 +14,8 @@
 
         /// <summary>
         /// Reference to the target digimon.
-        public int HatchType { get; private set; }
         /// </summary>
+        public int HatchType { get; private set; }
 
         /// <summary>
         /// Section low class data type.
