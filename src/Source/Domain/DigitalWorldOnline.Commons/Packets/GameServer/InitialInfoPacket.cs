@@ -45,7 +45,7 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
             WriteInt(-1); // BackupDisk TradeLimitTime
 
             WriteShort((short)character.BuffList.ActiveBuffs.Count);
-            foreach (var buff in character.BuffList.ActiveBuffs)
+            foreach (var buff in character.BuffList.ActiveBuffs.ToList())
             {
                 WriteShort((short)buff.BuffId);
                 WriteShort((short)buff.TypeN);

@@ -35,7 +35,18 @@ namespace DigitalWorldOnline.Character
         {
             Console.WriteLine(((Exception)e.ExceptionObject).InnerException);
             if (e.IsTerminating)
+            {
+                var message = "";
+                var exceptionStackTrace = "";
+                if (e.ExceptionObject is Exception exception) 
+                {
+                    message =  exception.Message;
+                    exceptionStackTrace = exception.StackTrace;
+                }
+                Console.WriteLine($"{message}");
+                Console.WriteLine($"{exceptionStackTrace}");
                 Console.WriteLine("Terminating by unhandled exception...");
+            }
             else
                 Console.WriteLine("Received unhandled exception.");
 

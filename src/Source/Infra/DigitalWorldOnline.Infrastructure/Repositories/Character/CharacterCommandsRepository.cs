@@ -47,9 +47,23 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
         public async Task<DigimonDTO> AddDigimonAsync(DigimonModel digimon)
         {
             var tamerDto = await _context.Character
-                .AsNoTracking()
                 .Include(x => x.Digimons)
+                .ThenInclude(y => y.Digiclone)
+                .ThenInclude(z => z.History)
+                .Include(x => x.Digimons)
+                .ThenInclude(y => y.AttributeExperience)
+                .Include(x => x.Digimons)
+                .ThenInclude(y => y.Location)
+                .Include(x => x.Digimons)
+                .ThenInclude(y => y.BuffList)
+                .ThenInclude(z => z.Buffs)
+                .Include(x => x.Digimons)
+                .ThenInclude(y => y.Evolutions)
+                .ThenInclude(z => z.Skills)
+                .Include(x => x.Encyclopedia)
                 .ThenInclude(x => x.Evolutions)
+                .Include(x => x.Encyclopedia)
+                .ThenInclude(y => y.EvolutionAsset)
                 .SingleOrDefaultAsync(x => x.Id == digimon.CharacterId);
 
             try
@@ -60,11 +74,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 {
                     tamerDto.Digimons.Add(dto);
 
-                    _context.Update(tamerDto);
-
                     _context.SaveChanges();
                 }
-
+                
                 return dto;
             }
             catch (Exception e)
@@ -379,8 +391,8 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             var dto = await _context.DigimonDigiclone
                 .AsNoTracking()
                 .Include(x => x.History)
-                .FirstOrDefaultAsync(x => x.Id == digiclone.Id);
-
+                .FirstOrDefaultAsync(x => x.Id == digiclone.Id || x.DigimonId == digiclone.DigimonId);
+            
             if (dto != null)
             {
                 dto.ATLevel = digiclone.ATLevel;
