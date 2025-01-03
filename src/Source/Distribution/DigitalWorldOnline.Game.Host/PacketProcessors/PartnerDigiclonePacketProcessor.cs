@@ -55,7 +55,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Send(new SystemMessagePacket($"Invalid clone item at slot {digicloneSlot}."));
                 return;
             }
-            _logger.Information($"Digiclone Digimon Id: {client.Partner.Digiclone?.DigimonId}");
+            
             if (client.Partner.Digiclone.DigimonId == 0)
             {
                 client.Partner.Digiclone.GetOrSetDigimonId(client.Partner.Id);
@@ -63,7 +63,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             
             var currentCloneLevel = client.Partner.Digiclone.GetCurrentLevel(cloneType);
             
-            _logger.Information($"Current level: {currentCloneLevel}");
             var cloneConfig =
                 _configs.Clones.FirstOrDefault(x => x.Type == cloneType && x.Level == currentCloneLevel + 1);
             if (cloneConfig == null)
@@ -206,14 +205,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             client.Tamer.Inventory.RemoveBits(clonePriceAsset.Bits);
             client.Tamer.Inventory.RemoveOrReduceItem(digicloneItem, 1, digicloneSlot);
             client.Tamer.Inventory.RemoveOrReduceItem(backupItem, 1, backupSlot);
-            _logger.Information($"Character {client.TamerId} removed {clonePriceAsset.Bits} bits from inventory.");
-            _logger.Information($"Digimon Digiclone: {client.Partner.Digiclone?.Id}, DigimonId: {client.Partner.Digiclone?.DigimonId}");
             await _sender.Send(new UpdateDigicloneCommand(client.Partner.Digiclone));
-            _logger.Information($"Character {client.TamerId} saved digiclone info");
             await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory));
-            _logger.Information($"Character {client.TamerId} saved bits info");
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
-            _logger.Information($"Character {client.TamerId} saved items info");
         }
     }
 }
