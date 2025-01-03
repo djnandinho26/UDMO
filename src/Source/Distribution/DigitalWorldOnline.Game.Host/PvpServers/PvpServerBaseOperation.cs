@@ -369,6 +369,13 @@ namespace DigitalWorldOnline.GameHost
             return Maps.SelectMany(map => map.Clients).FirstOrDefault(client => client.Tamer?.GeneralHandler == handle);
         }
 
+        public GameClient? FindClientByTamerHandleAndChannel(int handle, long TamerId)
+        {
+            return Maps.Where(x => x.Clients.Exists(gameClient => gameClient.TamerId == TamerId))
+                .SelectMany(map => map.Clients)
+                .FirstOrDefault(client => client.Tamer?.GeneralHandler == handle);
+        }
+
         public void BroadcastForTargetTamers(List<long> targetTamers, byte[] packet)
         {
             var map = Maps.FirstOrDefault(

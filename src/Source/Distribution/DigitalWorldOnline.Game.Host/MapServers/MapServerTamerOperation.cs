@@ -540,6 +540,17 @@ namespace DigitalWorldOnline.GameHost
                         client.Tamer.IsSpecialMapActive = false;
                     }
 
+                    if (mapDebuff != null)
+                    {
+                        _logger.Information($"Map Debuff Activated !!");
+
+                        foreach (var teste in mapDebuff)
+                        {
+                            _logger.Information($"Map Debuff ID: {teste.BuffId}");
+                        }
+
+                    }
+
                 }
 
                 // Verifica Buff do PvpMap
