@@ -43,7 +43,7 @@ namespace DigitalWorldOnline.GameHost
 
                 CheckLocationDebuff(client);
                 //MapBuff(client);
-                DarkTowerBreakEvolution(client);
+
                 GetInViewMobs(map, tamer);
                 GetInViewMobs(map, tamer, true);
 
@@ -514,7 +514,7 @@ namespace DigitalWorldOnline.GameHost
 
         // -----------------------------------------------------------------------------------------------------------------------
 
-        private void CheckLocationDebuff(GameClient client)
+        private async void CheckLocationDebuff(GameClient client)
         {
             if (client.Tamer.DebuffTime)
             {
@@ -524,67 +524,33 @@ namespace DigitalWorldOnline.GameHost
                 if (client.Tamer.Location.MapId == 1109)
                 {
                     var mapDebuff = client.Partner.DebuffList.ActiveBuffs.Where(x => x.BuffId == 50101);
-                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType)
-                        .EvolutionType;
+                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType).EvolutionType;
 
-                    /*if (mapDebuff != null && (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie)
+                    if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie && (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Capsule &&
+                        (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Spirit)
                     {
+                        await Task.Delay(1000);
+                        client.Tamer.IsSpecialMapActive = true;
+
                         client.Tamer.ActiveEvolution.SetDs(0);
                         client.Tamer.ActiveEvolution.SetXg(0);
+                    }
+                    else
+                    {
+                        client.Tamer.IsSpecialMapActive = false;
+                    }
 
-                        var buffToRemove = client.Partner.BuffList.TamerBaseSkill();
+                    if (mapDebuff != null)
+                    {
+                        _logger.Information($"Map Debuff Activated !!");
 
-                        if (buffToRemove != null)
+                        foreach (var teste in mapDebuff)
                         {
-                            BroadcastForTamerViewsAndSelf(client.TamerId, new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
+                            _logger.Information($"Map Debuff ID: {teste.BuffId}");
                         }
 
-                        client.Tamer.RemovePartnerPassiveBuff();
+                    }
 
-                        BroadcastForTamerViewsAndSelf(client.TamerId, new DigimonEvolutionSucessPacket(client.Tamer.GeneralHandler,
-                            client.Partner.GeneralHandler, client.Partner.BaseType, DigimonEvolutionEffectEnum.Back).Serialize());
-
-                        var currentHp = client.Partner.CurrentHp;
-                        var currentMaxHp = client.Partner.HP;
-                        var currentDs = client.Partner.CurrentDs;
-                        var currentMaxDs = client.Partner.DS;
-
-                        client.Partner.UpdateCurrentType(client.Partner.BaseType);
-                        client.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(client.Partner.CurrentType));
-                        client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Partner.CurrentType, client.Partner.Level, client.Partner.Size));
-
-                        client.Tamer.SetPartnerPassiveBuff();
-
-                        client.Partner.AdjustHpAndDs(currentHp, currentMaxHp, currentDs, currentMaxDs);
-
-                        foreach (var buff in client.Partner.BuffList.ActiveBuffs)
-                            buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x => x.SkillCode == buff.SkillId && buff.BuffInfo == null || x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
-
-                        client.Send(new UpdateStatusPacket(client.Tamer));
-
-                        if (client.Partner.BuffList.TamerBaseSkill() != null)
-                        {
-                            var buffToApply = client.Partner.BuffList.Buffs.Where(x => x.Duration == 0).ToList();
-
-                            buffToApply.ForEach(buffToApply =>
-                            {
-                                BroadcastForTamerViewsAndSelf(client.Tamer.Id, new AddBuffPacket(client.Partner.GeneralHandler, buffToApply.BuffId, buffToApply.SkillId, (short)buffToApply.TypeN, 0).Serialize());
-                            });
-                        }
-
-                        var party = _partyManager.FindParty(client.TamerId);
-
-                        if (party != null)
-                        {
-                            party.UpdateMember(party[client.TamerId], client.Tamer);
-
-                            BroadcastForTargetTamers(party.GetMembersIdList(), new PartyMemberInfoPacket(party[client.TamerId]).Serialize());
-                        }
-
-                        _sender.Send(new UpdatePartnerCurrentTypeCommand(client.Partner));
-                        _sender.Send(new UpdateCharacterActiveEvolutionCommand(client.Tamer.ActiveEvolution));
-                        _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
-                    }*/
                 }
 
                 // Verifica Buff do PvpMap
@@ -598,30 +564,9 @@ namespace DigitalWorldOnline.GameHost
                     client.Send(new RemoveBuffPacket(client.Tamer.GeneralHandler, buff1.BuffId).Serialize());
                 }
 
-                _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
-
+                await _sender.Send(new UpdateCharacterBuffListCommand(client.Tamer.BuffList));
             }
 
-        }
-
-        public async void DarkTowerBreakEvolution(GameClient client)
-        {
-            var partner = client.Tamer.Partner;
-            var evolutionType = _assets.DigimonBaseInfo
-                .First(x => x.Type == partner.CurrentType)
-                .EvolutionType;
-
-            if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie &&
-                (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Capsule)
-            {
-                await Task.Delay(5000);
-                client.Tamer.IsSpecialMapActive = client.Tamer.Location.MapId >= 1109 && client.Tamer.Location.MapId <= 1112;
-
-            }
-            else
-            {
-                client.Tamer.IsSpecialMapActive = false;
-            }
         }
 
         private async void MapBuff(GameClient client)

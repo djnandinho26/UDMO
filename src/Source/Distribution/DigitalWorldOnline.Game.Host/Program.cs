@@ -42,16 +42,20 @@ namespace DigitalWorldOnline.Game
             if (e.IsTerminating)
             {
                 var message = "";
-                if (e.ExceptionObject is Exception exception)
+                var exceptionStackTrace = "";
+                if (e.ExceptionObject is Exception exception) 
                 {
-                    message = exception.Message;
+                    message =  exception.Message;
+                    exceptionStackTrace = exception.StackTrace;
                 }
-
                 Console.WriteLine($"{message}");
+                Console.WriteLine($"{exceptionStackTrace}");
                 Console.WriteLine("Terminating by unhandled exception...");
             }
             else
                 Console.WriteLine("Received unhandled exception.");
+
+            Console.ReadLine();
         }
 
         public static IHost CreateHostBuilder(string[] args)
@@ -85,6 +89,8 @@ namespace DigitalWorldOnline.Game
 
                     //services.AddScoped<IEmailService, EmailService>();
 
+                    services.AddSingleton<AssetsLoader>();
+                    services.AddSingleton<ConfigsLoader>();
                     services.AddSingleton<DropManager>();
                     services.AddSingleton<StatusManager>();
                     services.AddSingleton<ExpManager>();
@@ -96,8 +102,6 @@ namespace DigitalWorldOnline.Game
                     services.AddSingleton<PvpServer>();
                     services.AddSingleton<EventServer>();
                     services.AddSingleton<DungeonsServer>();
-                    services.AddSingleton<AssetsLoader>();
-                    services.AddSingleton<ConfigsLoader>();
                     services.AddSingleton<GameMasterCommandsProcessor>();
                     services.AddSingleton<PlayerCommandsProcessor>();
 

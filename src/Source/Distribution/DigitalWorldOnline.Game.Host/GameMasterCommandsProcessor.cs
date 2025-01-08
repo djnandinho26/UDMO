@@ -182,12 +182,10 @@ namespace DigitalWorldOnline.Game
 
                         newDigimon.SetTamer(client.Tamer);
 
-                        client.Tamer.AddDigimon(newDigimon);
-
                         client.Send(new HatchFinishPacket(newDigimon, (ushort)(client.Partner.GeneralHandler + 1000), newDigimon.Slot));
 
-                        var digimonInfo = await _sender.Send(new CreateDigimonCommand(newDigimon));
-
+                        var digimonInfo = _mapper.Map<DigimonModel>(await _sender.Send(new CreateDigimonCommand(newDigimon)));
+                        client.Tamer.AddDigimon(digimonInfo);
                         if (digimonInfo != null)
                         {
                             newDigimon.SetId(digimonInfo.Id);
@@ -217,7 +215,7 @@ namespace DigitalWorldOnline.Game
                             }
                         }
 
-                        _mapServer.BroadcastForUniqueTamer(client.TamerId, new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name, newDigimon.BaseType, newDigimon.Size).Serialize());
+                        client.Send(new NeonMessagePacket(NeonMessageTypeEnum.Scale, client.Tamer.Name, newDigimon.BaseType, newDigimon.Size).Serialize());
 
                         // ------------------------------------------------------------------------------------------------------
 

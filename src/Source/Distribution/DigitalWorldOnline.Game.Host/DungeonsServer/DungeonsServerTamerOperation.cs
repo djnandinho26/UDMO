@@ -41,11 +41,12 @@ namespace DigitalWorldOnline.GameHost
                     continue;
 
                 CheckLocationDebuff(client);
+
                 GetInViewMobs(map, tamer);
                 GetInViewMobs(map, tamer, true);
 
                 ShowOrHideTamer(map, tamer);
-                _mapServer.DarkTowerBreakEvolution(client);
+
                 if (tamer.TargetMobs.Count > 0)
                     PartnerAutoAttack(tamer);
 
@@ -377,7 +378,7 @@ namespace DigitalWorldOnline.GameHost
 
         // -----------------------------------------------------------------------------------------------------------------------
 
-        private void CheckLocationDebuff(GameClient client)
+        private async void CheckLocationDebuff(GameClient client)
         {
             if (client.Tamer.DebuffTime)
             {
@@ -387,13 +388,11 @@ namespace DigitalWorldOnline.GameHost
                 if (client.Tamer.Location.MapId == 2001 || client.Tamer.Location.MapId == 2002)
                 {
                     var debuff = client.Tamer.Partner.DebuffList.ActiveBuffs.FirstOrDefault(x => x.BuffId == 63000);
-                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType)
-                        .EvolutionType;
+                    var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType).EvolutionType;
 
                     if (debuff == null)
                     {
-                        if ((EvolutionRankEnum)evolutionType == EvolutionRankEnum.Jogress ||
-                            (EvolutionRankEnum)evolutionType == EvolutionRankEnum.JogressX)
+                        if ((EvolutionRankEnum)evolutionType == EvolutionRankEnum.Jogress || (EvolutionRankEnum)evolutionType == EvolutionRankEnum.JogressX)
                         {
                             var duration = 0xffffffff;
 
@@ -424,74 +423,19 @@ namespace DigitalWorldOnline.GameHost
                     var evolutionType = _assets.DigimonBaseInfo.First(x => x.Type == client.Partner.CurrentType).EvolutionType;
 
                     // Break Digimon evolution
-                    if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie &&
-                        (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Capsule &&
+                    if ((EvolutionRankEnum)evolutionType != EvolutionRankEnum.Rookie && (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Capsule &&
                         (EvolutionRankEnum)evolutionType != EvolutionRankEnum.Spirit)
                     {
+                        
+                        await Task.Delay(1000);
+                        client.Tamer.IsSpecialMapActive = true;
+
                         client.Tamer.ActiveEvolution.SetDs(0);
                         client.Tamer.ActiveEvolution.SetXg(0);
-
-                        var buffToRemove = client.Partner.BuffList.TamerBaseSkill();
-
-                        if (buffToRemove != null)
-                        {
-                            BroadcastForTamerViewsAndSelf(client.TamerId,
-                                new RemoveBuffPacket(client.Partner.GeneralHandler, buffToRemove.BuffId).Serialize());
-                        }
-
-                        client.Tamer.RemovePartnerPassiveBuff();
-
-                        BroadcastForTamerViewsAndSelf(client.TamerId, new DigimonEvolutionSucessPacket(
-                                client.Tamer.GeneralHandler,
-                                client.Partner.GeneralHandler, client.Partner.BaseType, DigimonEvolutionEffectEnum.Back)
-                            .Serialize());
-
-                        var currentHp = client.Partner.CurrentHp;
-                        var currentMaxHp = client.Partner.HP;
-                        var currentDs = client.Partner.CurrentDs;
-                        var currentMaxDs = client.Partner.DS;
-
-                        client.Partner.UpdateCurrentType(client.Partner.BaseType);
-                        client.Partner.SetBaseInfo(_statusManager.GetDigimonBaseInfo(client.Partner.CurrentType));
-                        client.Partner.SetBaseStatus(_statusManager.GetDigimonBaseStatus(client.Partner.CurrentType,
-                            client.Partner.Level, client.Partner.Size));
-
-                        client.Tamer.SetPartnerPassiveBuff();
-
-                        client.Partner.AdjustHpAndDs(currentHp, currentMaxHp, currentDs, currentMaxDs);
-
-                        foreach (var buff in client.Partner.BuffList.ActiveBuffs)
-                            buff.SetBuffInfo(_assets.BuffInfo.FirstOrDefault(x =>
-                                x.SkillCode == buff.SkillId && buff.BuffInfo == null ||
-                                x.DigimonSkillCode == buff.SkillId && buff.BuffInfo == null));
-
-                        client.Send(new UpdateStatusPacket(client.Tamer));
-
-                        if (client.Partner.BuffList.TamerBaseSkill() != null)
-                        {
-                            var buffToApply = client.Partner.BuffList.Buffs.Where(x => x.Duration == 0).ToList();
-
-                            buffToApply.ForEach(digimonBuffModel =>
-                            {
-                                BroadcastForTamerViewsAndSelf(client.Tamer.Id,
-                                    new AddBuffPacket(client.Partner.GeneralHandler, digimonBuffModel.BuffId,
-                                        digimonBuffModel.SkillId, (short)digimonBuffModel.TypeN, 0).Serialize());
-                            });
-                        }
-
-                        var party = _partyManager.FindParty(client.TamerId);
-
-                        if (party != null)
-                        {
-                            party.UpdateMember(party[client.TamerId], client.Tamer);
-
-                            BroadcastForTargetTamers(party.GetMembersIdList(),
-                                new PartyMemberInfoPacket(party[client.TamerId]).Serialize());
-                        }
-
-                        _sender.Send(new UpdatePartnerCurrentTypeCommand(client.Partner));
-                        _sender.Send(new UpdateCharacterActiveEvolutionCommand(client.Tamer.ActiveEvolution));
-                        _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
+                    }
+                    else
+                    {
+                        client.Tamer.IsSpecialMapActive = false;
                     }
                 }
             }

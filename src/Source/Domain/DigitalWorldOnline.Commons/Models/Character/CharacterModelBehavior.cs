@@ -186,8 +186,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
             return true;
         }
 
-        public static double CalcularProbabilidadeAcerto(double seuHitRate, int seuNivel, int nivelDoMonstro,
-            double evDoMonstro, double attributeAdvantage)
+        public static double CalcularProbabilidadeAcerto(double seuHitRate, int seuNivel, int nivelDoMonstro, double evDoMonstro, double attributeAdvantage)
         {
             double diferencaDeNiveis = seuNivel - nivelDoMonstro;
             double levelMultiplier = 1 / (1 + Math.Exp(-diferencaDeNiveis / 9.0));

@@ -1,6 +1,7 @@
-﻿using DigitalWorldOnline.Commons.Entities;
+﻿using DigitalWorldOnline.Application.Separar.Queries;
+using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Account;
-using DigitalWorldOnline.Commons.Enums.Character;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
@@ -8,8 +9,9 @@ using DigitalWorldOnline.Commons.Models.Base;
 using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.GameHost;
+using DigitalWorldOnline.GameHost.EventsServer;
+using MediatR;
 using Serilog;
-using System.Net.Sockets;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -18,26 +20,52 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         public GameServerPacketEnum Type => GameServerPacketEnum.TradeAddItem;
 
         private readonly MapServer _mapServer;
+        private readonly DungeonsServer _dungeonServer;
+        private readonly EventServer _eventServer;
+        private readonly PvpServer _pvpServer;
         private readonly ILogger _logger;
+        private readonly ISender _sender;
 
-
-        public TradeAddItemPacketProcessor(
-            MapServer mapServer,
-            ILogger logger)
+        public TradeAddItemPacketProcessor(MapServer mapServer, DungeonsServer dungeonsServer, EventServer eventServer, PvpServer pvpServer, ILogger logger, ISender sender)
         {
             _mapServer = mapServer;
+            _dungeonServer = dungeonsServer;
+            _eventServer = eventServer;
+            _pvpServer = pvpServer;
             _logger = logger;
-
+            _sender = sender;
         }
 
         public async Task Process(GameClient client, byte[] packetData)
         {
             var packet = new GamePacketReader(packetData);
+
             var inventorySlot = packet.ReadShort();
             var amount = packet.ReadShort();
             var slotAtual = client.Tamer.TradeInventory.EquippedItems.Count;
 
-            var targetClient = _mapServer.FindClientByTamerHandleAndChannel(client.Tamer.TargetTradeGeneralHandle, client.TamerId);
+            GameClient? targetClient;
+
+            var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+
+            switch (mapConfig!.Type)
+            {
+                case MapTypeEnum.Dungeon:
+                    targetClient = _dungeonServer.FindClientByTamerHandleAndChannel(client.Tamer.TargetTradeGeneralHandle, client.TamerId);
+                    break;
+
+                case MapTypeEnum.Event:
+                    targetClient = _eventServer.FindClientByTamerHandleAndChannel(client.Tamer.TargetTradeGeneralHandle, client.TamerId);
+                    break;
+
+                case MapTypeEnum.Pvp:
+                    targetClient = _pvpServer.FindClientByTamerHandleAndChannel(client.Tamer.TargetTradeGeneralHandle, client.TamerId);
+                    break;
+
+                default:
+                    targetClient = _mapServer.FindClientByTamerHandleAndChannel(client.Tamer.TargetTradeGeneralHandle, client.TamerId);
+                    break;
+            }
 
             var Item = client.Tamer.Inventory.FindItemBySlot(inventorySlot);
 

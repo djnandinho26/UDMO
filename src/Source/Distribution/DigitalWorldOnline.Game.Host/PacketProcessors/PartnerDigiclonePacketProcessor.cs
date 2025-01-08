@@ -55,10 +55,16 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Send(new SystemMessagePacket($"Invalid clone item at slot {digicloneSlot}."));
                 return;
             }
-
+            
+            if (client.Partner.Digiclone.DigimonId == 0)
+            {
+                client.Partner.Digiclone.GetOrSetDigimonId(client.Partner.Id);
+            }
+            
             var currentCloneLevel = client.Partner.Digiclone.GetCurrentLevel(cloneType);
-
-            var cloneConfig = _configs.Clones.FirstOrDefault(x => x.Type == cloneType && x.Level == currentCloneLevel + 1);
+            
+            var cloneConfig =
+                _configs.Clones.FirstOrDefault(x => x.Type == cloneType && x.Level == currentCloneLevel + 1);
             if (cloneConfig == null)
             {
                 _logger.Warning($"Invalid clone config with type {cloneType} and level {currentCloneLevel}.");
@@ -74,7 +80,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            var cloneAsset = _assets.CloneValues.FirstOrDefault(x => x.Type == cloneType && currentCloneLevel + 1 >= x.MinLevel && currentCloneLevel + 1 <= x.MaxLevel);
+            var cloneAsset = _assets.CloneValues.FirstOrDefault(x =>
+                x.Type == cloneType && currentCloneLevel + 1 >= x.MinLevel && currentCloneLevel + 1 <= x.MaxLevel);
             if (cloneAsset == null)
             {
                 _logger.Warning($"Invalid clone assets with type {cloneType} and level {currentCloneLevel}.");
@@ -122,7 +129,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (cloneResult == DigicloneResultEnum.Success)
             {
                 _logger.Verbose($"Character {client.TamerId} increased {client.Partner.Id} {cloneType} clon level to " +
-                    $"{currentCloneLevel + 1} with value {value} using {digicloneItem.ItemId} {backupItem?.ItemId}.");
+                                $"{currentCloneLevel + 1} with value {value} using {digicloneItem.ItemId} {backupItem?.ItemId}.");
 
                 client.Partner.Digiclone.IncreaseCloneLevel(cloneType, value);
 
@@ -162,7 +169,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     {
                         if (backupItem == null)
                         {
-                            _logger.Verbose($"Character {client.TamerId} broken {client.Partner.Id} {cloneType} clon level to " +
+                            _logger.Verbose(
+                                $"Character {client.TamerId} broken {client.Partner.Id} {cloneType} clon level to " +
                                 $"{currentCloneLevel - 1} using {digicloneItem.ItemId} without backup.");
 
                             cloneResult = DigicloneResultEnum.Break;
@@ -170,7 +178,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         }
                         else
                         {
-                            _logger.Verbose($"Character {client.TamerId} failed to increase {client.Partner.Id} {cloneType} clon level to " +
+                            _logger.Verbose(
+                                $"Character {client.TamerId} failed to increase {client.Partner.Id} {cloneType} clon level to " +
                                 $"{currentCloneLevel + 1} using {digicloneItem.ItemId} with backup {backupItem?.ItemId}.");
 
                             cloneResult = DigicloneResultEnum.Backup;
@@ -179,20 +188,23 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else
                 {
-                    _logger.Verbose($"Character {client.TamerId} failed to increase {client.Partner.Id} {cloneType} clon level to " +
-                                $"{currentCloneLevel + 1} using {digicloneItem.ItemId} {backupItem?.ItemId}.");
+                    _logger.Verbose(
+                        $"Character {client.TamerId} failed to increase {client.Partner.Id} {cloneType} clon level to " +
+                        $"{currentCloneLevel + 1} using {digicloneItem.ItemId} {backupItem?.ItemId}.");
 
                     cloneResult = DigicloneResultEnum.Fail;
                 }
             }
 
             client.Send(new DigicloneResultPacket(cloneResult, client.Partner.Digiclone));
-            client.Send(new UpdateStatusPacket(client.Tamer));
+            if (cloneResult == DigicloneResultEnum.Success)
+            {
+                client.Send(new UpdateStatusPacket(client.Tamer));
+            }
 
             client.Tamer.Inventory.RemoveBits(clonePriceAsset.Bits);
             client.Tamer.Inventory.RemoveOrReduceItem(digicloneItem, 1, digicloneSlot);
             client.Tamer.Inventory.RemoveOrReduceItem(backupItem, 1, backupSlot);
-
             await _sender.Send(new UpdateDigicloneCommand(client.Partner.Digiclone));
             await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory));
             await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
