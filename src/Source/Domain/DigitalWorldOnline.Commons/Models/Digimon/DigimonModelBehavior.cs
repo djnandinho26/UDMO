@@ -30,7 +30,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         private int _baseAt => BaseStatus.ATValue;
         private short _baseBl => (short)BaseStatus.BLValue;
         private int _baseCc => BaseStatus.CTValue;
-        private int _baseCd => (short)BaseStatus.CDValue; // 100% Critical Damage
+        private int _baseCd => 10000; // 100% Critical Damage
         private short _baseAtt => 0;
         private short _baseDe => (short)BaseStatus.DEValue;
         private int _baseEv => BaseStatus.EVValue;

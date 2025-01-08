@@ -416,7 +416,7 @@ namespace DigitalWorldOnline.Commons.Models.Config
             {
                 if (targetTamer?.TargetMobs != null)
                 {
-                    targetTamer.TargetMobs.RemoveAll(x => x.Id == Id);
+                    targetTamer.TargetMobs?.RemoveAll(x => x.Id == Id);
                 }
             });
 
