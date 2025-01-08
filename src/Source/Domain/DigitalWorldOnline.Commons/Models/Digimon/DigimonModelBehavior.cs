@@ -102,6 +102,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         public bool SameType(int baseType) => BaseType == baseType;
 
         public bool PossibleTranscendence => TranscendenceExperience >= 140000;
+        
+        public bool IsUnbeatable { get; set; }
 
         //TODO: deck, encyclopedia
         /// <summary>
@@ -627,6 +629,11 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         /// <returns>Remaining HP.</returns>
         public int ReceiveDamage(int damage)
         {
+            if (IsUnbeatable)
+            {
+                return CurrentHp;
+            }
+
             CurrentHp -= damage;
             if (CurrentHp < 0) CurrentHp = 0;
 

@@ -21,6 +21,7 @@ using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Models;
 using System.Diagnostics.Eventing.Reader;
 using System.Runtime.CompilerServices;
+using DigitalWorldOnline.Commons.Enums.Map;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -2245,7 +2246,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 ((skillValue.Count > 1 && skillValue[1].Type != 0) ||
                  (skillValue.Count > 2 && skillValue[2].Type != 0)))
             {
-                BuffSkill(client,targetSkill,durationBuff,skillDuration, skillSlot);
+                BuffSkill(client,durationBuff,skillDuration,skillSlot);
             }
 
             int totalDamage =  baseDamage + clonDamage + attributeBonus + elementBonus;
@@ -2558,229 +2559,225 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         }
 
         // -------------------------------------------------------------------------------------
-        private void BuffSkill(GameClient client,DigimonSkillAssetModel? targetSkill,int duration, int skillDuration, byte skillSlot)
+        private void BuffSkill(GameClient client,int duration,int skillDuration,byte skillSlot)
         {
-            var skillCode = _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == targetSkill.SkillId);
+            var skillInfo = _assets.DigimonSkillInfo.FirstOrDefault(x => x.Type == client.Partner.CurrentType && x.Slot == skillSlot);
+            Action<long,byte[]> broadcastAction = client.DungeonMap
+                ? (id,data) => _dungeonServer.BroadcastForTamerViewsAndSelf(id,data)
+                : (id,data) => _mapServer.BroadcastForTamerViewsAndSelf(id,data);
+
+            var skillCode = _assets.SkillCodeInfo.FirstOrDefault(x => x.SkillCode == skillInfo.SkillId);
             var buff = _assets.BuffInfo.FirstOrDefault(x => x.SkillCode == skillCode.SkillCode);
-            var skillValue = skillCode.Apply
-                .Where(x => x.Type > 0)
-                .Take(3)
-                .ToList();
+            var skillValue = skillCode.Apply.Where(x => x.Type > 0).Take(3).ToList();
             var partnerEvolution = client.Partner.Evolutions.FirstOrDefault(x => x.Type == client.Partner.CurrentType);
+            var selectedMob = client.Tamer.TargetMob;
+
             if (buff != null)
             {
                 var debuffs = new List<SkillCodeApplyAttributeEnum>
-                    {
-                        SkillCodeApplyAttributeEnum.CrowdControl,
-                        SkillCodeApplyAttributeEnum.DOT,
-                        SkillCodeApplyAttributeEnum.DOT2
-                    };
+        {
+            SkillCodeApplyAttributeEnum.CrowdControl,
+            SkillCodeApplyAttributeEnum.DOT,
+            SkillCodeApplyAttributeEnum.DOT2
+        };
 
                 var buffs = new List<SkillCodeApplyAttributeEnum>
-                    {
-                        SkillCodeApplyAttributeEnum.MS,
-                        SkillCodeApplyAttributeEnum.SCD,
-                        SkillCodeApplyAttributeEnum.CC,
-                        SkillCodeApplyAttributeEnum.AS,
-                        SkillCodeApplyAttributeEnum.AT,
-                        SkillCodeApplyAttributeEnum.HP,
-                        SkillCodeApplyAttributeEnum.DamageShield,
-                        SkillCodeApplyAttributeEnum.CA,
-                        SkillCodeApplyAttributeEnum.Unbeatable,
-                        SkillCodeApplyAttributeEnum.DR,
-                        SkillCodeApplyAttributeEnum.EV
-                    };
+        {
+            SkillCodeApplyAttributeEnum.MS,
+            SkillCodeApplyAttributeEnum.SCD,
+            SkillCodeApplyAttributeEnum.CC,
+            SkillCodeApplyAttributeEnum.AS,
+            SkillCodeApplyAttributeEnum.AT,
+            SkillCodeApplyAttributeEnum.HP,
+            SkillCodeApplyAttributeEnum.DamageShield,
+            SkillCodeApplyAttributeEnum.CA,
+            SkillCodeApplyAttributeEnum.Unbeatable,
+            SkillCodeApplyAttributeEnum.DR,
+            SkillCodeApplyAttributeEnum.EV
+        };
 
                 for (int i = 1;i <= 2;i++)
                 {
                     if (skillValue.Count > i)
                     {
-
-                        if (buffs.Contains(skillValue[i].Attribute))
+                        switch (skillValue[i].Attribute)
                         {
-                            if (client.DungeonMap || client.EventMap || client.PvpMap)
-                            {
-                                int buffsValue = (skillValue[i].Value) +
-                                                 ((partnerEvolution.Skills[skillSlot].CurrentLevel) *
-                                                  skillValue[i].IncreaseValue);
-
+                            // Handling Buffs
+                            case var attribute when buffs.Contains(attribute):
+                                int buffsValue = skillValue[i].Value + (partnerEvolution.Skills[skillSlot].CurrentLevel * skillValue[i].IncreaseValue);
                                 client.Tamer.Partner.BuffValueFromBuffSkill = buffsValue;
 
-                                var newDigimonBuff =
-                                    DigimonBuffModel.Create(buff.BuffId, buff.SkillId, 0, skillDuration);
-                                var activeBuff =
-                                    client.Tamer.Partner.BuffList.Buffs.FirstOrDefault(x => x.BuffId == buff.BuffId);
-
-                                if (activeBuff == null)
+                                var newDigimonBuff = DigimonBuffModel.Create(buff.BuffId,buff.SkillId,0,skillDuration);
+                                var activeBuff = client.Tamer.Partner.BuffList.Buffs.FirstOrDefault(x => x.BuffId == buff.BuffId);
+                                switch (attribute)
                                 {
-                                    newDigimonBuff.SetBuffInfo(buff);
-                                    client.Tamer.Partner.BuffList.Add(newDigimonBuff);
-
-                                    _mapServer.BroadcastForTamerViewsAndSelf(
-                                        client.TamerId,
-                                        new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buff,
-                                            partnerEvolution.Skills[skillSlot].CurrentLevel, duration).Serialize()
-                                    );
-                                }
-                                else
-                                {
-                                    continue;
-                                }
-                            }
-                            else
-                            {
-                                int buffsValue = (skillValue[i].Value) +
-                                                 ((partnerEvolution.Skills[skillSlot].CurrentLevel) *
-                                                  skillValue[i].IncreaseValue);
-
-                                client.Tamer.Partner.BuffValueFromBuffSkill = buffsValue;
-
-                                var newDigimonBuff =
-                                    DigimonBuffModel.Create(buff.BuffId, buff.SkillId, 0, skillDuration);
-                                var activeBuff =
-                                    client.Tamer.Partner.BuffList.Buffs.FirstOrDefault(x => x.BuffId == buff.BuffId);
-
-                                if (activeBuff == null)
-                                {
-                                    newDigimonBuff.SetBuffInfo(buff);
-                                    client.Tamer.Partner.BuffList.Add(newDigimonBuff);
-
-                                    _mapServer.BroadcastForTamerViewsAndSelf(
-                                        client.TamerId,
-                                        new AddBuffPacket(client.Tamer.Partner.GeneralHandler, buff,
-                                            partnerEvolution.Skills[skillSlot].CurrentLevel, duration).Serialize()
-                                    );
-                                }
-                                else
-                                {
-                                    continue;
-                                }
-                            }
-                            
-                            client.Send(new UpdateStatusPacket(client.Tamer));
-                        }
-                        else if (debuffs.Contains(skillValue[i].Attribute))
-                        {
-                            var activeDebuff = client.Tamer.TargetMob.DebuffList.Buffs.FirstOrDefault(x => x.BuffId == buff.BuffId);
-                            var newMobDebuff = MobDebuffModel.Create(buff.BuffId,(int)skillCode.SkillCode,0,skillDuration);
-                            newMobDebuff.SetBuffInfo(buff);
-                            int debuffsValue = (skillValue[i].Value) + ((partnerEvolution.Skills[skillSlot].CurrentLevel) * skillValue[i].IncreaseValue);
-                            
-                            if (skillValue[i].Attribute == SkillCodeApplyAttributeEnum.CrowdControl)
-                            {
-                                if (activeDebuff == null)
-                                {
-                                    client.Tamer.TargetMob.DebuffList.Buffs.Add(newMobDebuff);
-                                }
-                                else
-                                {
-                                    continue;
-                                }
-
-                                if (client.Tamer.TargetMob.CurrentAction != Commons.Enums.Map.MobActionEnum.CrowdControl)
-                                {
-                                    client.Tamer.TargetMob.UpdateCurrentAction(Commons.Enums.Map.MobActionEnum.CrowdControl);
-                                }
-
-                                if (client.DungeonMap)
-                                {
-                                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,new AddStunDebuffPacket(
-                                    client.Tamer.TargetMob.GeneralHandler,newMobDebuff.BuffId,newMobDebuff.SkillId,duration).Serialize());
-                                }
-                                else if (client.EventMap)
-                                {
-                                    _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,new AddStunDebuffPacket(
-                                  client.Tamer.TargetMob.GeneralHandler,newMobDebuff.BuffId,newMobDebuff.SkillId,duration).Serialize());
-                                }
-                                else
-                                {
-                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,new AddStunDebuffPacket(
-                                    client.Tamer.TargetMob.GeneralHandler,newMobDebuff.BuffId,newMobDebuff.SkillId,duration).Serialize());
-                                }
-                            }
-                            else if (skillValue[i].Attribute == SkillCodeApplyAttributeEnum.DOT || skillValue[i].Attribute == SkillCodeApplyAttributeEnum.DOT2)
-                            {
-                                if (debuffsValue > client.Tamer.TargetMob.CurrentHP)
-                                    debuffsValue = client.Tamer.TargetMob.CurrentHP;
-
-                                if (client.DungeonMap)
-                                {
-                                    _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new AddBuffPacket(client.Tamer.TargetMob.GeneralHandler,buff,partnerEvolution.Skills[skillSlot].CurrentLevel,duration).Serialize());
-                                }
-                                else if (client.EventMap)
-                                {
-                                    _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new AddBuffPacket(client.Tamer.TargetMob.GeneralHandler,buff,partnerEvolution.Skills[skillSlot].CurrentLevel,duration).Serialize());
-                                }
-                                else
-                                {
-                                    _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                        new AddBuffPacket(client.Tamer.TargetMob.GeneralHandler,buff,partnerEvolution.Skills[skillSlot].CurrentLevel,duration).Serialize());
-                                }
-
-                                if (activeDebuff != null)
-                                {
-                                    activeDebuff.IncreaseEndDate(skillDuration);
-                                }
-                                else
-                                {
-                                    client.Tamer.TargetMob.DebuffList.Buffs.Add(newMobDebuff);
-                                }
-
-                                Task.Delay(skillDuration * 1000).ContinueWith(_ =>
-                                {
-                                    // Apply the damage after delay
-                                    var newHp = client.Tamer.TargetMob.ReceiveDamage(debuffsValue,client.TamerId);
-                                    if (newHp > 0)
-                                    {
-                                        if (client.DungeonMap)
+                                    case SkillCodeApplyAttributeEnum.DR: //reflect damage
+                                        if (activeBuff == null)
                                         {
-                                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                                new AddDotDebuffPacket(client.Tamer.Partner.GeneralHandler,client.Tamer.TargetMob.GeneralHandler,
-                                                    newMobDebuff.BuffId,client.Tamer.TargetMob.CurrentHpRate,debuffsValue,0).Serialize());
+                                            newDigimonBuff.SetBuffInfo(buff);
+                                            client.Tamer.Partner.BuffList.Add(newDigimonBuff);
+                                            broadcastAction(client.TamerId,new SkillBuffPacket(
+                                                client.Tamer.GeneralHandler,
+                                                (int)buff.BuffId,
+                                                0,
+                                                duration,
+                                                (int)skillCode.SkillCode).Serialize());
+
+                                            var reflectDamageInterval = TimeSpan.FromMilliseconds(selectedMob.ASValue);
+                                            var reflectDamageDuration = duration;
+                                            var buffId = newDigimonBuff.BuffId;
+
+                                            Task.Run(async () =>
+                                            {
+                                                await Task.Delay(1500);
+
+
+                                                for (int i = 0;i < reflectDamageDuration;i++)
+                                                {
+                                                    if (selectedMob == null
+                                                        || !client.Tamer.Partner.BuffList.Buffs.Any(b => b.BuffId == buffId)
+                                                        || selectedMob.CurrentAction != MobActionEnum.Attack)
+                                                    {
+                                                        client.Tamer.Partner.BuffList.Remove(newDigimonBuff.BuffId);
+                                                        broadcastAction(client.Tamer.Id,
+                                                            new RemoveBuffPacket(client.Tamer.Partner.GeneralHandler,newDigimonBuff.BuffId).Serialize());
+                                                        break;
+                                                    }
+
+                                                    var damageValue = selectedMob.ATValue * 3;
+                                                    var newHp = selectedMob.ReceiveDamage(damageValue,client.TamerId);
+
+                                                    broadcastAction(client.TamerId,new AddDotDebuffPacket(
+                                                        client.Tamer.Partner.GeneralHandler,selectedMob.GeneralHandler,
+                                                        newDigimonBuff.BuffId,selectedMob.CurrentHpRate,damageValue,
+                                                        (byte)((newHp > 0) ? 0 : 1)).Serialize());
+
+                                                    if (newHp <= 0)
+                                                    {
+                                                        client.Tamer.Partner.BuffList.Remove(newDigimonBuff.BuffId);
+                                                        broadcastAction(client.Tamer.Id,
+                                                            new RemoveBuffPacket(client.Tamer.Partner.GeneralHandler,newDigimonBuff.BuffId).Serialize());
+                                                        selectedMob.Die();
+                                                        break;
+                                                    }
+
+                                                    await Task.Delay(reflectDamageInterval);
+                                                }
+
+                                            });
+
                                         }
-                                        else if (client.EventMap)
+                                        break;
+
+                                    case SkillCodeApplyAttributeEnum.Unbeatable:
+                                        if (client.Tamer.Partner.IsUnbeatable)
                                         {
-                                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                                new AddDotDebuffPacket(client.Tamer.Partner.GeneralHandler,client.Tamer.TargetMob.GeneralHandler,
-                                                    newMobDebuff.BuffId,client.Tamer.TargetMob.CurrentHpRate,debuffsValue,0).Serialize());
+                                            break;
+                                        }
+                                            newDigimonBuff.SetBuffInfo(buff);
+                                            client.Tamer.Partner.BuffList.Add(newDigimonBuff);
+
+                                            client.Tamer.Partner.IsUnbeatable = true;
+
+                                            broadcastAction(client.TamerId,new SkillBuffPacket(
+                                                client.Tamer.GeneralHandler,
+                                                (int)buff.BuffId,
+                                                partnerEvolution.Skills[skillSlot].CurrentLevel,
+                                                duration,
+                                                (int)skillCode.SkillCode).Serialize());
+                                        
+                                        Task.Delay(skillDuration * 1000).ContinueWith(_ =>
+                                        {
+                                            client.Tamer.Partner.IsUnbeatable = false;
+                                        });
+                                        break;
+                                    case SkillCodeApplyAttributeEnum.EV:
+                                    case SkillCodeApplyAttributeEnum.MS:
+                                    case SkillCodeApplyAttributeEnum.SCD:
+                                    case SkillCodeApplyAttributeEnum.CA:
+                                    case SkillCodeApplyAttributeEnum.AT:
+                                    case SkillCodeApplyAttributeEnum.HP:
+                                        if (activeBuff == null)
+                                        {
+                                            newDigimonBuff.SetBuffInfo(buff);
+                                            client.Tamer.Partner.BuffList.Add(newDigimonBuff);
+
+                                            broadcastAction(client.TamerId,new SkillBuffPacket(
+                                                client.Tamer.GeneralHandler,
+                                                (int)buff.BuffId,
+                                                partnerEvolution.Skills[skillSlot].CurrentLevel,
+                                                duration,
+                                                (int)skillCode.SkillCode).Serialize());
+                                        }
+                                        client.Send(new UpdateStatusPacket(client.Tamer));
+                                        break;
+                                }
+                                break;
+
+                            // Handling Debuffs
+                            case var attribute when debuffs.Contains(attribute):
+
+                                var activeDebuff = selectedMob.DebuffList.Buffs.FirstOrDefault(x => x.BuffId == buff.BuffId);
+                                var newMobDebuff = MobDebuffModel.Create(buff.BuffId,(int)skillCode.SkillCode,0,skillDuration);
+
+                                newMobDebuff.SetBuffInfo(buff);
+                                int debuffsValue = skillValue[i].Value + (partnerEvolution.Skills[skillSlot].CurrentLevel * skillValue[i].IncreaseValue);
+
+                                switch (attribute)
+                                {
+                                    case SkillCodeApplyAttributeEnum.CrowdControl:
+                                        if (activeDebuff == null)
+                                        {
+                                            selectedMob.DebuffList.Buffs.Add(newMobDebuff);
+                                        }
+
+                                        if (selectedMob.CurrentAction != Commons.Enums.Map.MobActionEnum.CrowdControl)
+                                        {
+                                            selectedMob.UpdateCurrentAction(Commons.Enums.Map.MobActionEnum.CrowdControl);
+                                        }
+
+                                        broadcastAction(client.TamerId,new AddStunDebuffPacket(
+                                            selectedMob.GeneralHandler,newMobDebuff.BuffId,newMobDebuff.SkillId,duration).Serialize());
+                                        break;
+
+                                    case SkillCodeApplyAttributeEnum.DOT:
+                                    case SkillCodeApplyAttributeEnum.DOT2:
+                                        if (debuffsValue > selectedMob.CurrentHP)
+                                            debuffsValue = selectedMob.CurrentHP;
+
+                                        broadcastAction(client.TamerId,new AddBuffPacket(
+                                            selectedMob.GeneralHandler,buff,partnerEvolution.Skills[skillSlot].CurrentLevel,duration).Serialize());
+
+                                        if (activeDebuff != null)
+                                        {
+                                            activeDebuff.IncreaseEndDate(skillDuration);
                                         }
                                         else
                                         {
-                                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                                new AddDotDebuffPacket(client.Tamer.Partner.GeneralHandler,client.Tamer.TargetMob.GeneralHandler,
-                                                    newMobDebuff.BuffId,client.Tamer.TargetMob.CurrentHpRate,debuffsValue,0).Serialize());
+                                            selectedMob.DebuffList.Buffs.Add(newMobDebuff);
                                         }
-                                    }
-                                    else
-                                    {
-                                        if (client.DungeonMap)
-                                        {
-                                            _dungeonServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                                new AddDotDebuffPacket(client.Tamer.Partner.GeneralHandler,client.Tamer.TargetMob.GeneralHandler,
-                                                    newMobDebuff.BuffId,client.Tamer.TargetMob.CurrentHpRate,debuffsValue,1).Serialize());
-                                        }
-                                        else if (client.EventMap)
-                                        {
-                                            _eventServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                                new AddDotDebuffPacket(client.Tamer.Partner.GeneralHandler,client.Tamer.TargetMob.GeneralHandler,
-                                                    newMobDebuff.BuffId,client.Tamer.TargetMob.CurrentHpRate,debuffsValue,1).Serialize());
-                                        }
-                                        else
-                                        {
-                                            _mapServer.BroadcastForTamerViewsAndSelf(client.TamerId,
-                                                new AddDotDebuffPacket(client.Tamer.Partner.GeneralHandler,client.Tamer.TargetMob.GeneralHandler,
-                                                    newMobDebuff.BuffId,client.Tamer.TargetMob.CurrentHpRate,debuffsValue,1).Serialize());
-                                        }
-                                        client.Tamer.TargetMob.Die();
-                                    }
-                                });
-                            }
 
+                                        Task.Delay(skillDuration * 1000).ContinueWith(_ =>
+                                        {
+                                            if (selectedMob == null) return;
+                                            var newHp = selectedMob.ReceiveDamage(debuffsValue,client.TamerId);
+
+                                            broadcastAction(client.TamerId,new AddDotDebuffPacket(
+                                                client.Tamer.Partner.GeneralHandler,selectedMob.GeneralHandler,
+                                                newMobDebuff.BuffId,selectedMob.CurrentHpRate,debuffsValue,(byte)((newHp > 0) ? 0 : 1)).Serialize());
+
+                                            if (newHp <= 0)
+                                            {
+                                                selectedMob.Die();
+                                            }
+                                        });
+                                        break;
+                                }
+                                break;
                         }
                     }
                 }
+
                 _sender.Send(new UpdateDigimonBuffListCommand(client.Partner.BuffList));
             }
         }
@@ -2809,11 +2806,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 (int)SkillBuffAndDebuffDurationEnum.MagnaAttack => 5, // MagnaAttack Magnamon Worn F1
                 (int)SkillBuffAndDebuffDurationEnum.PlasmaRage => 10, // MagnaAttack Magnamon Worn F2
                 (int)SkillBuffAndDebuffDurationEnum.KyukyokuSenjin => 1, // AOA Magnamon Worn F2
-                (int)SkillBuffAndDebuffDurationEnum.FirelapBurnZDG => 300, // Burn 1st dg for Birdramon ZDG
-                (int)SkillBuffAndDebuffDurationEnum.EagleClaw2ndBurnZDG => 300, // Burn 2st dg for Gurdramon ZDG
-                (int)SkillBuffAndDebuffDurationEnum.StarLightBurn3rdZDG => 300, // Burn 3st dg for Phoenixmon ZDG
-                (int)SkillBuffAndDebuffDurationEnum.PheonixFire4thBurnZDG => 300, // Burn Final dg for Zhuqiamon ZDG
-                (int)SkillBuffAndDebuffDurationEnum.RamapageAlterBF3 => 10, // Burn Final dg for Zhuqiamon ZDG
+               // (int)SkillBuffAndDebuffDurationEnum.FirelapBurnZDG => 300, // Burn 1st dg for Birdramon ZDG
+               // (int)SkillBuffAndDebuffDurationEnum.EagleClaw2ndBurnZDG => 300, // Burn 2st dg for Gurdramon ZDG
+               // (int)SkillBuffAndDebuffDurationEnum.StarLightBurn3rdZDG => 300, // Burn 3st dg for Phoenixmon ZDG
+               // (int)SkillBuffAndDebuffDurationEnum.PheonixFire4thBurnZDG => 300, // Burn Final dg for Zhuqiamon ZDG
+                (int)SkillBuffAndDebuffDurationEnum.RamapageAlterBF3 => 10, // Alter B Rampage
                 _ => 0 
             };
         }

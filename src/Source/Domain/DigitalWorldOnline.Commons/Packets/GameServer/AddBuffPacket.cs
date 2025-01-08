@@ -59,6 +59,22 @@ namespace DigitalWorldOnline.Commons.Packets.GameServer
         }
 
         // ---------------------------------------------------------------------------------------------
+        
+        public class SkillBuffPacket :PacketWriter
+        {
+            private const int PacketNumber = 4012;
+            public SkillBuffPacket(int hitHandler,int nBuffCode,byte skillLevel,int time,int skillCode)
+            {
+                Type(PacketNumber);
+                WriteUInt((uint)hitHandler);
+                WriteUShort((ushort)nBuffCode);
+                WriteByte(skillLevel);
+                WriteUInt((uint)time);
+                WriteUInt((uint)skillCode);
+            }
+        }
+        
+        // ---------------------------------------------------------------------------------------------
 
         public class AddStunDebuffPacket : PacketWriter
         {
