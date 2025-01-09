@@ -2228,7 +2228,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 if ((int)skillValue[skillValueIndex].Attribute != 37 && (int)skillValue[skillValueIndex].Attribute != 38)
                 {
                     durationBuff += currentLevel;
-                    skillDuration += currentLevel;
+                    skillDuration += currentLevel + 2;
                 }
 
 

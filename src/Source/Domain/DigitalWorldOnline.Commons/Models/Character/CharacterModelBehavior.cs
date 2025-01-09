@@ -1485,7 +1485,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// <summary>
         /// Updates the character's buffs check timer.
         /// </summary>
-        public void UpdateBuffsCheckTime() => LastBuffsCheck = DateTime.Now.AddSeconds(15);
+        public void UpdateBuffsCheckTime() => LastBuffsCheck = DateTime.Now.AddSeconds(2);
 
 
         /// <summary>

@@ -311,7 +311,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         /// </summary>
         /// <param name="baseValue">Base character attribute value.</param>
         /// <param name="attributes">Target attribute params.</param>
-        private int BuffAttribute(int baseValue,int buffSkillValue, params SkillCodeApplyAttributeEnum[] attributes)
+             private int BuffAttribute(int baseValue,int buffSkillValue, params SkillCodeApplyAttributeEnum[] attributes)
         {
             var totalValue = 0.0;
             var SomaValue = 0.0;
@@ -332,13 +332,19 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                             case SkillCodeApplyTypeEnum.Default:
                                 totalValue += apply.Value + (buff.TypeN) * apply.AdditionalValue;
                                 break;
-                            case SkillCodeApplyTypeEnum.Unknown200:
+
                             case SkillCodeApplyTypeEnum.Unknown206:
+                                if (apply.Attribute == SkillCodeApplyAttributeEnum.SCD)
+                                    totalValue += buffSkillValue;
+                                if (apply.Attribute == SkillCodeApplyAttributeEnum.CA)
+                                    totalValue += buffSkillValue;
+                                break;
                             case SkillCodeApplyTypeEnum.Unknown207:
                             case SkillCodeApplyTypeEnum.Unknown208:
-                                totalValue += buffSkillValue;
                                 if (apply.Attribute == SkillCodeApplyAttributeEnum.EV)
                                     totalValue += buffSkillValue * 100;
+                                if (apply.Attribute == SkillCodeApplyAttributeEnum.SCD)
+                                    totalValue = buffSkillValue * 100;
                                 break;
 
                             case SkillCodeApplyTypeEnum.AlsoPercent:
@@ -370,6 +376,7 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
 
             return (int)totalValue;
         }
+
 
         private int DeckBuffCalculation(DeckBookInfoTypesEnum deckBookInfoType, int baseValue)
         {
