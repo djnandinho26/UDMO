@@ -7,12 +7,13 @@ using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.GameHost;
-using MediatR;
-using Serilog;
-using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.GameHost.EventsServer;
+using DigitalWorldOnline.Commons.Enums.Account;
+using DigitalWorldOnline.Commons.Packets.Chat;
+using MediatR;
+using Serilog;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -49,6 +50,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             int itemSlot = packet.ReadInt();
             var newName = packet.ReadString();
+
             var oldName = client.Tamer.Name;
             var AvaliabeName = await _sender.Send(new CharacterByNameQuery(newName)) == null;
 
@@ -62,6 +64,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             if (inventoryItem != null)
             {
+                if (inventoryItem?.ItemInfo.Section != 15200)
+                {
+                    _logger.Error($"The Player {client.Tamer.Name} tryed to change digimon name with the incorrect item: {inventoryItem.ItemId} - {inventoryItem.ItemInfo.Name}");
+
+                    var banProcessor = new BanForCheating();
+                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
+
+                    client.Send(new NoticeMessagePacket(banMessage));
+                    client.Send(new DisconnectUserPacket($"GAME DISCONNECTED: TRYING TO USE CHEAT").Serialize());
+
+                    return;
+                }
+
                 client.Tamer.Inventory.RemoveOrReduceItem(inventoryItem, 1, itemSlot);
                 client.Tamer.UpdateName(newName);
 

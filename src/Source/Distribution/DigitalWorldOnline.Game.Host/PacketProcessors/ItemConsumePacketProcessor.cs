@@ -24,6 +24,7 @@ using MediatR;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 using DigitalWorldOnline.GameHost.EventsServer;
+using DigitalWorldOnline.Commons.Enums.Account;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
@@ -76,8 +77,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var packet = new GamePacketReader(packetData);
 
             packet.Skip(4);
-
+            
             var itemSlot = packet.ReadShort();
+          
+            _logger.Information($"Slot: {itemSlot}");
 
             if (client.Partner == null)
             {
@@ -95,7 +98,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            //_logger.Information($"Item: {targetItem.ItemInfo.Name} | Slot: {itemSlot}");
+            _logger.Information($"Item: {targetItem.ItemInfo.Name} | Slot: {itemSlot} | itemId: {targetItem.ItemId}");
 
             if (targetItem.ItemInfo.Type == 60)
             {
@@ -1005,6 +1008,24 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         private async Task Fruits(GameClient client, short itemSlot, ItemModel targetItem)
         {
+            if (client.Partner != null)
+            {
+                var starterPartners = new List<int>() { 31001, 31002, 31003, 31004 };
+
+                if (client.Partner.BaseType.IsBetween(starterPartners.ToArray()))
+                {
+                    client.Send(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type).Serialize());
+                    client.SendToAll(new NoticeMessagePacket($"Tamer: {client.Tamer.Name} tried to change starter digimon size using a Cheat, Then he got banned!").Serialize());
+
+                    var banProcessor = new BanForCheating();
+                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
+
+                    client.Send(new DisconnectUserPacket($"You tried to change starter digimon size using a Cheat, so be happy with Ban").Serialize());
+                    return;
+                }
+
+            }
+
             var fruitConfig = _configs.Fruits.FirstOrDefault(x => x.ItemId == targetItem.ItemId);
 
             if (fruitConfig == null)

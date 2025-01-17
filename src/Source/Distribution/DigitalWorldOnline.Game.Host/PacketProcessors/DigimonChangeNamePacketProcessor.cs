@@ -2,8 +2,11 @@
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
+using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
+using DigitalWorldOnline.Commons.Packets.Chat;
+using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.Commons.Packets.MapServer;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.GameHost;
@@ -46,13 +49,31 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             int itemSlot = packet.ReadInt();
             var newName = packet.ReadString();
+
             var oldName = client.Tamer.Partner.Name;
             var digimonID = client.Tamer.Partner.Id;
 
             var inventoryItem = client.Tamer.Inventory.FindItemBySlot(itemSlot);
+
+            _logger.Information($"itemSlot: {itemSlot} | inventoryItem: {inventoryItem.ItemId} | inventoryItem: {inventoryItem.Id}");
+
             var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+            
             if (inventoryItem != null)
             {
+                if (inventoryItem?.ItemInfo.Section != 15100)
+                {
+                    _logger.Error($"The Player {client.Tamer.Name} tryed to change digimon name with the incorrect item: {inventoryItem.ItemId} - {inventoryItem.ItemInfo.Name}");
+
+                    var banProcessor = new BanForCheating();
+                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
+
+                    client.Send(new NoticeMessagePacket(banMessage));
+                    client.Send(new DisconnectUserPacket($"GAME DISCONNECTED: TRYING TO USE CHEAT").Serialize());
+
+                    return;
+                }
+
                 client.Tamer.Inventory.RemoveOrReduceItem(inventoryItem, 1, itemSlot);
                 client.Tamer.Partner.UpdateDigimonName(newName);
 
