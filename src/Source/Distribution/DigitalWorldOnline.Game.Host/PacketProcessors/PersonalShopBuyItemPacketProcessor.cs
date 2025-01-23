@@ -104,6 +104,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
 
                 hasItem = false;
+                int[] numbers = { boughtItem.Amount, boughtAmount };
+                boughtAmount = numbers.Min();
                 var totalValue = boughtItem.TamerShopSellPrice * boughtAmount;
 
                 if (client.Tamer.Inventory.Bits < totalValue)

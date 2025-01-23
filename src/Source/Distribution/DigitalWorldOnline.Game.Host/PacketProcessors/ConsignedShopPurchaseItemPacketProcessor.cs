@@ -92,10 +92,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
+            int[] numbers = { boughtItem.Amount, boughtAmount };
+            boughtAmount = numbers.Min();
+
             var totalValue = boughtItem.TamerShopSellPrice * boughtAmount;
 
             _logger.Information(
                 $"bought item price: {boughtItem.TamerShopSellPrice} | bought item amount: {boughtAmount} | total value: {totalValue} | slot {shopSlot}");
+
             if (client.Tamer.Inventory.Bits < totalValue)
             {
                 //sistema de banimento permanente
