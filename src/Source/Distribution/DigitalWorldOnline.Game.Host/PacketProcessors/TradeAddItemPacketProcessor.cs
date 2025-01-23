@@ -72,6 +72,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             // Verificação de quantidade suficiente no inventário
             if (client.Tamer.Inventory.CountItensById(Item.ItemId) < amount)
             {
+                targetClient?.Tamer.ClearTrade();
+                targetClient?.Send(new TradeInventoryUnlockPacket(client.Tamer.TargetTradeGeneralHandle));
+                targetClient?.Send(new TradeCancelPacket(client.Tamer.GeneralHandler));
+                
                 //sistema de banimento permanente
                 var banProcessor = SingletonResolver.GetService<BanForCheating>();
                 var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permanent, "Cheating", client, "You tried to trade invalid amount of item using a cheat method, So be happy with ban!");
@@ -107,10 +111,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             // Envia pacotes de atualização para ambos os clientes
             client.Send(new TradeAddItemPacket(client.Tamer.GeneralHandler, NewItem.ToArray(), (byte)EmptSlot, inventorySlot));
-            targetClient.Send(new TradeAddItemPacket(client.Tamer.GeneralHandler, NewItem.ToArray(), (byte)EmptSlot, inventorySlot));
+            targetClient?.Send(new TradeAddItemPacket(client.Tamer.GeneralHandler, NewItem.ToArray(), (byte)EmptSlot, inventorySlot));
 
             // Bloqueia o inventário até confirmação da troca
-            targetClient.Send(new TradeInventoryUnlockPacket(client.Tamer.TargetTradeGeneralHandle));
+            targetClient?.Send(new TradeInventoryUnlockPacket(client.Tamer.TargetTradeGeneralHandle));
             client.Send(new TradeInventoryUnlockPacket(client.Tamer.TargetTradeGeneralHandle));
         }
 

@@ -66,6 +66,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (client.Tamer.Inventory.Bits < TargetMoney)
             {
                 //sistema de banimento permanente
+                targetClient?.Tamer.ClearTrade();
+                targetClient?.Send(new TradeInventoryUnlockPacket(client.Tamer.TargetTradeGeneralHandle));
+                targetClient?.Send(new TradeCancelPacket(client.Tamer.GeneralHandler));
+                
                 var banProcessor = SingletonResolver.GetService<BanForCheating>();
                 var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permanent, "Cheating", client, "You tried to trade invalid amount of bits using a cheat method, So be happy with ban!");
 
@@ -76,11 +80,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             
             client.Tamer.TradeInventory.AddBits(TargetMoney);
 
-            targetClient.Send(new TradeInventoryUnlockPacket(client.Tamer.TargetTradeGeneralHandle));
+            targetClient?.Send(new TradeInventoryUnlockPacket(client.Tamer.TargetTradeGeneralHandle));
             client.Send(new TradeInventoryUnlockPacket(client.Tamer.TargetTradeGeneralHandle));
 
             client.Send(new TradeAddMoneyPacket(client.Tamer.GeneralHandler, TargetMoney));
-            targetClient.Send(new TradeAddMoneyPacket(client.Tamer.GeneralHandler, TargetMoney));
+            targetClient?.Send(new TradeAddMoneyPacket(client.Tamer.GeneralHandler, TargetMoney));
 
             //_logger.Verbose($"Character {client.TamerId} and {targetClient.TamerId} inventory unlock "); ;
         }
