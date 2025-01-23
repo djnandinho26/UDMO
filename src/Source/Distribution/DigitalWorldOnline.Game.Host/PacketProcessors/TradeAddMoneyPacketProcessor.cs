@@ -1,8 +1,10 @@
 ﻿using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
+using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
+using DigitalWorldOnline.Commons.Packets.Chat;
 using DigitalWorldOnline.Commons.Packets.GameServer;
 using DigitalWorldOnline.GameHost;
 using DigitalWorldOnline.GameHost.EventsServer;
@@ -61,6 +63,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     break;
             }
 
+            if (client.Tamer.Inventory.Bits < TargetMoney)
+            {
+                //sistema de banimento permanente
+                var banProcessor = SingletonResolver.GetService<BanForCheating>();
+                var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permanent, "Cheating", client, "You tried to trade invalid amount of bits using a cheat method, So be happy with ban!");
+
+                var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                client.SendToAll(chatPacket);
+                return;
+            }
+            
             client.Tamer.TradeInventory.AddBits(TargetMoney);
 
             targetClient.Send(new TradeInventoryUnlockPacket(client.Tamer.TargetTradeGeneralHandle));

@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using DigitalWorldOnline.Application;
+using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Models.Config;
 using DigitalWorldOnline.Commons.Models.Config.Events;
 using DigitalWorldOnline.Commons.Models.Map;
@@ -46,7 +47,7 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             _statusManager = statusManager;
             _expManager = expManager;
             _dropManager = dropManager;
-            _assets = assets.Load();
+            _assets = assets;
             _configs = configs.Load();
             _logger = logger;
             _sender = sender;
@@ -54,7 +55,14 @@ namespace DigitalWorldOnline.GameHost.EventsServer
             _serviceProvider = serviceProvider;
 
             Maps = new List<GameMap>();
-            Events = configs.Events;
+            
+            // Call the asynchronous method synchronously
+            Events = FetchEvents().GetAwaiter().GetResult();
+        }
+
+        private async Task<List<EventConfigModel>> FetchEvents()
+        {
+            return _mapper.Map<List<EventConfigModel>>(await _sender.Send(new EventsConfigQuery()));
         }
 
         private void SaveMobToDatabase(MobConfigModel mob)
@@ -87,18 +95,13 @@ namespace DigitalWorldOnline.GameHost.EventsServer
 
         private void AddContent()
         {
-            Events?.ForEach(eventConfig =>
+            foreach(EventConfigModel eventConfig in Events.ToList())
             {
                 eventConfig.EventMaps.ForEach(eventMap =>
                 {
                     Maps.Add(new GameMap(eventMap.Map.MapId, AddMobs(), AddDrops()));
                 });
-            });
-            /*Maps = new List<GameMap>()
-            {
-                new GameMap(9001, AddMobs(), AddDrops()),
-                new GameMap(9002, AddBoss(), new List<Drop>())
-            };*/
+            }
         }
 
         private List<EventMobConfigModel> AddMobs()

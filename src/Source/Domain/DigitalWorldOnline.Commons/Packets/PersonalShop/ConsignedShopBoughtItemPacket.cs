@@ -1,4 +1,5 @@
-﻿using DigitalWorldOnline.Commons.Writers;
+﻿using DigitalWorldOnline.Commons.Enums.ClientEnums;
+using DigitalWorldOnline.Commons.Writers;
 
 namespace DigitalWorldOnline.Commons.Packets.PersonalShop
 {
@@ -11,12 +12,12 @@ namespace DigitalWorldOnline.Commons.Packets.PersonalShop
         /// </summary>
         /// <param name="shopAction">The target action enum to choose the shop type</param>
         /// <param name="itemId">The item id used to open the shop</param>
-        public ConsignedShopBoughtItemPacket(int shopSlot, int boughtAmount)
+        public ConsignedShopBoughtItemPacket(TamerShopActionEnum shopAction, int slot, int count)
         {
             Type(PacketNumber);
-            WriteInt(101);
-            WriteInt(shopSlot);
-            WriteInt(boughtAmount);
+            WriteInt(shopAction.GetHashCode());
+            WriteInt(slot);
+            WriteInt(count);
         }
     }
 }

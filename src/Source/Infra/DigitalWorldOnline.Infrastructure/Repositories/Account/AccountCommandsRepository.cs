@@ -33,6 +33,16 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Account
             return dto;
         }
 
+        public async Task<AccountBlockDTO> AddAccountBlockAsync(AccountBlockModel account)
+        {
+            var dto = _mapper.Map<AccountBlockDTO>(account);
+
+            _context.Add(dto);
+            await _context.SaveChangesAsync();
+
+            return dto;
+        }
+
         public async Task<LoginTryDTO> AddLoginTryAsync(LoginTryModel loginTry)
         {
             var dto = _mapper.Map<LoginTryDTO>(loginTry);

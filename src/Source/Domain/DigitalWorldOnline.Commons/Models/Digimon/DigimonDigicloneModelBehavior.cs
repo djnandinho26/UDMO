@@ -77,7 +77,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
                     }
                     break;
             }
-
+            
+            Console.WriteLine($"Digiclone increased {type} level to {CloneLevel}.");
             History.AddEntry(type, value);
         }
 
@@ -314,14 +315,6 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
             }
 
             History.ResetEntries(cloneType);
-        }
-
-        public void GetOrSetDigimonId(long digimonId)
-        {
-            if (DigimonId == 0)
-            {
-                DigimonId = digimonId;
-            }
         }
     }
 }

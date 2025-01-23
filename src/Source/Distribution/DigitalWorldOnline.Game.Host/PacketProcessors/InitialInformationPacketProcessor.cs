@@ -59,7 +59,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             _logger = logger;
             _sender = sender;
             _mapper = mapper;
-            _logger.Information($"Assets Maps: {assets.Maps?.Count}");
         }
 
         public async Task Process(GameClient client, byte[] packetData)

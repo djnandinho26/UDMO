@@ -73,14 +73,15 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (client.Tamer.Inventory.CountItensById(Item.ItemId) < amount)
             {
                 //sistema de banimento permanente
-                var banProcessor = new BanForCheating();
-                var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
+                var banProcessor = SingletonResolver.GetService<BanForCheating>();
+                var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permanent, "Cheating", client, "You tried to trade invalid amount of item using a cheat method, So be happy with ban!");
 
-                var chatPacket = new NoticeMessagePacket(banMessage);
-                client.Send(new DisconnectUserPacket($"YOU HAVE BEEN PERMANENTLY BANNED").Serialize());
+                var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                client.SendToAll(chatPacket);
+                // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN PERMANENTLY BANNED").Serialize());
                 _logger.Error($"[DISCONNECTED] {client.Tamer.Name} tried DUPPING in TRADE {amount}x {Item.ItemInfo.Name}, but only has {Item.Amount}x!");
 
-                client.Disconnect();
+                // client.Disconnect();
                 return;
             }
 

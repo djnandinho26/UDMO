@@ -1015,12 +1015,12 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 if (client.Partner.BaseType.IsBetween(starterPartners.ToArray()))
                 {
                     client.Send(new ItemConsumeFailPacket(itemSlot, targetItem.ItemInfo.Type).Serialize());
-                    client.SendToAll(new NoticeMessagePacket($"Tamer: {client.Tamer.Name} tried to change starter digimon size using a Cheat, Then he got banned!").Serialize());
+                    client.SendToAll(new NoticeMessagePacket($"Tamer: {client.Tamer.Name} tried to change starter digimon size using a cheat method, Then they got banned!").Serialize());
 
-                    var banProcessor = new BanForCheating();
-                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
+                    var banProcessor = SingletonResolver.GetService<BanForCheating>();
+                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permanent, "Cheating", client, "You tried to change your starter digimon size using a cheat method, So be happy with ban!");
 
-                    client.Send(new DisconnectUserPacket($"You tried to change starter digimon size using a Cheat, so be happy with Ban").Serialize());
+                    // client.Send(new DisconnectUserPacket($"You tried to change starter digimon size using a cheat method, so be happy with Ban").Serialize());
                     return;
                 }
 

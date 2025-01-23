@@ -4,6 +4,7 @@ using DigitalWorldOnline.Application.Separar.Commands.Delete;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Extensions;
@@ -28,7 +29,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
         private readonly IMapper _mapper;
         private readonly ISender _sender;
 
-        public ConsignedShopPurchaseItemPacketProcessor(AssetsLoader assets, ILogger logger, IMapper mapper, ISender sender)
+        public ConsignedShopPurchaseItemPacketProcessor(AssetsLoader assets, ILogger logger, IMapper mapper,
+            ISender sender)
         {
             _assets = assets;
             _logger = logger;
@@ -43,13 +45,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             _logger.Information($"ConsigmentShop Buy Packet 1518");
 
             var shopHandler = packet.ReadInt();
-            var shopSlot = packet.ReadInt();
+            var shopSlot = packet.ReadInt() - 1;
             var boughtItemId = packet.ReadInt();
             var boughtAmount = packet.ReadInt();
             packet.Skip(60);
             var boughtUnitPrice = packet.ReadInt64();
 
-            _logger.Information($"boughtItemId: {boughtItemId} | boughtUnitPrice: {boughtUnitPrice} | boughtAmount: {boughtAmount}");
+            _logger.Information(
+                $"boughtItemId: {boughtItemId} | boughtUnitPrice: {boughtUnitPrice} | boughtAmount: {boughtAmount}");
 
             _logger.Debug($"Searching consigned shop {shopHandler}...");
             var shop = _mapper.Map<ConsignedShop>(await _sender.Send(new ConsignedShopByHandlerQuery(shopHandler)));
@@ -61,7 +64,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            var seller = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterAndItemsByIdQuery(shop.CharacterId)));
+            var seller =
+                _mapper.Map<CharacterModel>(await _sender.Send(new CharacterAndItemsByIdQuery(shop.CharacterId)));
 
             if (seller == null)
             {
@@ -73,20 +77,45 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            if (seller.Name == client.Tamer.Name) {
+            if (seller.Name == client.Tamer.Name)
+            {
                 client.Send(new NoticeMessagePacket($"You cannot buy from the store itself!"));
                 return;
             }
 
-            var totalValue = boughtUnitPrice * boughtAmount;
+            var boughtItem = seller.ConsignedShopItems.Items.FirstOrDefault(x => x.Slot == shopSlot);
+
+            if (boughtItem == null)
+            {
+                client.Send(new ConsignedShopBoughtItemPacket(TamerShopActionEnum.NoPartFound, shopSlot, boughtAmount)
+                    .Serialize());
+                return;
+            }
+
+            var totalValue = boughtItem.TamerShopSellPrice * boughtAmount;
+
+            _logger.Information(
+                $"bought item price: {boughtItem.TamerShopSellPrice} | bought item amount: {boughtAmount} | total value: {totalValue} | slot {shopSlot}");
+            if (client.Tamer.Inventory.Bits < totalValue)
+            {
+                //sistema de banimento permanente
+                var banProcessor = SingletonResolver.GetService<BanForCheating>();
+                var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name,
+                    AccountBlockEnum.Permanent, "Cheating", client,
+                    "You tried to buy an item with an invalid amount of bits using a cheat method, So be happy with ban!");
+
+                var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                client.SendToAll(chatPacket);
+                return;
+            }
 
             _logger.Information($"Removing {totalValue} bits from {client.Tamer.Name}");
             client.Tamer.Inventory.RemoveBits(totalValue);
 
             await _sender.Send(new UpdateItemListBitsCommand(client.Tamer.Inventory));
 
-            var newItem = new ItemModel(boughtItemId, boughtAmount);
-            newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == boughtItemId));
+            var newItem = new ItemModel(boughtItem.ItemId, boughtAmount);
+            newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == boughtItem.ItemId));
 
             _logger.Information($"Adding items to {client.Tamer.Name}");
             client.Tamer.Inventory.AddItems(((ItemModel)newItem.Clone()).GetList());
@@ -100,8 +129,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (sellerClient != null && sellerClient.IsConnected)
             {
                 _logger.Debug($"Sending system message packet {sellerClient.TamerId}...");
-                var itemName = _assets.ItemInfo.FirstOrDefault(x => x.ItemId == boughtItemId)?.Name ?? "item";
-                sellerClient.Send(new NoticeMessagePacket($"You sold {boughtAmount}x {itemName} for {client.Tamer.Name}!"));
+                var itemName = _assets.ItemInfo.FirstOrDefault(x => x.ItemId == boughtItem.ItemId)?.Name ?? "item";
+                sellerClient.Send(
+                    new NoticeMessagePacket($"You sold {boughtAmount}x {itemName} for {client.Tamer.Name}!"));
 
                 _logger.Debug($"Adding {totalValue} bits to {sellerClient.TamerId} consigned warehouse...");
                 sellerClient.Tamer.ConsignedWarehouse.AddBits(totalValue);
@@ -142,14 +172,16 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             else
             {
                 seller.ConsignedShopItems.Items.ForEach(item =>
-                { item.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == item.ItemId)); });
+                {
+                    item.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == item.ItemId));
+                });
             }
 
             _logger.Debug($"Sending load inventory packet...");
             client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory));
 
             _logger.Debug($"Sending consigned shop bought item packet...");
-            client.Send(new ConsignedShopBoughtItemPacket(shopSlot, boughtAmount));
+            client.Send(new ConsignedShopBoughtItemPacket(TamerShopActionEnum.TamerShopOpen, shopSlot, boughtAmount));
 
             _logger.Debug($"Sending consigned shop item list view packet...");
             client.Send(new ConsignedShopItemsViewPacket(shop, seller.ConsignedShopItems, seller.Name));

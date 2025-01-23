@@ -70,26 +70,31 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             if (scannedItem == null || scannedItem.ItemId == 0 || scannedItem.ItemInfo == null) //fazer aqui
             {
                 //sistema de banimento permanente
-                var banProcessor = new BanForCheating();
+                var banProcessor = SingletonResolver.GetService<BanForCheating>();
                 var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name,
-                    AccountBlockEnum.Permannent, "Cheating");
+                    AccountBlockEnum.Permanent, "Cheating", client, "You tried to scan an invalid item using a cheat method, So be happy with ban!");
 
-                var chatPacket = new NoticeMessagePacket(banMessage);
-                client.Send(chatPacket); // Envia a mensagem no chat
+                var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                client.SendToAll(chatPacket); // Envia a mensagem no chat
 
                 client.Send(new SystemMessagePacket($"Invalid item at slot {slotToScan}."));
                 _logger.Warning($"Invalid item on slot {slotToScan} for tamer {client.TamerId} on scanning.");
 
-                client.Send(new DisconnectUserPacket($"YOU HAVE BEEN PERMANENTLY BANNED").Serialize());
+                // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN PERMANENTLY BANNED").Serialize());
 
                 return;
             }
 
             if (client.Tamer.Inventory.CountItensById(scannedItem.ItemId) < amountToScan)
             {
-                Console.WriteLine(
+                //sistema de banimento permanente
+                var banProcessor = SingletonResolver.GetService<BanForCheating>();
+                var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name,
+                    AccountBlockEnum.Permanent, "Cheating", client, "You tried to scan an invalid amount of item using a cheat method, So be happy with ban!");
+
+                /*Console.WriteLine(
                     $"[DISCONNECTED] {client.Tamer.Name} try DUPPING in SCANN {amountToScan}x {scannedItem.ItemInfo.Name}, but he has {scannedItem.Amount}x!");
-                client.Disconnect();
+                client.Disconnect();*/
                 return;
             }
 

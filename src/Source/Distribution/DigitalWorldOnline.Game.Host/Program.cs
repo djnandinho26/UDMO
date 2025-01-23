@@ -1,14 +1,12 @@
 ﻿using DigitalWorldOnline.Application;
 using DigitalWorldOnline.Application.Admin.Repositories;
 using DigitalWorldOnline.Application.Extensions;
-using DigitalWorldOnline.Application.Services;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Repositories.Admin;
 using DigitalWorldOnline.Game.Managers;
 using DigitalWorldOnline.GameHost;
 using DigitalWorldOnline.GameHost.EventsServer;
 using DigitalWorldOnline.Infrastructure;
-using DigitalWorldOnline.Infrastructure.Extensions;
 using DigitalWorldOnline.Infrastructure.Mapping;
 using DigitalWorldOnline.Infrastructure.Repositories.Account;
 using DigitalWorldOnline.Infrastructure.Repositories.Admin;
@@ -24,8 +22,8 @@ using Serilog;
 using Serilog.Events;
 using System.Globalization;
 using System.Reflection;
-using DigitalWorldOnline.Commons.Models.Map;
 using DigitalWorldOnline.Commons.Utils;
+using DigitalWorldOnline.Game.PacketProcessors;
 
 namespace DigitalWorldOnline.Game
 {
@@ -63,7 +61,7 @@ namespace DigitalWorldOnline.Game
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionHandler;
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-            return Host.CreateDefaultBuilder(args)
+            var host =  Host.CreateDefaultBuilder(args)
                 .UseSerilog()
                 .UseEnvironment("Development")
                 .ConfigureServices((context, services) =>
@@ -88,7 +86,6 @@ namespace DigitalWorldOnline.Game
                     services.AddScoped<IRoutineRepository, RoutineRepository>();
 
                     //services.AddScoped<IEmailService, EmailService>();
-
                     services.AddSingleton<AssetsLoader>();
                     services.AddSingleton<ConfigsLoader>();
                     services.AddSingleton<DropManager>();
@@ -104,11 +101,11 @@ namespace DigitalWorldOnline.Game
                     services.AddSingleton<DungeonsServer>();
                     services.AddSingleton<GameMasterCommandsProcessor>();
                     services.AddSingleton<PlayerCommandsProcessor>();
+                    services.AddSingleton<BanForCheating>();
 
                     services.AddSingleton<ISender, ScopedSender<Mediator>>();
                     services.AddSingleton<IProcessor, GamePacketProcessor>();
                     services.AddSingleton(ConfigureLogger(context.Configuration));
-
                     services.AddHostedService<GameServer>();
 
                     services.AddMediatR(typeof(MediatorApplicationHandlerExtension).GetTypeInfo().Assembly);
@@ -124,6 +121,8 @@ namespace DigitalWorldOnline.Game
                         .AddUserSecrets<Program>();
                 })
                 .Build();
+            SingletonResolver.Services = host.Services;
+            return host;
         }
 
         private static void AddAutoMapper(IServiceCollection services)

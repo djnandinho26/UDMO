@@ -41,7 +41,8 @@ namespace DigitalWorldOnline.Game
 
         private const int OnConnectEventHandshakeHandler = 65535;
 
-        public GameServer(IHostApplicationLifetime hostApplicationLifetime,
+        public GameServer(
+            IHostApplicationLifetime hostApplicationLifetime,
             IConfiguration configuration,
             IProcessor processor,
             ILogger logger,
@@ -123,22 +124,26 @@ namespace DigitalWorldOnline.Game
 
                 if (gameClientEvent.Client.DungeonMap)
                 {
-                    _logger.Information($"Removing the tamer {gameClientEvent.Client.Tamer.Name} . {gameClientEvent.Client.HiddenAddress}.");
+                    _logger.Information(
+                        $"Removing the tamer {gameClientEvent.Client.Tamer.Name} . {gameClientEvent.Client.HiddenAddress}.");
                     _dungeonsServer.RemoveClient(gameClientEvent.Client);
                 }
                 else if (gameClientEvent.Client.EventMap)
                 {
-                    _logger.Information($"Removing the tamer {gameClientEvent.Client.Tamer.Name} . {gameClientEvent.Client.HiddenAddress}.");
+                    _logger.Information(
+                        $"Removing the tamer {gameClientEvent.Client.Tamer.Name} . {gameClientEvent.Client.HiddenAddress}.");
                     _eventServer.RemoveClient(gameClientEvent.Client);
                 }
                 else if (gameClientEvent.Client.PvpMap)
                 {
-                    _logger.Information($"Removing the tamer {gameClientEvent.Client.Tamer.Name} . {gameClientEvent.Client.HiddenAddress}.");
+                    _logger.Information(
+                        $"Removing the tamer {gameClientEvent.Client.Tamer.Name} . {gameClientEvent.Client.HiddenAddress}.");
                     _pvpServer.RemoveClient(gameClientEvent.Client);
                 }
                 else
                 {
-                    _logger.Information($"Removing the tamer {gameClientEvent.Client.Tamer.Name} {gameClientEvent.Client.TamerId}. {gameClientEvent.Client.HiddenAddress}.");
+                    _logger.Information(
+                        $"Removing the tamer {gameClientEvent.Client.Tamer.Name} {gameClientEvent.Client.TamerId}. {gameClientEvent.Client.HiddenAddress}.");
                     _mapServer.RemoveClient(gameClientEvent.Client);
                 }
 

@@ -83,7 +83,6 @@ namespace DigitalWorldOnline.Character
                     services.AddScoped<IRoutineRepository, RoutineRepository>();
 
                     //services.AddScoped<IEmailService, EmailService>();
-
                     services.AddSingleton<ISender, ScopedSender<Mediator>>();
                     services.AddSingleton<IProcessor, CharacterPacketProcessor>();
                     services.AddSingleton(ConfigureLogger(context.Configuration));

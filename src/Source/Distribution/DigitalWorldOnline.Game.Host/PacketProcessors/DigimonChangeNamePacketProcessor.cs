@@ -65,11 +65,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     _logger.Error($"The Player {client.Tamer.Name} tryed to change digimon name with the incorrect item: {inventoryItem.ItemId} - {inventoryItem.ItemInfo.Name}");
 
-                    var banProcessor = new BanForCheating();
-                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permannent, "Cheating");
+                    var banProcessor = SingletonResolver.GetService<BanForCheating>();
+                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name, AccountBlockEnum.Permanent, "Cheating", client, "You tried to change your digimon name using a cheat method, So be happy with ban!");
 
                     client.Send(new NoticeMessagePacket(banMessage));
-                    client.Send(new DisconnectUserPacket($"GAME DISCONNECTED: TRYING TO USE CHEAT").Serialize());
+                    // client.Send(new DisconnectUserPacket($"GAME DISCONNECTED: TRYING TO USE CHEAT").Serialize());
 
                     return;
                 }

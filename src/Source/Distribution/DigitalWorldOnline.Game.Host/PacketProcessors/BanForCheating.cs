@@ -1,56 +1,63 @@
 ﻿using System;
+using DigitalWorldOnline.Application.Separar.Commands.Create;
+using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.Account;
+using DigitalWorldOnline.Commons.Models.Account;
+using DigitalWorldOnline.Commons.Packets.GameServer;
+using MediatR;
 using Microsoft.Data.SqlClient;
+using Serilog;
 
 namespace DigitalWorldOnline.Game.PacketProcessors
 {
     internal class BanForCheating
     {
-        // A string de conexão fixa dentro do arquivo
-        private readonly string _connectionString = "Server=DESKTOP-COAQJGK\\SQLEXPRESS;Database=DMOX;User Id=sa;Password=@E4l9r1a9y9e6s;TrustServerCertificate=True";
+        public ILogger _logger;
+        public ISender _sender;
 
-        public void BanAccountForCheating(long accountId, AccountBlockEnum type, string reason, DateTime startDate, DateTime endDate)
+        public BanForCheating(ILogger logger, ISender sender)
         {
-            var query = @"
-                INSERT INTO Account.AccountBlock (AccountId, Type, Reason, StartDate, EndDate)
-                VALUES (@AccountId, @Type, @Reason, @StartDate, @EndDate)";
+            _logger = logger;
+            _sender = sender;
+        }
 
+        public async void BanAccountForCheating(long accountId, AccountBlockEnum type, string reason,
+            DateTime startDate,
+            DateTime endDate)
+        {
             try
             {
-                using (var connection = new SqlConnection(_connectionString))
-                {
-                    connection.Open();
-
-                    using (var command = new SqlCommand(query, connection))
-                    {
-                        command.Parameters.AddWithValue("@AccountId", accountId);
-                        command.Parameters.AddWithValue("@Type", (int)type);
-                        command.Parameters.AddWithValue("@Reason", reason);
-                        command.Parameters.AddWithValue("@StartDate", startDate);
-                        command.Parameters.AddWithValue("@EndDate", endDate);
-
-                        command.ExecuteNonQuery();
-                    }
-                }
-
-                Console.WriteLine("Banimento registrado com sucesso.");
+                await _sender.Send(new AddAccountBlockCommand(accountId, type, reason, startDate, endDate));
+                _logger.Verbose($"Account ID: {accountId} has been banned");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Erro ao registrar banimento: " + ex.Message);
+                _logger.Error("Failed to ban account id {accountId} and error:\n " + ex.Message, accountId);
             }
         }
 
-        public string SimpleBan(long accountId, string Name, AccountBlockEnum type, string reason)
+        public string SimpleBan(long accountId, string Name, AccountBlockEnum type, string reason,
+            GameClient? client = null, string? banMessage = null)
         {
+            var startDate = DateTime.Now;
+            var endDate = DateTime.Now.AddDays(3);
+            BanAccountForCheating(accountId, type, reason, startDate, endDate);
 
-            BanAccountForCheating(accountId, type, reason, DateTime.Now, DateTime.Now.AddDays(3));
+            // Retorna a mensagem de banimento
+            if (client != null)
+            {
+                TimeSpan timeRemaining = endDate - startDate;
+
+                uint secondsRemaining = (uint)timeRemaining.TotalSeconds;
+                client.Send(new BanUserPacket(secondsRemaining, banMessage ?? reason));
+            }
 
             return $"User {Name} has been banned for 3 days! reason: {reason}.";
         }
-        
+
         // Método simplificado para usar no código de banimento
-        public string BanAccountWithMessage(long accountId, string Name, AccountBlockEnum type, string reason)
+        public string BanAccountWithMessage(long accountId, string Name, AccountBlockEnum type, string reason,
+            GameClient? client = null, string? banMessage = null)
         {
             // Chama o método BanAccountForCheating
             /*
@@ -62,7 +69,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
              Para banir permanentemente : DateTime.MaxValue
 
              fazer um sistema decrescente a cada ban
-             
+
                DateTime endDate;
 
                 // Definir a data de término do banimento com base no tipo de duração
@@ -88,8 +95,19 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         break;
                 }
              */
-            BanAccountForCheating(accountId, type, reason, DateTime.Now, DateTime.MaxValue); // DateTime.Now.AddDays(1) = 1 day | DateTime.MaxValue = Permanent
+            var startDate = DateTime.Now;
+            var endDate = DateTime.MaxValue;
+            BanAccountForCheating(accountId, type, reason, startDate, endDate);
+            // DateTime.Now.AddDays(1) = 1 day | DateTime.MaxValue = Permanent
             // Retorna a mensagem de banimento
+            if (client != null)
+            {
+                TimeSpan timeRemaining = endDate - startDate;
+
+                uint secondsRemaining = (uint)timeRemaining.TotalSeconds;
+                client.Send(new BanUserPacket(secondsRemaining, banMessage ?? reason));
+            }
+
             return $"User {Name} has been banned permanently for {reason}.";
         }
     }

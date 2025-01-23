@@ -4,7 +4,6 @@ using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Commons.Writers;
-using System.Linq;
 using System.Net.Sockets;
 
 namespace DigitalWorldOnline.Commons.Entities

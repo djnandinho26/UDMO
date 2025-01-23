@@ -10,7 +10,8 @@ namespace DigitalWorldOnline.Commons.Utils
     {
         public static List<short> DungeonMapIds = new List<short>()
         {
-            13, 17, 50, 51, 10, 210, 211, 212, 213, 214, 215, 255, 270, 1110, 1111, 1112, 1304, 1308, 1310, 1311, 1403, 1404, 1406,
+            13, 17, 50, 51, 10, 210, 211, 212, 213, 214, 215, 255, 270, 1110, 1111, 1112, 1304, 1308, 1310, 1311, 1403,
+            1404, 1406,
             1500, 1501, 1502, 1600, 1601, 1602, 1603, 1604, 1605, 1606, 1607, 1608, 1609, 1610, 1611, 1612, 1613, 1614,
             1615, 1701, 1702, 1703, 1704, 1705, 1706, 1809, 1810, 1911, 2001, 2002
         };
@@ -284,7 +285,8 @@ namespace DigitalWorldOnline.Commons.Utils
             if (dateTime == null)
                 return 0;
             else
-                return (int)DateTimeOffset.UtcNow.AddSeconds(dateTime.Value.Subtract(DateTime.Now).TotalSeconds).ToUnixTimeSeconds();
+                return (int)DateTimeOffset.UtcNow.AddSeconds(dateTime.Value.Subtract(DateTime.Now).TotalSeconds)
+                    .ToUnixTimeSeconds();
         }
 
         public static int GetUtcSecondsBuff(this DateTime? dateTime)
@@ -330,7 +332,8 @@ namespace DigitalWorldOnline.Commons.Utils
 
         public static int GetUtcSeconds(this DateTime dateTime)
         {
-            return (int)DateTimeOffset.UtcNow.AddSeconds(dateTime.Subtract(DateTime.Now).TotalSeconds).ToUnixTimeSeconds();
+            return (int)DateTimeOffset.UtcNow.AddSeconds(dateTime.Subtract(DateTime.Now).TotalSeconds)
+                .ToUnixTimeSeconds();
         }
 
         public static bool HasAttributeAdvantage(this DigimonAttributeEnum hitter, DigimonAttributeEnum target)
@@ -529,6 +532,17 @@ namespace DigitalWorldOnline.Commons.Utils
             {
                 return -1; // Valor para indicar que o mapa não pertence a nenhum grupo conhecido
             }
+        }
+
+        /// <summary>
+        /// Check if this item is clone
+        /// </summary>
+        /// <param name="itemSection"></param>
+        /// <returns></returns>
+        public static bool IsCloneItem(int itemSection)
+        {
+            return itemSection.IsBetween(5511, 5512, 5513, 5514, 5515, 5521, 5522, 5523, 5524, 5525, 5536, 5537, 5538,
+                5539, 5540, 5531, 5532, 5533, 5534, 5535, 5501, 5502, 5503, 5504, 5505);
         }
     }
 }

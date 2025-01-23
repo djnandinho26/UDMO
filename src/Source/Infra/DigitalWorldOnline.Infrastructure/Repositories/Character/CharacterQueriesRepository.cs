@@ -154,6 +154,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             return await _context.Digimon
                 .AsNoTracking()
                 .Include(x => x.Digiclone)
+                .ThenInclude(x => x.History)
                 .Include(x => x.AttributeExperience)
                 .Include(x => x.Evolutions)
                 .ThenInclude(y => y.Skills)
@@ -170,7 +171,9 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                 .ThenInclude(y => y.Encyclopedia)
                 .ThenInclude(y => y.Evolutions)
                 .Include(x => x.Digiclone)
+                .ThenInclude(x => x.History)
                 .Include(x => x.AttributeExperience)
+                .Include(x => x.Location)
                 .Include(x => x.Evolutions)
                 .ThenInclude(y => y.Skills)
                 .Include(x => x.BuffList)

@@ -4,6 +4,7 @@ using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
+using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Extensions;
@@ -61,7 +62,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             _logger.Information($"PersonalShopBuy");
 
             var shopHandler = packet.ReadInt();
-            var shopSlot = packet.ReadInt();
+            var shopSlot = packet.ReadInt() - 1;
             var boughtItemId = packet.ReadInt();
             var boughtAmount = packet.ReadInt();
 
@@ -70,16 +71,55 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             var boughtUnitPrice = packet.ReadInt64();
 
             _logger.Information($"Searching Personal Shop {shopHandler}...");
-            var PersonalShop = _mapServer.FindClientByTamerHandle(shopHandler);
             var mapConfig = await _sender.Send(new GameMapConfigByMapIdQuery(client.Tamer.Location.MapId));
+            GameClient? PersonalShop = null;
+
+            switch (mapConfig?.Type)
+            {
+                case MapTypeEnum.Dungeon:
+                    PersonalShop = _dungeonsServer.FindClientByTamerHandle(shopHandler);
+                    break;
+
+                case MapTypeEnum.Event:
+                    PersonalShop = _eventServer.FindClientByTamerHandle(shopHandler);
+                    break;
+
+                case MapTypeEnum.Pvp:
+                    PersonalShop = _pvpServer.FindClientByTamerHandle(shopHandler);
+                    break;
+
+                default:
+                    PersonalShop = _mapServer.FindClientByTamerHandle(shopHandler);
+                    break;
+            }
 
             if (PersonalShop != null)
             {
-                _logger.Information(
-                    $"boughtItemId: {boughtItemId} | boughtUnitPrice: {boughtUnitPrice} | boughtAmount: {boughtAmount}");
+                var boughtItem = PersonalShop.Tamer.TamerShop.Items.FirstOrDefault(x => x.Slot == shopSlot);
+
+                if (boughtItem == null)
+                {
+                    client.Send(new PersonalShopBuyItemPacket().Serialize());
+                    return;
+                }
 
                 hasItem = false;
-                var totalValue = boughtUnitPrice * boughtAmount;
+                var totalValue = boughtItem.TamerShopSellPrice * boughtAmount;
+
+                if (client.Tamer.Inventory.Bits < totalValue)
+                {
+                    //sistema de banimento permanente
+                    var banProcessor = SingletonResolver.GetService<BanForCheating>();
+                    var banMessage = banProcessor.BanAccountWithMessage(client.AccountId, client.Tamer.Name,
+                        AccountBlockEnum.Permanent, "Cheating", client,
+                        "You tried to buy an item with an invalid amount of bits using a cheat method, So be happy with ban!");
+                    
+                    client.Send(new PersonalShopBuyItemPacket().Serialize());
+                    
+                    var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                    client.SendToAll(chatPacket);
+                    return;
+                }
 
                 _logger.Information($"You spend {totalValue} bits");
                 client.Tamer.Inventory.RemoveBits(totalValue);
@@ -107,8 +147,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 _logger.Debug(
                     $"Tentando comprar Item em {PersonalShop.Tamer.ShopName} {shopHandler} » {shopHandler} {shopSlot} {boughtItemId} {boughtAmount} {boughtUnitPrice}.");
-                var newItem = new ItemModel(boughtItemId, boughtAmount);
-                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == boughtItemId));
+                var newItem = new ItemModel(boughtItem.ItemId, boughtAmount);
+                newItem.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == boughtItem.ItemId));
 
                 _logger.Debug($"Removing consigned shop bought item...");
                 PersonalShop.Tamer.TamerShop.RemoveOrReduceItems(((ItemModel)newItem.Clone()).GetList());
@@ -122,17 +162,20 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Tamer.Inventory.AddItems(((ItemModel)newItem.Clone()).GetList());
 
                 _logger.Debug($"Updating item list...");
-                client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+                // client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
                 _logger.Debug($"Sending consigned shop item list view packet...");
-                client.Send(new PersonalShopItemsViewPacket(PersonalShop.Tamer.TamerShop, PersonalShop.Tamer.ShopName));
-                PersonalShop.Send(new PersonalShopItemsViewPacket(PersonalShop.Tamer.TamerShop,
-                    PersonalShop.Tamer.ShopName));
+                // client.Send(new PersonalShopItemsViewPacket(PersonalShop.Tamer.TamerShop, PersonalShop.Tamer.ShopName));
+                /*PersonalShop.Send(new PersonalShopItemsViewPacket(PersonalShop.Tamer.TamerShop,
+                    PersonalShop.Tamer.ShopName));*/
+                client.Send(new PersonalShopBuyItemPacket(TamerShopActionEnum.TamerShopWindow, shopSlot, boughtAmount)
+                    .Serialize());
+                PersonalShop.Send(new PersonalShopSellItemPacket(shopSlot, boughtAmount).Serialize());
 
-                PersonalShop.Send(
+                /*PersonalShop.Send(
                     new NoticeMessagePacket(
-                        $"You sold {newItem.Amount}x {newItem.ItemInfo.Name} for {client.Tamer.Name}!"));
+                        $"You sold {newItem.Amount}x {newItem.ItemInfo.Name} for {client.Tamer.Name}!"));*/
 
                 foreach (var item in PersonalShop.Tamer.TamerShop.Items.Where(x => x.ItemId > 0))
                 {

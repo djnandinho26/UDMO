@@ -52,14 +52,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (sourceItem.Amount < amountToSplit)
                         {
                             //sistema de banimento 3 dias
-                            var banProcessor = new BanForCheating();
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
                             var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
-                                AccountBlockEnum.Permannent, "Cheating");
+                                AccountBlockEnum.Permanent, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
 
                             var chatPacket = new NoticeMessagePacket(banMessage);
-                            client.Send(chatPacket); // Envia a mensagem no chat
+                            client.SendToAll(chatPacket.Serialize()); // Envia a mensagem no chat
 
-                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+                            // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
 
                             break;
                         }
@@ -92,22 +92,30 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (sourceItem.Amount < amountToSplit)
                         {
                             //sistema de banimento 3 dias
-                            var banProcessor = new BanForCheating();
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
                             var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
-                                AccountBlockEnum.Permannent, "Cheating");
+                                AccountBlockEnum.Short, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
 
-                            var chatPacket = new NoticeMessagePacket(banMessage);
-                            client.Send(chatPacket); // Envia a mensagem no chat
+                            var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                            client.SendToAll(chatPacket); // Envia a mensagem no chat
 
-                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+                            // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
 
                             break;
                         }
 
                         if (destItem.Amount < amountToSplit)
                         {
-                            _logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {destItem.ItemInfo.Name}, but he has {destItem.Amount}x on slot {originSlot} to {destinationSlot}!");
-                            client.Disconnect();
+                            //sistema de banimento 3 dias
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
+                            var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
+                                AccountBlockEnum.Short, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
+
+                            var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                            client.SendToAll(chatPacket); // Envia a mensagem no chat
+                            
+                            /*_logger.Error($"[DISCONNECTED] {client.Tamer.Name} try DUPPING {amountToSplit}x {destItem.ItemInfo.Name}, but he has {destItem.Amount}x on slot {originSlot} to {destinationSlot}!");
+                            client.Disconnect();*/
                             return;
                         }
 
@@ -145,14 +153,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (sourceItem.Amount < amountToSplit)
                         {
                             //sistema de banimento 3 dias
-                            var banProcessor = new BanForCheating();
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
                             var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
-                                AccountBlockEnum.Permannent, "Cheating");
+                                AccountBlockEnum.Short, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
 
-                            var chatPacket = new NoticeMessagePacket(banMessage);
-                            client.Send(chatPacket); // Envia a mensagem no chat
+                            var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                            client.SendToAll(chatPacket); // Envia a mensagem no chat
 
-                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+                            // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
 
                             break;
                         }
@@ -190,14 +198,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (sourceItem.Amount < amountToSplit)
                         {
                             //sistema de banimento 3 dias
-                            var banProcessor = new BanForCheating();
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
                             var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
-                                AccountBlockEnum.Permannent, "Cheating");
+                                AccountBlockEnum.Short, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
 
-                            var chatPacket = new NoticeMessagePacket(banMessage);
-                            client.Send(chatPacket); // Envia a mensagem no chat
+                            var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                            client.SendToAll(chatPacket); // Envia a mensagem no chat
 
-                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+                            // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
 
                             break;
                         }
@@ -230,14 +238,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (sourceItem.Amount < amountToSplit)
                         {
                             //sistema de banimento 3 dias
-                            var banProcessor = new BanForCheating();
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
                             var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
-                                AccountBlockEnum.Permannent, "Cheating");
+                                AccountBlockEnum.Short, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
 
-                            var chatPacket = new NoticeMessagePacket(banMessage);
-                            client.Send(chatPacket); // Envia a mensagem no chat
+                            var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                            client.SendToAll(chatPacket); // Envia a mensagem no chat
 
-                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+                            // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
 
                             break;
                         }
@@ -277,14 +285,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (sourceItem.Amount < amountToSplit)
                         {
                             //sistema de banimento 3 dias
-                            var banProcessor = new BanForCheating();
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
                             var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
-                                AccountBlockEnum.Permannent, "Cheating");
+                                AccountBlockEnum.Short, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
 
-                            var chatPacket = new NoticeMessagePacket(banMessage);
-                            client.Send(chatPacket); // Envia a mensagem no chat
+                            var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                            client.SendToAll(chatPacket); // Envia a mensagem no chat
 
-                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+                            // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
 
                             break;
                         }
@@ -321,14 +329,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (sourceItem.Amount < amountToSplit)
                         {
                             //sistema de banimento 3 dias
-                            var banProcessor = new BanForCheating();
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
                             var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
-                                AccountBlockEnum.Permannent, "Cheating");
+                                AccountBlockEnum.Short, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
 
-                            var chatPacket = new NoticeMessagePacket(banMessage);
-                            client.Send(chatPacket); // Envia a mensagem no chat
+                            var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                            client.SendToAll(chatPacket); // Envia a mensagem no chat
 
-                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+                            // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
 
                             break;
                         }
@@ -361,14 +369,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (sourceItem.Amount < amountToSplit)
                         {
                             //sistema de banimento 3 dias
-                            var banProcessor = new BanForCheating();
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
                             var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
-                                AccountBlockEnum.Permannent, "Cheating");
+                                AccountBlockEnum.Short, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
 
-                            var chatPacket = new NoticeMessagePacket(banMessage);
-                            client.Send(chatPacket); // Envia a mensagem no chat
+                            var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                            client.SendToAll(chatPacket); // Envia a mensagem no chat
 
-                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
+                            // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize());
 
                             break;
                         }
@@ -407,14 +415,14 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         if (sourceItem.Amount < amountToSplit)
                         {
                             //sistema de banimento 3 dias
-                            var banProcessor = new BanForCheating();
+                            var banProcessor = SingletonResolver.GetService<BanForCheating>();
                             var banMessage = banProcessor.SimpleBan(client.AccountId, client.Tamer.Name,
-                                AccountBlockEnum.Permannent, "Cheating");
+                                AccountBlockEnum.Short, "Cheating", client, "You tried to split an invalid amount of item using a cheat method, So be happy with ban!");
 
-                            var chatPacket = new NoticeMessagePacket(banMessage);
-                            client.Send(chatPacket); // Envia a mensagem no chat
+                            var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
+                            client.SendToAll(chatPacket); // Envia a mensagem no chat
 
-                            client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize()); // mensagem enviada para cliente
+                            // client.Send(new DisconnectUserPacket($"YOU HAVE BEEN BANNED FOR 3 DAYS").Serialize()); // mensagem enviada para cliente
 
                             break;
                         }
