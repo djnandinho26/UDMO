@@ -186,15 +186,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     item.SetItemInfo(_assets.ItemInfo.FirstOrDefault(x => x.ItemId == item.ItemId));
                 });
             }
-
-            _logger.Debug($"Sending load inventory packet...");
-            client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory));
-
+            
             _logger.Debug($"Sending consigned shop bought item packet...");
-            client.Send(new ConsignedShopBoughtItemPacket(TamerShopActionEnum.TamerShopOpen, shopSlot, boughtAmount));
-
-            _logger.Debug($"Sending consigned shop item list view packet...");
-            client.Send(new ConsignedShopItemsViewPacket(shop, seller.ConsignedShopItems, seller.Name));
+            client.Send(new ConsignedShopBoughtItemPacket(TamerShopActionEnum.TamerShopWindow, shopSlot, boughtAmount));
         }
     }
 }

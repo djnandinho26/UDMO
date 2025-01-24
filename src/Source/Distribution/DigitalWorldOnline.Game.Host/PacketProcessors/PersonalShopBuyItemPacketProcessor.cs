@@ -123,8 +123,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         AccountBlockEnum.Permanent, "Cheating", client,
                         "You tried to buy an item with an invalid amount of bits using a cheat method, So be happy with ban!");
 
-                    client.Send(new PersonalShopBuyItemPacket(TamerShopActionEnum.NoPartFound).Serialize());
-
                     var chatPacket = new NoticeMessagePacket(banMessage).Serialize();
                     client.SendToAll(chatPacket);
                     return;
@@ -133,7 +131,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 _logger.Information($"You spend {totalValue} bits");
                 client.Tamer.Inventory.RemoveBits(totalValue);
 
-                // client.Send(new LoadInventoryPacket(client.Tamer.Inventory, InventoryTypeEnum.Inventory).Serialize());
                 await _sender.Send(
                     new UpdateItemListBitsCommand(client.Tamer.Inventory.Id, client.Tamer.Inventory.Bits));
 
@@ -171,13 +168,11 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 client.Tamer.Inventory.AddItems(((ItemModel)newItem.Clone()).GetList());
 
                 _logger.Debug($"Updating item list...");
-                // client.Send(new ReceiveItemPacket(newItem, InventoryTypeEnum.Inventory));
+
                 await _sender.Send(new UpdateItemsCommand(client.Tamer.Inventory));
 
                 _logger.Debug($"Sending consigned shop item list view packet...");
-                // client.Send(new PersonalShopItemsViewPacket(PersonalShop.Tamer.TamerShop, PersonalShop.Tamer.ShopName));
-                /*PersonalShop.Send(new PersonalShopItemsViewPacket(PersonalShop.Tamer.TamerShop,
-                    PersonalShop.Tamer.ShopName));*/
+                
                 client.Send(
                     new PersonalShopBuyItemPacket(TamerShopActionEnum.TamerShopWindow, shopSlot, boughtAmount)
                         .Serialize());
