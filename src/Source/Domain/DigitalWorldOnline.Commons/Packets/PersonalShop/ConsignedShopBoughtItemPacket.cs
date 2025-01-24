@@ -19,5 +19,16 @@ namespace DigitalWorldOnline.Commons.Packets.PersonalShop
             WriteInt(slot);
             WriteInt(count);
         }
+
+        /// <summary>
+        /// Pop up the personal shop window.
+        /// </summary>
+        /// <param name="shopAction">The target action enum to choose the shop type</param>
+        /// <param name="itemId">The item id used to open the shop</param>
+        public ConsignedShopBoughtItemPacket(bool isFailed = true)
+        {
+            Type(PacketNumber);
+            WriteInt(1);
+        }
     }
 }

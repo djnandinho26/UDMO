@@ -5,7 +5,7 @@ namespace DigitalWorldOnline.Commons.Packets.PersonalShop
 {
     public class PersonalShopSellItemPacket : PacketWriter
     {
-        private const int PacketNumber = 1513;
+        private const int PacketNumber = 1514;
 
         /// <summary>
         /// Pop up the personal shop window.

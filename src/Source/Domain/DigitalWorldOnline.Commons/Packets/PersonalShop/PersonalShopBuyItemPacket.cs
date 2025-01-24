@@ -24,10 +24,10 @@ namespace DigitalWorldOnline.Commons.Packets.PersonalShop
         /// <summary>
         /// Pop up the personal shop window.
         /// </summary>
-        public PersonalShopBuyItemPacket()
+        public PersonalShopBuyItemPacket(TamerShopActionEnum shopAction)
         {
             Type(PacketNumber);
-            WriteInt(TamerShopActionEnum.NoPartFound.GetHashCode());
+            WriteInt(shopAction.GetHashCode());
         }
     }
 }

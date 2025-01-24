@@ -645,6 +645,44 @@ namespace DigitalWorldOnline.Commons.Models.Base
             return true;
         }
 
+        public bool RemoveOrReduceItems(List<ItemModel> itemsToRemoveOrReduce, bool reArrangeSlots = true)
+        {
+            var backup = BackupOperation();
+
+            //TODO: teste com 2 slots do mesmo itemId
+            foreach (var itemToRemove in itemsToRemoveOrReduce)
+            {
+                if (itemToRemove.Amount == 0 || itemToRemove.ItemId == 0)
+                    continue;
+
+                var targetItems = FindItemsById(itemToRemove.ItemId);
+
+                foreach (var targetItem in targetItems)
+                {
+                    if (targetItem.Amount >= itemToRemove.Amount)
+                    {
+                        targetItem.ReduceAmount(itemToRemove.Amount);
+                        itemToRemove.SetAmount();
+                        break;
+                    }
+
+                    itemToRemove.ReduceAmount(targetItem.Amount);
+                    targetItem.SetAmount();
+                }
+
+                if (itemToRemove.Amount <= 0)
+                {
+                    continue;
+                }
+
+                RevertOperation(backup);
+                return false;
+            }
+
+            CheckEmptyItemsThenRearrangeSlots();
+            return true;
+        }
+
         public bool RemoveOrReduceItem(ItemModel? itemToRemove, int amount, int slot = -1)
         {
             if (itemToRemove == null || amount == 0) return false;
@@ -654,10 +692,11 @@ namespace DigitalWorldOnline.Commons.Models.Base
 
             return slot > -1 ? RemoveOrReduceItemWithSlot(tempItem, slot) : RemoveOrReduceItemWithoutSlot(tempItem);
         }
+
         public List<ItemModel> AddSlotsAll(byte amount = 1)
         {
             List<ItemModel> newSlots = new List<ItemModel>();
-            for (byte i = 0;i < amount;i++)
+            for (byte i = 0; i < amount; i++)
             {
                 var newItemSlot = new ItemModel(Items.Max(x => x.Slot))
                 {
@@ -766,6 +805,30 @@ namespace DigitalWorldOnline.Commons.Models.Base
                     item.SetSellPrice(0);
                 }
             });
+        }
+
+        public void CheckEmptyItemsThenRearrangeSlots()
+        {
+            // Filter and update any item with invalid data (e.g., ItemId == 0 or Amount <= 0)
+            foreach (var item in Items.Where(item => item.ItemId == 0 || item.Amount <= 0))
+            {
+                item.SetItemId(); // Set a valid item ID
+                item.SetAmount(); // Set a valid amount
+                item.SetRemainingTime(); // Set the remaining time
+                item.SetSellPrice(0); // Set the sell price to 0 if invalid
+            }
+
+            // 2. Reorder and reassign slots, then update `Items` with the reordered list.
+            int slot = 0;
+            Items = Items
+                .OrderBy(item => item.ItemId > 0 ? 0 : 1) // Items with ItemId > 0 come first
+                .ThenBy(item => item.Slot) // Further sort by the existing Slot values
+                .Select(item =>
+                {
+                    item.SetSlot(slot++); // Reassign slots sequentially
+                    return item;
+                })
+                .ToList(); // Update the Items collection with the reordered list
         }
 
         /// <summary>

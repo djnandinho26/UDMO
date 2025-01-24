@@ -4,6 +4,7 @@ using DigitalWorldOnline.Application.Separar.Commands.Delete;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
+using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
@@ -45,7 +46,8 @@ namespace DigitalWorldOnline.Game.PacketProcessors
             _logger.Information($"ConsigmentShop Buy Packet 1518");
 
             var shopHandler = packet.ReadInt();
-            var shopSlot = packet.ReadInt() - 1;
+            var shopSlot = packet.ReadInt();
+            var shopSlotInDatabase = shopSlot - 1;
             var boughtItemId = packet.ReadInt();
             var boughtAmount = packet.ReadInt();
             packet.Skip(60);
@@ -83,7 +85,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            var boughtItem = seller.ConsignedShopItems.Items.FirstOrDefault(x => x.Slot == shopSlot);
+            var boughtItem = seller.ConsignedShopItems.Items.FirstOrDefault(x => x.Slot == shopSlotInDatabase);
 
             if (boughtItem == null)
             {
@@ -92,13 +94,17 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 return;
             }
 
-            int[] numbers = { boughtItem.Amount, boughtAmount };
-            boughtAmount = numbers.Min();
-
+            if (boughtItem.Amount < boughtAmount)
+            {
+                _logger.Information($"Amount exceeding the amount of the item in the consigned shop.");
+                client.Send(new ConsignedShopBoughtItemPacket(true));
+                return;
+            }
+            
             var totalValue = boughtItem.TamerShopSellPrice * boughtAmount;
 
             _logger.Information(
-                $"bought item price: {boughtItem.TamerShopSellPrice} | bought item amount: {boughtAmount} | total value: {totalValue} | slot {shopSlot}");
+                $"bought item price: {boughtItem.TamerShopSellPrice} | bought item amount: {boughtAmount} | total value: {totalValue} | slot {shopSlotInDatabase} | slot sent: {shopSlot}");
 
             if (client.Tamer.Inventory.Bits < totalValue)
             {
@@ -130,7 +136,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             var sellerClient = client.Server.FindByTamerId(shop.CharacterId);
 
-            if (sellerClient != null && sellerClient.IsConnected)
+            if (sellerClient is { IsConnected: true })
             {
                 _logger.Debug($"Sending system message packet {sellerClient.TamerId}...");
                 var itemName = _assets.ItemInfo.FirstOrDefault(x => x.ItemId == boughtItem.ItemId)?.Name ?? "item";
@@ -144,7 +150,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 await _sender.Send(new UpdateItemListBitsCommand(sellerClient.Tamer.ConsignedWarehouse));
 
                 _logger.Debug($"Removing consigned shop bought item...");
-                seller.ConsignedShopItems.RemoveOrReduceItems(((ItemModel)newItem.Clone()).GetList());
+                seller.ConsignedShopItems.RemoveOrReduceItems(((ItemModel)newItem.Clone()).GetList(), true);
 
                 _logger.Debug($"Updating {seller.Id} consigned shop items...");
                 await _sender.Send(new UpdateItemsCommand(seller.ConsignedShopItems));
@@ -155,7 +161,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 seller.ConsignedWarehouse.AddBits(totalValue);
 
                 _logger.Debug($"Removing consigned shop bought item...");
-                seller.ConsignedShopItems.RemoveOrReduceItems(((ItemModel)newItem.Clone()).GetList());
+                seller.ConsignedShopItems.RemoveOrReduceItems(((ItemModel)newItem.Clone()).GetList(), true);
 
                 await _sender.Send(new UpdateItemListBitsCommand(seller.ConsignedWarehouse));
 
