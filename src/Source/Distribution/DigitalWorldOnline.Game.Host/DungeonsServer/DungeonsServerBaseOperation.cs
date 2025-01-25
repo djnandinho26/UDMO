@@ -420,6 +420,8 @@ namespace DigitalWorldOnline.GameHost
                     }
                     else
                     {
+                        Maps.RemoveAll(x => x.DungeonId == party.LeaderId || x.DungeonId == party.Id);
+
                         await SearchNewMaps(true, client);
 
                         while (partyMap == null)

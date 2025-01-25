@@ -334,6 +334,20 @@ namespace DigitalWorldOnline.GameHost
 
                         map.BroadcastForTargetTamers(party.GetMembersIdList(),
                             new PartyMemberInfoPacket(party[tamer.Id]).Serialize());
+
+                        var memberEntry = party.GetMemberById(client.TamerId);
+
+                        var leaveTargetKey = memberEntry.Value.Key;
+                        var currentLeaderEntry = party.GetMemberById(party.LeaderId);
+
+                        if (currentLeaderEntry != null)
+                        {
+                            var currentLeaderKey = currentLeaderEntry.Value.Key;
+
+                            party.LeaderSlot = currentLeaderKey;
+
+                            BroadcastForTargetTamers(party.GetMembersIdList(),new PartyLeaderChangedPacket((int)currentLeaderKey).Serialize());
+                        }
                     }
                 }
 

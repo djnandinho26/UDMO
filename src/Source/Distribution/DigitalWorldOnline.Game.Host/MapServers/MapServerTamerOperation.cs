@@ -348,8 +348,10 @@ namespace DigitalWorldOnline.GameHost
                 {
                     tamer.UpdateSyncResourcesTime();
 
-                    client?.Send(new UpdateCurrentResourcesPacket(tamer.GeneralHandler, (short)tamer.CurrentHp, (short)tamer.CurrentDs, 0));
-                    client?.Send(new UpdateCurrentResourcesPacket(tamer.Partner.GeneralHandler, (short)tamer.Partner.CurrentHp, (short)tamer.Partner.CurrentDs, 0));
+                    client?.Send(new UpdateCurrentResourcesPacket(tamer.GeneralHandler, (short)tamer.CurrentHp,
+                        (short)tamer.CurrentDs, 0));
+                    client?.Send(new UpdateCurrentResourcesPacket(tamer.Partner.GeneralHandler,
+                        (short)tamer.Partner.CurrentHp, (short)tamer.Partner.CurrentDs, 0));
                     client?.Send(new TamerXaiResourcesPacket(client.Tamer.XGauge, client.Tamer.XCrystals));
 
                     map.BroadcastForTargetTamers(tamer.Id,
@@ -357,7 +359,8 @@ namespace DigitalWorldOnline.GameHost
                     map.BroadcastForTargetTamers(tamer.Id,
                         new UpdateCurrentHPRatePacket(tamer.Partner.GeneralHandler, tamer.Partner.HpRate).Serialize());
                     map.BroadcastForTamerViewsAndSelf(tamer.Id,
-                        new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName).Serialize());
+                        new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName)
+                            .Serialize());
 
                     var party = _partyManager.FindParty(tamer.Id);
 
@@ -367,6 +370,22 @@ namespace DigitalWorldOnline.GameHost
 
                         map.BroadcastForTargetTamers(party.GetMembersIdList(),
                             new PartyMemberInfoPacket(party[tamer.Id]).Serialize());
+                        var memberEntry = party.GetMemberById(client.TamerId);
+
+                        var leaveTargetKey = memberEntry.Value.Key;
+
+
+                        var currentLeaderEntry = party.GetMemberById(party.LeaderId);
+
+                        if (currentLeaderEntry != null)
+                        {
+                            var currentLeaderKey = currentLeaderEntry.Value.Key;
+
+                            party.LeaderSlot = currentLeaderKey;
+
+                            BroadcastForTargetTamers(party.GetMembersIdList(),
+                                new PartyLeaderChangedPacket((int)currentLeaderKey).Serialize());
+                        }
                     }
 
                 }

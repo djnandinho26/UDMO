@@ -46,7 +46,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
             if (party != null)
             {
-                party.ChangeLeader(newLeaderSlot);
+                party.ChangeLeader((byte)newLeaderSlot);
 
                 //foreach (var memberId in party.GetMembersIdList())
                 //{
