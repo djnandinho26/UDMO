@@ -2806,10 +2806,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 (int)SkillBuffAndDebuffDurationEnum.MagnaAttack => 5, // MagnaAttack Magnamon Worn F1
                 (int)SkillBuffAndDebuffDurationEnum.PlasmaRage => 10, // MagnaAttack Magnamon Worn F2
                 (int)SkillBuffAndDebuffDurationEnum.KyukyokuSenjin => 1, // AOA Magnamon Worn F2
-               // (int)SkillBuffAndDebuffDurationEnum.FirelapBurnZDG => 300, // Burn 1st dg for Birdramon ZDG
-               // (int)SkillBuffAndDebuffDurationEnum.EagleClaw2ndBurnZDG => 300, // Burn 2st dg for Gurdramon ZDG
-               // (int)SkillBuffAndDebuffDurationEnum.StarLightBurn3rdZDG => 300, // Burn 3st dg for Phoenixmon ZDG
-               // (int)SkillBuffAndDebuffDurationEnum.PheonixFire4thBurnZDG => 300, // Burn Final dg for Zhuqiamon ZDG
                 (int)SkillBuffAndDebuffDurationEnum.RamapageAlterBF3 => 10, // Alter B Rampage
                 _ => 0 
             };

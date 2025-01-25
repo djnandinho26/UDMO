@@ -27,10 +27,6 @@ namespace DigitalWorldOnline.Commons.Enums
         MagnaAttack = 7500411, // Magnamon worn F1
         PlasmaRage = 7500421, // Magnamon Worn f2
         KyukyokuSenjin = 7590831, // AOA Worn f2
-        FirelapBurnZDG = 5108211, // Debuff 1st Burn
-        EagleClaw2ndBurnZDG = 5108311, // Debuff 1st Burn
-        StarLightBurn3rdZDG = 5108411, // Debuff 3rd Burn
-        PheonixFire4thBurnZDG = 5108511, // Debuff 3rd Burn
         RamapageAlterBF3 = 7110931, // Alter B F3 Ramapage
 
 
