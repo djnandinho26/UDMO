@@ -2668,7 +2668,55 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                                         }
                                         break;
+                                    case SkillCodeApplyAttributeEnum.DamageShield:
+                                        int shieldHp = skillValue[i].Value + (partnerEvolution.Skills[skillSlot].CurrentLevel * skillValue[i].IncreaseValue);
 
+                                        if (client.Tamer.Partner.DamageShieldHp > 0)
+                                        {
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            newDigimonBuff.SetBuffInfo(buff);
+                                            client.Tamer.Partner.BuffList.Add(newDigimonBuff);
+                                            client.Tamer.Partner.DamageShieldHp = shieldHp;
+
+                                            broadcastAction(client.TamerId,new SkillBuffPacket(
+                                                client.Tamer.GeneralHandler,
+                                                (int)buff.BuffId,
+                                                partnerEvolution.Skills[skillSlot].CurrentLevel,
+                                                duration,
+                                                (int)skillCode.SkillCode).Serialize());
+
+                                            Task.Run(async () =>
+                                            {
+                                                int remainingDuration = skillDuration;
+                                                while (remainingDuration > 0)
+                                                {
+                                                    await Task.Delay(1000);
+
+                                                    if (client.Tamer.Partner.DamageShieldHp <= 0)
+                                                    {
+                                                        client.Tamer.Partner.DamageShieldHp = 0;
+                                                        client.Tamer.Partner.BuffList.Remove(newDigimonBuff.BuffId);
+                                                        broadcastAction(client.TamerId,new RemoveBuffPacket(client.Tamer.Partner.GeneralHandler,newDigimonBuff.BuffId).Serialize());
+                                                        break;
+                                                    }
+
+                                                    remainingDuration--;
+                                                }
+
+                                                if (client.Tamer.Partner.DamageShieldHp > 0)
+                                                {
+                                                    client.Tamer.Partner.DamageShieldHp = 0;
+                                                    client.Tamer.Partner.BuffList.Remove(newDigimonBuff.BuffId);
+                                                    broadcastAction(client.TamerId,new RemoveBuffPacket(client.Tamer.Partner.GeneralHandler,newDigimonBuff.BuffId).Serialize());
+                                                }
+
+
+                                            });
+                                        }
+                                        break;
                                     case SkillCodeApplyAttributeEnum.Unbeatable:
                                         if (client.Tamer.Partner.IsUnbeatable)
                                         {
