@@ -37,6 +37,8 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         private short _baseHt => (short)BaseStatus.HTValue;
 
         public int BuffValueFromBuffSkill { get; set; }
+        
+        public int DamageShieldHp { get; set; }
 
 
         /// <summary>
@@ -636,6 +638,12 @@ namespace DigitalWorldOnline.Commons.Models.Digimon
         /// <returns>Remaining HP.</returns>
         public int ReceiveDamage(int damage)
         {
+            if (DamageShieldHp > 0)
+            {
+                DamageShieldHp -= damage;
+                return CurrentHp;
+            }
+
             if (IsUnbeatable)
             {
                 return CurrentHp;

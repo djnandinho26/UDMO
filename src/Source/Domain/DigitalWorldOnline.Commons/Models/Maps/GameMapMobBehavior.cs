@@ -814,8 +814,8 @@ namespace DigitalWorldOnline.Commons.Models.Map
                         mob.StartBattle(targetClient.Tamer);
                         targetClient.Tamer.StartBattle(mob);
 
-                        if (!targetClient.Tamer.GodMode)
-                            AttackTarget(mob, npcAsset);
+                        /* if (!targetClient.Tamer.GodMode)
+                            AttackTarget(mob, npcAsset); */
 
                         break;
                     }
