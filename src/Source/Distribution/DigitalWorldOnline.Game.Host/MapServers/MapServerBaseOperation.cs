@@ -25,8 +25,8 @@ namespace DigitalWorldOnline.GameHost
         private byte _loadChannel = 0;
 
         //TODO: externalizar
-        private readonly int _startToSee = 6000;
-        private readonly int _stopSeeing = 6001;
+        private readonly int _startToSee = 18000;
+        private readonly int _stopSeeing = 18001;
 
         /// <summary>
         /// Cleans unused running maps.
@@ -77,7 +77,7 @@ namespace DigitalWorldOnline.GameHost
                     }
                 }
 
-                _lastMapsSearch = DateTime.Now.AddSeconds(10);
+                _lastMapsSearch = DateTime.Now.AddSeconds(5);
             }
         }
 
@@ -103,7 +103,7 @@ namespace DigitalWorldOnline.GameHost
                 }
             }
 
-            _lastMapsSearch = DateTime.Now.AddSeconds(10);
+            _lastMapsSearch = DateTime.Now.AddSeconds(5);
         }
 
         public async Task LoadAllMaps(CancellationToken cancellationToken)

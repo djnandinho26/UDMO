@@ -22,8 +22,8 @@ namespace DigitalWorldOnline.GameHost
         private DateTime _lastConsignedShopsSearch = DateTime.Now;
 
         //TODO: externalizar
-        private readonly int _startToSee = 6000;
-        private readonly int _stopSeeing = 6001;
+        private readonly int _startToSee = 18000;
+        private readonly int _stopSeeing = 18001;
 
         /// <summary>
         /// Cleans unused running maps.
