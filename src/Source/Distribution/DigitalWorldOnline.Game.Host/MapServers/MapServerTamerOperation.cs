@@ -64,7 +64,7 @@ namespace DigitalWorldOnline.GameHost
                     
                 CheckTimeReward(client);
 
-                if (client.Tamer.AttendanceReward.LastRewardDate.Day < DateTime.Now.Day)
+                if (client.Tamer.AttendanceReward.ReedemRewards)
                 {
                     CheckMonthlyReward(client);
                 }
@@ -362,29 +362,43 @@ namespace DigitalWorldOnline.GameHost
                         new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName)
                             .Serialize());
 
-                    var party = _partyManager.FindParty(tamer.Id);
-
-                    if (party != null)
+                    var party = _partyManager.FindParty(client.Tamer.Id);
+                    if (party == null)
                     {
-                        party.UpdateMember(party[tamer.Id], tamer);
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(0).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(1).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(2).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(3).Serialize());
+
+                    }
+                    else if (party != null && party.Members.Count == 1)
+                    {
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(0).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(1).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(2).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(3).Serialize());
+                        _partyManager.RemoveParty(party.Id);
+                    }
+                    else
+                    {
+                        party.UpdateMember(party[client.Tamer.Id],client.Tamer);
 
                         map.BroadcastForTargetTamers(party.GetMembersIdList(),
-                            new PartyMemberInfoPacket(party[tamer.Id]).Serialize());
+                            new PartyMemberInfoPacket(party[client.Tamer.Id]).Serialize());
+
                         var memberEntry = party.GetMemberById(client.TamerId);
-
                         var leaveTargetKey = memberEntry.Value.Key;
-
 
                         var currentLeaderEntry = party.GetMemberById(party.LeaderId);
 
                         if (currentLeaderEntry != null)
                         {
                             var currentLeaderKey = currentLeaderEntry.Value.Key;
-
                             party.LeaderSlot = currentLeaderKey;
 
                             BroadcastForTargetTamers(party.GetMembersIdList(),
                                 new PartyLeaderChangedPacket((int)currentLeaderKey).Serialize());
+
                         }
                     }
 
@@ -1439,21 +1453,26 @@ namespace DigitalWorldOnline.GameHost
 
         // -----------------------------------------------------------------------------------------------------------------------
 
-        private void CheckMonthlyReward(GameClient client)
+        private async void CheckMonthlyReward(GameClient client)
         {
-            if (client.Tamer.AttendanceReward.ReedemRewards)
+            var attendenceReward = client.Tamer.AttendanceReward;
+            if (attendenceReward.LastRewardDate.Day == attendenceReward.TotalDays)
             {
-                client.Tamer.AttendanceReward.CheckAndResetTotalDays();
-                client.Tamer.AttendanceReward.SetLastRewardDate();
-                client.Tamer.AttendanceReward.SetTotalDaysToToday();
-
-                if (client.Tamer.AttendanceReward.TotalDays < 29)
-                {
-                    ReedemReward(client);
-                }
+                return;
             }
+            else if (attendenceReward.LastRewardDate.Day > attendenceReward.TotalDays)
+            {
+                client.Tamer.AttendanceReward.SetLastRewardDate();
+                client.Tamer.AttendanceReward.IncreaseTotalDays();
+                ReedemReward(client);
 
-            client.Send(new TamerAttendancePacket(client.Tamer.AttendanceReward.TotalDays));
+                client.Send(new TamerAttendancePacket(attendenceReward.TotalDays));
+            }
+            else
+            {
+                await  _sender.Send(new UpdateTamerAttendanceRewardCommand(client.Tamer.AttendanceReward));
+
+            }
         }
 
         private async void CheckTimeReward(GameClient client)

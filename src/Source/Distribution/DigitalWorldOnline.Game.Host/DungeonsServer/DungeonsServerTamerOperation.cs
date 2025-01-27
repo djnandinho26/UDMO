@@ -326,27 +326,43 @@ namespace DigitalWorldOnline.GameHost
                         new SyncConditionPacket(tamer.GeneralHandler, tamer.CurrentCondition, tamer.ShopName)
                             .Serialize());
 
-                    var party = _partyManager.FindParty(tamer.Id);
-
-                    if (party != null)
+                     var party = _partyManager.FindParty(client.Tamer.Id);
+                    if (party == null)
                     {
-                        party.UpdateMember(party[tamer.Id], tamer);
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(0).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(1).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(2).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(3).Serialize());
+
+                    }
+                    else if (party != null && party.Members.Count == 1)
+                    {
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(0).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(1).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(2).Serialize());
+                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(3).Serialize());
+                        _partyManager.RemoveParty(party.Id);
+                    }
+                    else
+                    {
+                        party.UpdateMember(party[client.Tamer.Id],client.Tamer);
 
                         map.BroadcastForTargetTamers(party.GetMembersIdList(),
-                            new PartyMemberInfoPacket(party[tamer.Id]).Serialize());
+                            new PartyMemberInfoPacket(party[client.Tamer.Id]).Serialize());
 
                         var memberEntry = party.GetMemberById(client.TamerId);
-
                         var leaveTargetKey = memberEntry.Value.Key;
+
                         var currentLeaderEntry = party.GetMemberById(party.LeaderId);
 
                         if (currentLeaderEntry != null)
                         {
                             var currentLeaderKey = currentLeaderEntry.Value.Key;
-
                             party.LeaderSlot = currentLeaderKey;
 
-                            BroadcastForTargetTamers(party.GetMembersIdList(),new PartyLeaderChangedPacket((int)currentLeaderKey).Serialize());
+                            BroadcastForTargetTamers(party.GetMembersIdList(),
+                                new PartyLeaderChangedPacket((int)currentLeaderKey).Serialize());
+
                         }
                     }
                 }

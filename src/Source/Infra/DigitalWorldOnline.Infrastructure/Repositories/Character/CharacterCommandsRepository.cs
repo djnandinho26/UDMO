@@ -1235,9 +1235,15 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
 
             if (dto != null)
             {
-                dto.LastRewardDate = attendanceRewardModel.LastRewardDate;
-                dto.TotalDays = attendanceRewardModel.TotalDays;
-
+                if (dto.TotalDays > DateTime.Now.Day)
+                {
+                    dto.TotalDays = 1;
+                }
+                else
+                {
+                    dto.LastRewardDate = attendanceRewardModel.LastRewardDate;
+                    dto.TotalDays = attendanceRewardModel.TotalDays;
+                }
                 _context.AttendanceReward.Update(dto);
                 _context.SaveChanges();
             }

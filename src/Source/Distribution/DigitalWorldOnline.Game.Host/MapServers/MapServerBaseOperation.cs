@@ -423,12 +423,12 @@ namespace DigitalWorldOnline.GameHost
                 .FirstOrDefault(client => client.Tamer?.GeneralHandler == handle);
         }
 
-        public void BroadcastForTargetTamers(List<long> targetTamers, byte[] packet)
+        public void BroadcastForTargetTamers(List<long> targetTamers,byte[] packet)
         {
-            var map = Maps.FirstOrDefault(
-                x => x.Clients.Exists(gameClient => targetTamers.Contains(gameClient.TamerId)));
-
-            map?.BroadcastForTargetTamers(targetTamers, packet);
+            Maps
+                .Where(x => x.Clients.Any(gameClient => targetTamers.Contains(gameClient.TamerId)))
+                .ToList()
+                .ForEach(map => map.BroadcastForTargetTamers(targetTamers,packet));
         }
 
         public void BroadcastForTargetTamers(long sourceId, byte[] packet)
