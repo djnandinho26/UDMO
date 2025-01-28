@@ -26,7 +26,7 @@ namespace DigitalWorldOnline.Infrastructure
         {
             try
             {
-                optionsBuilder.UseSqlServer("Server=Elrayes\\SQLEXPRESS;Database=DMOX;User Id=sa;Password=sql@123;TrustServerCertificate=True");
+                optionsBuilder.UseSqlServer("Server=DESKTOP-C106JM5\\SQLEXPRESS;Database=DMOX;User Id=sa;Password=Kratos9090@;TrustServerCertificate=True");
             }
             catch (SqlException ex)
             {

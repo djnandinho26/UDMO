@@ -9,6 +9,7 @@ using DigitalWorldOnline.Commons.DTOs.Server;
 using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Models.Account;
+using DigitalWorldOnline.Commons.Models.Summon;
 using DigitalWorldOnline.Commons.Repositories.Admin;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -36,6 +37,13 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
 
             return account;
         }
+        public async Task<SummonDTO> AddSummonConfigAsync(SummonDTO summon)
+        {
+            _context.SummonsConfig.Add(summon);
+            await _context.SaveChangesAsync();
+            return summon;
+        }
+
 
         public async Task<ContainerAssetDTO> AddContainerConfigAsync(ContainerAssetDTO container)
         {
@@ -59,6 +67,25 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
 
             return mob;
         }
+
+        public async Task<SummonMobDTO> AddSummonMobAsync(SummonMobDTO mob)
+        {
+            var targetSummon = await _context.SummonsConfig
+                .SingleAsync(x => x.Id == mob.SummonDTOId);
+
+            // Assign the first map from the SummonConfig or default to 0 if none exist
+            mob.Location.MapId = (short)targetSummon.Maps.FirstOrDefault();
+
+            // Reset Drop IDs to prevent conflicts
+            mob.DropReward?.Drops.ForEach(drop => drop.Id = 0);
+
+            _context.SummonsMobConfig.Add(mob);
+            await _context.SaveChangesAsync();
+
+            return mob;
+        }
+
+
 
         public async Task<ScanDetailAssetDTO> AddScanConfigAsync(ScanDetailAssetDTO scan)
         {
@@ -129,7 +156,20 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                 _context.SaveChanges();
             }
         }
+        public async Task DeleteSummonAsync(long id)
+        {
+            var dto = await _context.SummonsConfig
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
 
+            if (dto != null)
+            {
+
+                _context.Remove(dto);
+
+                _context.SaveChanges();
+            }
+        }
         public async Task DeleteContainerConfigAsync(long id)
         {
             var dto = await _context.Container
@@ -163,6 +203,20 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
         public async Task DeleteMobAsync(long id)
         {
             var dto = await _context.MobConfig
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            if (dto != null)
+            {
+                _context.Remove(dto);
+
+                _context.SaveChanges();
+            }
+        }
+
+        public async Task DeleteSummonMobAsync(long id)
+        {
+            var dto = await _context.SummonsMobConfig
                 .AsNoTracking()
                 .SingleOrDefaultAsync(x => x.Id == id);
 
@@ -272,7 +326,47 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
                 _context.SaveChanges();
             }
         }
+        public async Task DuplicateSummonMobAsync(long id)
+        {
+            var dto = await _context.SummonsMobConfig
+                .AsNoTracking()
+                .Include(x => x.Location)
+                .Include(x => x.ExpReward)
+                .Include(x => x.DropReward)
+                .ThenInclude(y => y.Drops)
+                .Include(x => x.DropReward)
+                .ThenInclude(y => y.BitsDrop)
+                .SingleOrDefaultAsync(x => x.Id == id);
 
+            if (dto != null)
+            {
+                var clonedEntity = (SummonMobDTO)dto.Clone();
+                clonedEntity.Id = 0;
+
+                if (clonedEntity.Location == null)
+                    clonedEntity.Location = new SummonMobLocationDTO();
+                else
+                    clonedEntity.Location.Id = 0;
+
+                if (clonedEntity.ExpReward == null)
+                    clonedEntity.ExpReward = new SummonMobExpRewardDTO();
+                else
+                    clonedEntity.ExpReward.Id = 0;
+
+                if (clonedEntity.DropReward == null)
+                    clonedEntity.DropReward = new SummonMobDropRewardDTO();
+                else
+                {
+                    clonedEntity.DropReward.Id = 0;
+                    clonedEntity.DropReward.Drops.ToList().ForEach(drop => drop.Id = 0);
+                    clonedEntity.DropReward.BitsDrop.Id = 0;
+                }
+
+                _context.Add(clonedEntity);
+
+                _context.SaveChanges();
+            }
+        }
         public async Task UpdateAccountAsync(AccountDTO account)
         {
             var dto = await _context.Account

@@ -30,140 +30,19 @@
                     </MudAutocomplete>
                 </MudItem>
                 <MudItem xs="12" xl="12" sm="12">
-                    <MudAutocomplete @ref="_selectedMobAsset"
-                                     ToStringFunc="@(e => e == null ? null : $"{e.Type} - {e.Name}")"
-                                     T="MobAssetViewModel"
-                                     Label="Mob Template"
-                                     SearchFunc="GetMobAssets"
-                                     ValueChanged="UpdateMobFields"
+                    <MudAutocomplete @bind-Value="_summon.MapConfig"
+                                     @ref="_selectedMapAsset"
+                                     ToStringFunc="@(e => e == null ? null : $"{e.MapId} - {e.Name}")"
+                                     T="MapConfigViewModel"
+                                     Label="Summon Map"
+                                     SearchFunc="GetMapAssets"
                                      Variant="Variant.Outlined"
                                      Class="docs-search-bar"
                                      AdornmentIcon="@Icons.Material.Filled.Search">
-                        <ItemTemplate Context="result">
-                            <MudText><strong>@result.Type</strong> - @result.Name</MudText>
+                        <ItemTemplate Context="MapAssetResult">
+                            <MudText><strong>@MapAssetResult.MapId</strong> - @MapAssetResult.Name</MudText>
                         </ItemTemplate>
                     </MudAutocomplete>
-                </MudItem>
-
-                <MudItem xs="12" xl="12" sm="12">
-                    <MudExpansionPanels Elevation="2" Style="padding-bottom:15px">
-                        @if (_summon.SummonedMobs.Any())
-                        {
-                            <MudExpansionPanel IsInitiallyExpanded>
-                                <TitleContent>
-                                    <MudStack Row="true" Spacing="2">
-                                        <MudText>Base Information</MudText>
-                                    </MudStack>
-                                </TitleContent>
-                                <ChildContent>
-                                    <MudGrid>
-                                        <MudItem xs="3" xl="3" sm="3">
-                                            <MudNumericField @bind-Value="_summon.SummonedMobs.Last().Type"
-                                                             Label="Type"
-                                                             T="int"
-                                                             Variant="Variant.Outlined"
-                                                             Required
-                                                             RequiredError="Required"
-                                                             Min="0"
-                                                             Max="int.MaxValue">
-                                            </MudNumericField>
-                                        </MudItem>
-                                        <MudItem xs="3" xl="3" sm="3">
-                                            <MudNumericField @bind-Value="_summon.SummonedMobs.Last().Model"
-                                                             Label="Model"
-                                                             T="int"
-                                                             Variant="Variant.Outlined"
-                                                             Required
-                                                             RequiredError="Required"
-                                                             Min="0"
-                                                             Max="int.MaxValue">
-                                            </MudNumericField>
-                                        </MudItem>
-                                        <MudItem xs="3" xl="3" sm="3">
-                                            <MudTextField @bind-Value="_summon.SummonedMobs.Last().Name"
-                                                          Label="Alias Name"
-                                                          T="string"
-                                                          Variant="Variant.Outlined"
-                                                          Required
-                                                          RequiredError="Required">
-                                            </MudTextField>
-                                        </MudItem>
-                                        <MudItem xs="3" xl="3" sm="3">
-                                            <MudNumericField @bind-Value="_summon.SummonedMobs.Last().Level"
-                                                             Label="Level"
-                                                             T="byte"
-                                                             Variant="Variant.Outlined"
-                                                             Required
-                                                             RequiredError="Required"
-                                                             Min="1"
-                                                             Max="byte.MaxValue">
-                                            </MudNumericField>
-                                        </MudItem>
-                                        <MudItem xs="3" xl="3" sm="3">
-                                            <MudNumericField @bind-Value="_summon.SummonedMobs.Last().Duration"
-                                                             Label="Respawn Time"
-                                                             T="int"
-                                                             Variant="Variant.Outlined"
-                                                             Required
-                                                             RequiredError="Required"
-                                                             Min="5"
-                                                             Max="int.MaxValue">
-                                            </MudNumericField>
-                                        </MudItem>
-                                    </MudGrid>
-                                </ChildContent>
-                            </MudExpansionPanel>
-
-                            <MudExpansionPanel>
-                                <TitleContent>
-                                    <MudStack Row="true" Spacing="2">
-                                        <MudText>Status Information</MudText>
-                                    </MudStack>
-                                </TitleContent>
-                                <ChildContent>
-                                    <MudGrid>
-                                        <MudItem xs="3" xl="3" sm="3">
-                                            <MudNumericField @bind-Value="_summon.SummonedMobs.Last().ARValue"
-                                                             Label="Attack Range"
-                                                             T="int"
-                                                             Variant="Variant.Outlined"
-                                                             Required
-                                                             RequiredError="Required"
-                                                             Min="150"
-                                                             Max="int.MaxValue">
-                                            </MudNumericField>
-                                        </MudItem>
-                                        <MudItem xs="3" xl="3" sm="3">
-                                            <MudNumericField @bind-Value="_summon.SummonedMobs.Last().ASValue"
-                                                             Label="Attack Speed"
-                                                             T="int"
-                                                             Variant="Variant.Outlined"
-                                                             Required
-                                                             RequiredError="Required"
-                                                             Min="1000"
-                                                             Max="int.MaxValue">
-                                            </MudNumericField>
-                                        </MudItem>
-                                        <MudItem xs="3" xl="3" sm="3">
-                                            <MudNumericField @bind-Value="_summon.SummonedMobs.Last().ATValue"
-                                                             Label="Attack Damage"
-                                                             T="int"
-                                                             Variant="Variant.Outlined"
-                                                             Required
-                                                             RequiredError="Required"
-                                                             Min="0"
-                                                             Max="int.MaxValue">
-                                            </MudNumericField>
-                                        </MudItem>
-                                    </MudGrid>
-                                </ChildContent>
-                            </MudExpansionPanel>
-                        }
-                        else
-                        {
-                            <MudText>No summoned mob available.</MudText>
-                        }
-                    </MudExpansionPanels>
                 </MudItem>
                 <MudItem xs="12" xl="12" sm="12">
                 </MudItem>

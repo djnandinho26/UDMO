@@ -12,6 +12,7 @@ namespace DigitalWorldOnline.Commons.Repositories.Admin
     public interface IAdminCommandsRepository
     {
         Task<AccountDTO> AddAccountAsync(AccountDTO account);
+        Task<SummonDTO> AddSummonConfigAsync(SummonDTO summon);
 
         Task<CloneConfigDTO> AddCloneConfigAsync(CloneConfigDTO clone);
 
@@ -20,6 +21,8 @@ namespace DigitalWorldOnline.Commons.Repositories.Admin
         Task<HatchConfigDTO> AddHatchConfigAsync(HatchConfigDTO hatch);
 
         Task<MobConfigDTO> AddMobAsync(MobConfigDTO mob);
+        Task<SummonMobDTO> AddSummonMobAsync(SummonMobDTO mob);
+
 
         Task<ScanDetailAssetDTO> AddScanConfigAsync(ScanDetailAssetDTO scan);
 
@@ -32,6 +35,7 @@ namespace DigitalWorldOnline.Commons.Repositories.Admin
         Task<AccountCreateResult> CreateAccountAsync(string username, string email, string discordId, string password);
         
         Task DeleteAccountAsync(long id);
+        Task DeleteSummonAsync(long id);
 
         Task DeleteCloneConfigAsync(long id);
 
@@ -42,6 +46,8 @@ namespace DigitalWorldOnline.Commons.Repositories.Admin
         Task DeleteMapMobsAsync(long id);
 
         Task DeleteMobAsync(long id);
+        Task DeleteSummonMobAsync(long id);
+
 
         Task DeleteScanConfigAsync(long id);
 
@@ -52,6 +58,8 @@ namespace DigitalWorldOnline.Commons.Repositories.Admin
         Task DeleteUserAsync(long id);
 
         Task DuplicateMobAsync(long id);
+        Task DuplicateSummonMobAsync(long id);
+
 
         Task UpdateAccountAsync(AccountDTO account);
 

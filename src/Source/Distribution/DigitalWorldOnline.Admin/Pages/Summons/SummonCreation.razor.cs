@@ -2,10 +2,12 @@
 using DigitalWorldOnline.Application.Admin.Commands;
 using DigitalWorldOnline.Application.Admin.Queries;
 using DigitalWorldOnline.Commons.DTOs.Config;
+using DigitalWorldOnline.Commons.Enums.Admin;
 using DigitalWorldOnline.Commons.ViewModel.Asset;
 using DigitalWorldOnline.Commons.ViewModel.Summons;
 using MediatR;
 using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
 using MudBlazor;
 using Serilog;
 using System;
@@ -18,8 +20,9 @@ namespace DigitalWorldOnline.Admin.Pages.Summons
 {
     public partial class SummonCreation
     {
-        private MudAutocomplete<MobAssetViewModel> _selectedMobAsset;
         private MudAutocomplete<ItemAssetViewModel> _selectedItemAsset;
+        private MudAutocomplete<MapConfigViewModel> _selectedMapAsset;
+
 
         SummonViewModel _summon = new SummonViewModel();
 
@@ -34,23 +37,6 @@ namespace DigitalWorldOnline.Admin.Pages.Summons
         [Inject] public ISnackbar Toast { get; set; }
 
         [Inject] public ILogger Logger { get; set; }
-
-        private async Task<IEnumerable<MobAssetViewModel>> GetMobAssets(string value)
-        {
-            if (string.IsNullOrEmpty(value) || value.Length < 3)
-            {
-                if (string.IsNullOrEmpty(value))
-                {
-                    _selectedMobAsset.Clear();
-                }
-
-                return Array.Empty<MobAssetViewModel>();
-            }
-
-            var assets = await Sender.Send(new GetMobAssetQuery(value));
-
-            return Mapper.Map<List<MobAssetViewModel>>(assets.Registers);
-        }
 
         private async Task<IEnumerable<ItemAssetViewModel>> GetItemAssets(string value)
         {
@@ -68,104 +54,73 @@ namespace DigitalWorldOnline.Admin.Pages.Summons
 
             return Mapper.Map<List<ItemAssetViewModel>>(assets.Registers);
         }
-
-        private bool IsLastMobsEmpty()
+        private async Task<IEnumerable<MapConfigViewModel>> GetMapAssets(string value)
         {
-            return !_summon.SummonedMobs.Any();
-        }
-
-        private void UpdateMobFields()
-        {
-            if (_selectedMobAsset.Value != null)
+            if (string.IsNullOrEmpty(value) || value.Length < 3)
             {
-                Console.WriteLine("22222");
-                var selectedMob = Mapper.Map<SummonMobViewModel>(_selectedMobAsset.Value);
-                if (_summon.SummonedMobs.Any())
+                if (string.IsNullOrEmpty(value))
                 {
-                    var backupExp = _summon.SummonedMobs.Last().ExpReward;
-                    var backupLocation = _summon.SummonedMobs.Last().Location;
-                    var backupDrop = _summon.SummonedMobs.Last().DropReward;
-                    var backupSpawn = _summon.SummonedMobs.Last().Duration;
-                    selectedMob.ExpReward = backupExp;
-                    selectedMob.Location = backupLocation;
-                    selectedMob.DropReward = backupDrop;
-                    selectedMob.Duration = backupSpawn > 5 ? backupSpawn : 5;
+                    _selectedMapAsset.Clear();
                 }
 
-                Console.WriteLine("asdasdasdasdasdasd");
-                Console.WriteLine("11111");
-                _summon.SummonedMobs.Add(selectedMob);
+                return Array.Empty<MapConfigViewModel>();
             }
 
-            Console.WriteLine(_summon.SummonedMobs.Count);
-            StateHasChanged();
-        }
+            int page = 0;
+            int pageSize = 10;
+            string sortColumn = "Name";
+            SortDirectionEnum sortDirection = SortDirectionEnum.Asc;
 
-        private void AddDrop()
-        {
-            if (_summon.SummonedMobs.Any() && _summon.SummonedMobs.LastOrDefault()?.DropReward?.Drops.Any() == true)
-            {
-                long maxId = _summon.SummonedMobs.Last().DropReward.Drops.Max(x => x.Id);
-                _summon.SummonedMobs.Last().DropReward.Drops.Add(new SummonMobItemDropViewModel(maxId));
-            }
-            else
-            {
-                _summon.SummonedMobs.Last().DropReward.Drops.Add(new SummonMobItemDropViewModel());
-            }
+            var query = new GetMapsQuery(page,pageSize,sortColumn,sortDirection,value);
 
-            StateHasChanged();
-        }
+            var result = await Sender.Send(query);
 
-        private void DeleteDrop(long id)
-        {
-            foreach (var mob in _summon.SummonedMobs)
-            {
-                mob.DropReward.Drops.RemoveAll(x => x.Id == id);
-            }
-
-            StateHasChanged();
+            return Mapper.Map<List<MapConfigViewModel>>(result.Registers);
         }
 
         private async Task Create()
         {
-            if (_summon.SummonedMobs.Count == 0)
-                return;
-
             try
             {
+                if (_summon == null || _summon.ItemInfo == null || _summon.MapConfig == null)
+                {
+                    Toast.Add("Invalid summon data.",Severity.Warning);
+                    return;
+                }
+
                 Loading = true;
                 StateHasChanged();
 
-                Logger.Information("Creating new mobs");
+                Logger.Information("Creating new summon config for item {itemId}.",_summon.ItemInfo.ItemId);
 
-                foreach (var mob in _summon.SummonedMobs)
+                var summonConfig = new SummonDTO
                 {
-                    mob.DropReward.Drops.RemoveAll(x => x.ItemInfo == null);
+                    ItemId = _summon.ItemInfo.ItemId,
+                    Maps = new List<int> { _summon.MapConfig.MapId }
+                };
 
-                    mob.DropReward.Drops.ForEach(drop => { drop.ItemId = drop.ItemInfo.ItemId; });
-                }
+                await Sender.Send(new CreateSummonCommand(summonConfig));
 
-                Logger.Information("Mobs created");
+                Logger.Information("Summon config created for item {itemId}.",_summon.ItemInfo.ItemId);
+                Toast.Add("Summon config created successfully.",Severity.Success);
 
-                Toast.Add("Mobs created successfully.", Severity.Success);
+                Return();
             }
             catch (Exception ex)
             {
-                Logger.Error("Error creating mobs: {ex}", ex.Message);
-                Toast.Add("Unable to create mobs, try again later.", Severity.Error);
+                Logger.Error("Error creating summon config for item {itemId}: {ex}",_summon.ItemInfo.ItemId,ex.Message);
+                Toast.Add("Unable to create summon config, try again later.",Severity.Error);
             }
             finally
             {
                 Loading = false;
                 StateHasChanged();
-                Return();
             }
         }
 
-
         private void Return()
         {
-            Nav.NavigateTo($"/maps");
+            Nav.NavigateTo($"/summons");
         }
     }
 }

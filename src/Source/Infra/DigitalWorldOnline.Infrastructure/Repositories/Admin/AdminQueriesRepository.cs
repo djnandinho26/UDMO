@@ -1,10 +1,13 @@
 ﻿using DigitalWorldOnline.Application.Admin.Queries;
 using DigitalWorldOnline.Application.Admin.Repositories;
 using DigitalWorldOnline.Commons.DTOs.Assets;
+using DigitalWorldOnline.Commons.DTOs.Config;
 using DigitalWorldOnline.Commons.Enums.Admin;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Dynamic.Core;
 using DigitalWorldOnline.Commons.Enums;
+using DigitalWorldOnline.Commons.ViewModel.Summons;
+using System.Linq;
 
 namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
 {
@@ -16,7 +19,16 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
         {
             _context = context;
         }
+        public async Task<GetSummonByIdQueryDto> GetSummonByIdAsync(long id)
+        {
+            var result = new GetSummonByIdQueryDto();
 
+            result.Register = await _context.SummonsConfig
+                .AsNoTracking()
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            return result;
+        }
         public async Task<GetAccountByIdQueryDto> GetAccountByIdAsync(long id)
         {
             var result = new GetAccountByIdQueryDto();
@@ -122,7 +134,48 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetMobsQueryDto> GetMobsAsync(long mapId, int limit, int offset, string sortColumn,
+    public async Task<GetSummonMobsQueryDto> GetSummonMobsAsync(long mapId,int limit,int offset,string sortColumn,
+    SortDirectionEnum sortDirection,string? filter)
+    {
+        var result = new GetSummonMobsQueryDto();
+
+        // Ensure sortColumn has a default value
+        if (string.IsNullOrEmpty(sortColumn))
+            sortColumn = "Id";
+
+        // Fix: Ensure filter is not null
+        if (string.IsNullOrWhiteSpace(filter) || filter.Length < 3)
+            filter = string.Empty;
+
+        // Fix: Ensure sortDirection has a valid default value
+        if (sortDirection == SortDirectionEnum.None)
+            sortDirection = SortDirectionEnum.Desc;
+
+        IQueryable<SummonMobDTO> query = _context.SummonsMobConfig
+            .AsNoTracking()
+            .Include(x => x.Location)
+            .Include(x => x.ExpReward)
+            .Include(x => x.DropReward)
+            .Where(x => x.SummonDTOId == mapId);
+
+        if (!string.IsNullOrEmpty(filter))
+        {
+            query = query.Where(x => x.Name.Contains(filter) || x.Type.ToString().Contains(filter));
+        }
+
+        result.TotalRegisters = await query.CountAsync();
+
+        // Fix: Safe dynamic sorting
+        result.Registers = await query
+            .Skip(offset)
+            .Take(limit)
+            .OrderBy($"{sortColumn} {(sortDirection == SortDirectionEnum.Asc ? "ascending" : "descending")}") // ✅
+            .ToListAsync();
+
+        return result;
+    }
+
+    public async Task<GetMobsQueryDto> GetMobsAsync(long mapId, int limit, int offset, string sortColumn,
             SortDirectionEnum sortDirection, string? filter)
         {
             var result = new GetMobsQueryDto();
@@ -361,37 +414,40 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
             return result;
         }
 
-        public async Task<GetSummonsQueryDto> GetSummonsAsync(int limit, int offset, string sortColumn,
-            SortDirectionEnum sortDirection, string filter)
+        public async Task<GetSummonsQueryDto> GetSummonsAsync(int limit,int offset,string sortColumn,
+            SortDirectionEnum sortDirection,string filter)
         {
             var result = new GetSummonsQueryDto();
 
             if (string.IsNullOrEmpty(sortColumn))
                 sortColumn = "Id";
 
-            if (filter?.Length < 3)
+            if (filter?.Length < 2)
                 filter = string.Empty;
 
             if (sortDirection == SortDirectionEnum.None)
                 sortDirection = SortDirectionEnum.Desc;
 
-            if (!string.IsNullOrEmpty(filter))
-            {
-                result.TotalRegisters = await _context.SummonsConfig.AsNoTracking().CountAsync();
+            var summonsList = await _context.SummonsConfig
+                .AsNoTracking()
+                .OrderBy(e => EF.Property<object>(e,sortColumn))
+                .ToListAsync();
 
-                result.Registers = await _context.SummonsConfig.AsNoTracking().Skip(offset).Take(limit)
-                    .OrderBy($"{sortColumn} {sortDirection}").ToListAsync();
-            }
-            else
+            if (!string.IsNullOrEmpty(filter) && int.TryParse(filter,out int filterValue))
             {
-                result.TotalRegisters = await _context.SummonsConfig.AsNoTracking().CountAsync();
-
-                result.Registers = await _context.SummonsConfig.AsNoTracking().Skip(offset).Take(limit)
-                    .OrderBy($"{sortColumn} {sortDirection}").ToListAsync();
+                summonsList = summonsList.Where(s => s.Maps.Contains(filterValue)).ToList();
             }
+
+            result.TotalRegisters = summonsList.Count;
+
+            result.Registers = summonsList.Skip(offset).Take(limit).ToList();
 
             return result;
         }
+
+
+
+
 
         public async Task<GetMobByIdQueryDto> GetMobByIdAsync(long id)
         {
@@ -409,12 +465,49 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Admin
 
             return result;
         }
+        public async Task<GetSummonMobByIdQueryDto> GetSummonMobByIdAsync(long id)
+        {
+            var result = new GetSummonMobByIdQueryDto();
+
+            result.Register = await _context.SummonsMobConfig
+                .AsNoTracking()
+                .Include(x => x.Location)
+                .Include(x => x.ExpReward)
+                .Include(x => x.DropReward)
+                    .ThenInclude(y => y.Drops)
+                .Include(x => x.DropReward)
+                    .ThenInclude(y => y.BitsDrop)
+                .SingleOrDefaultAsync(x => x.Id == id);
+
+            if (result.Register == null)
+            {
+                // Handle the case when no mob is found.
+                // Log it, throw a meaningful exception, or return an empty response
+            }
+
+            return result;
+        }
+
 
         public async Task<GetMobAssetQueryDto> GetMobAssetAsync(string filter)
         {
             var result = new GetMobAssetQueryDto();
 
             result.Registers = await _context.MonsterBaseInfoAsset
+                .AsNoTracking()
+                .Where(x =>
+                    //x.Class != 8 && 
+                    (x.Type.ToString().Contains(filter) || x.Name.Contains(filter)))
+                .ToListAsync();
+
+            return result;
+        }
+
+        public async Task<GetSummonMobAssetQueryDto> GetSummonMobAssetAsync(string filter)
+        {
+            var result = new GetSummonMobAssetQueryDto();
+
+            result.Registers = await _context.SummonsMobConfig
                 .AsNoTracking()
                 .Where(x =>
                     //x.Class != 8 && 
