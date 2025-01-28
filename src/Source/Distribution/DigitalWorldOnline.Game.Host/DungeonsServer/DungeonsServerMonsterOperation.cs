@@ -95,7 +95,8 @@ namespace DigitalWorldOnline.GameHost
             {
                 if (DateTime.Now > mob.ViewCheckTime)
                 {
-                    mob.SetViewCheckTime();
+                    mob.TamersViewing.Clear();
+                    mob.SetViewCheckTime(30);
 
                     mob.TamersViewing.RemoveAll(x => !map.ConnectedTamers.Select(y => y.Id).Contains(x));
 
@@ -114,7 +115,7 @@ namespace DigitalWorldOnline.GameHost
 
                                 var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == nearTamer);
 
-                                targetClient?.Send(new LoadMobsPacket(mob));
+                                targetClient?.Send(new LoadMobsPacket(mob,true));
                             }
                         });
                     }

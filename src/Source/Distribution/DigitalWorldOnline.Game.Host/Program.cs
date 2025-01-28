@@ -92,6 +92,8 @@ namespace DigitalWorldOnline.Game
                     services.AddSingleton<StatusManager>();
                     services.AddSingleton<ExpManager>();
                     services.AddSingleton<PartyManager>();
+                    services.AddSingleton<EventManager>();
+
 
                     services.AddSingleton<EventQueueManager>();
 

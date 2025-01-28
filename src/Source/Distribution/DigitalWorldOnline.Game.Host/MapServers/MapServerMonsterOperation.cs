@@ -35,7 +35,9 @@ namespace DigitalWorldOnline.GameHost
             stopwatch.Start();
 
             map.UpdateMapMobs();
-
+            //------------------------------------------------------------------------------------------------- EVENT MOBS
+            _eventManager.EventServer(this);
+            //-------------------------------------------------------------------------------------------------
             foreach (var mob in map.Mobs)
             {
                 if (!mob.AwaitingKillSpawn && DateTime.Now > mob.ViewCheckTime)
@@ -89,7 +91,7 @@ namespace DigitalWorldOnline.GameHost
 
             map.UpdateMapMobs(true);
 
-            foreach (var mob in map.SummonMobs)
+            foreach (var mob in map.SummonMobs.ToList())
             {
                 if (DateTime.Now > mob.ViewCheckTime)
                 {
@@ -112,23 +114,23 @@ namespace DigitalWorldOnline.GameHost
 
                                 var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == nearTamer);
 
-                                targetClient?.Send(new LoadMobsPacket(mob));
+                                targetClient?.Send(new LoadMobsPacket(mob,true));
                             }
                         });
                     }
 
-                    var farTamers = map.ConnectedTamers.Select(x => x.Id).Except(nearTamers).ToList();
-
-                    farTamers.ForEach(farTamer =>
-                    {
-                        if (mob.TamersViewing.Contains(farTamer))
-                        {
-                            var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == farTamer);
-
-                            mob.TamersViewing.Remove(farTamer);
-                            targetClient?.Send(new UnloadMobsPacket(mob));
-                        }
-                    });
+                    // var farTamers = map.ConnectedTamers.Select(x => x.Id).Except(nearTamers).ToList();
+                    //
+                    // farTamers.ForEach(farTamer =>
+                    // {
+                    //     if (mob.TamersViewing.Contains(farTamer))
+                    //     {
+                    //         var targetClient = map.Clients.FirstOrDefault(x => x.TamerId == farTamer);
+                    //
+                    //         mob.TamersViewing.Remove(farTamer);
+                    //         targetClient?.Send(new UnloadMobsPacket(mob));
+                    //     }
+                    // });
                 }
 
                 if (!mob.CanAct)

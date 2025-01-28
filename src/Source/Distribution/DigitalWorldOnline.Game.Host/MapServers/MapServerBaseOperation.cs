@@ -519,7 +519,13 @@ namespace DigitalWorldOnline.GameHost
 
             map?.AddMob(summon);
         }
-
+        public void AddSummonMobs(SummonMobModel summon)
+        {
+            foreach (var map in Maps)
+            {
+                map.AddMob(summon);  // Add the summon to every map
+            }
+        }
         public void AddMobs(short mapId, MobConfigModel mob, long tamerId)
         {
             var map = Maps.FirstOrDefault(x => x.Clients.Exists(gameClient => gameClient.TamerId == tamerId));

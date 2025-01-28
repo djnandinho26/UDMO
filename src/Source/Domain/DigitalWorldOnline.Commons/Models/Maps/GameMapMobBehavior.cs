@@ -42,7 +42,24 @@ namespace DigitalWorldOnline.Commons.Models.Map
 
             return targetTamers;
         }
+        public List<long> FarawayTamers(SummonMobModel mob)
+        {
+            var targetTamers = new List<long>();
 
+            foreach (var tamer in ConnectedTamers)
+            {
+                var diff = UtilitiesFunctions.CalculateDistance(
+                    mob.CurrentLocation.X,
+                    tamer.Partner.Location.X,
+                    mob.CurrentLocation.Y,
+                    tamer.Partner.Location.Y);
+
+                if (diff >= _stopSeeing)
+                    targetTamers.Add(tamer.Id);
+            }
+
+            return targetTamers;
+        }
         // ---------------------------------------------------------------------------------------
 
         public void UpdateMapMobs()
@@ -178,8 +195,9 @@ namespace DigitalWorldOnline.Commons.Models.Map
 
                             BroadcastForTargetTamers(mob.TamersViewing, new SetCombatOffPacket(targetClient.Tamer.GeneralHandler).Serialize());
                             BroadcastForTargetTamers(mob.TamersViewing, new SetCombatOffPacket(targetClient.Tamer.Partner.GeneralHandler).Serialize());
+                            targetClient?.Send(new UnloadMobsPacket(mob));
 
-                            targetClient.Send(new DestroyMobsPacket(mob));
+                            // targetClient.Send(new DestroyMobsPacket(mob)); 
                         }
                     }
                 }

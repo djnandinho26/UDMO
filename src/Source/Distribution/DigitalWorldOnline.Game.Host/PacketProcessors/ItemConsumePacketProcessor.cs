@@ -776,8 +776,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                     count++;
 
                     var mob = (SummonMobModel)mobToAdd.Clone();
-                    mob.TamersViewing.Clear();
-
+                    
                     if (mob?.Location?.X != 0 && mob?.Location?.Y != 0)
                     {
                         var diff = UtilitiesFunctions.CalculateDistance(mob.Location.X, client.Tamer.Location.X, mob.Location.Y, client.Tamer.Location.Y);
