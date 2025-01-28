@@ -6,10 +6,13 @@ namespace DigitalWorldOnline.Application.Admin.Repositories
     public interface IAdminQueriesRepository
     {
         Task<GetAccountByIdQueryDto> GetAccountByIdAsync(long id);
+        Task<GetSummonByIdQueryDto> GetSummonByIdAsync(long id);
+
 
         Task<GetAccountsQueryDto> GetAccountsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
 
         Task<GetMapsQueryDto> GetMapsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
+        Task<GetSummonMobsQueryDto> GetSummonMobsAsync(long mapId,int limit,int offset,string sortColumn,SortDirectionEnum sortDirection,string? filter);
 
         Task<GetMobsQueryDto> GetMobsAsync(long mapId, int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string? filter);
 
@@ -28,8 +31,12 @@ namespace DigitalWorldOnline.Application.Admin.Repositories
         Task<GetSummonsQueryDto> GetSummonsAsync(int limit, int offset, string sortColumn, SortDirectionEnum sortDirection, string filter);
 
         Task<GetMobByIdQueryDto> GetMobByIdAsync(long id);
+        Task<GetSummonMobByIdQueryDto> GetSummonMobByIdAsync(long id);
+
 
         Task<GetMobAssetQueryDto> GetMobAssetAsync(string filter);
+        Task<GetSummonMobAssetQueryDto> GetSummonMobAssetAsync(string filter);
+
 
         Task<GetRaidAssetQueryDto> GetRaidBossAssetAsync(string filter);
 
