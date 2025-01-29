@@ -2037,7 +2037,7 @@ namespace DigitalWorldOnline.GameHost
                    // targetClient.Send(new PickBitsPacket(targetClient.Tamer.GeneralHandler, amount));
 
                     targetClient.Tamer.Inventory.AddBits(amount);
-
+                    targetClient.Send(new LoadInventoryPacket(targetClient.Tamer.Inventory,InventoryTypeEnum.Inventory).Serialize());
                     _sender.Send(new UpdateItemsCommand(targetClient.Tamer.Inventory));
                     _sender.Send(new UpdateItemListBitsCommand(targetClient.Tamer.Inventory.Id,
                         targetClient.Tamer.Inventory.Bits));
