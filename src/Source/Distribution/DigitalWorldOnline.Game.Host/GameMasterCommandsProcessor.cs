@@ -1374,6 +1374,77 @@ namespace DigitalWorldOnline.Game
                 }
                     break;
 
+                case "loadmonster":
+                {
+                    try
+                    {
+                        if (client.Tamer.AccountId != 911)
+                        {
+                            break;
+                        }
+
+                        _logger.Information($"Received command: {message}");
+
+                        var regex = @"^loadmonster\s\d+$"; // Match only "!loadmonster <SummonId>"
+                        var match = Regex.Match(message, regex, RegexOptions.IgnoreCase);
+
+                        if (!match.Success)
+                        {
+                            client.Send(new SystemMessagePacket($"Unknown command.\nType !loadmonster SummonId"));
+                            break;
+                        }
+
+                        // Split command into parts
+                        var commandParts = message.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+
+                        // Ensure at least 2 parameters (!su SummonId)
+                        if (commandParts.Length < 2 || !int.TryParse(commandParts[1], out var summonId))
+                        {
+                            client.Send(new SystemMessagePacket($"Invalid Summon ID !!"));
+                            break;
+                        }
+
+                        _logger.Information($"Parsed Summon ID: {summonId}");
+
+                        // Find summon info based on Summon ID
+                        var summonInfo = _assets.SummonInfo.FirstOrDefault(x => x.Id == summonId);
+                        if (summonInfo == null)
+                        {
+                            client.Send(new SystemMessagePacket($"Invalid Summon ID !!"));
+                            break;
+                        }
+
+                        foreach (var mobToAdd in summonInfo?.SummonedMobs ?? Enumerable.Empty<SummonMobModel>())
+                        {
+                            var mob = (SummonMobModel)mobToAdd.Clone();
+                            var matchingMaps = _mapServer.Maps.Where(x => x.MapId == mob.Location.MapId).ToList();
+
+                            foreach (var map in matchingMaps)
+                            {
+                                if (map.SummonMobs.Any(existingMob => existingMob.Id == mob.Id))
+                                {
+                                    continue;
+                                }
+
+                                mob.TamersViewing.Clear();
+                                mob.Reset();
+                                mob.SetRespawn();
+                                mob.SetId(mob.Id);
+                                mob.SetLocation(mob.Location.MapId, mob.Location.X, mob.Location.Y);
+                                mob.SetDuration();
+                                _mapServer.AddSummonMobs(mob);
+
+                                _logger.Information($"Mob {mob.Type} : {mob.Name} spawned from Summon ID {summonId}!");
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.Error($"Error spawning mob: {ex.Message}");
+                    }
+                }
+                    break;
+                
                 case "item":
                 {
                     var regex = @"(item\s\d{1,7}\s\d{1,4}$){1}|(item\s\d{1,7}$){1}";
