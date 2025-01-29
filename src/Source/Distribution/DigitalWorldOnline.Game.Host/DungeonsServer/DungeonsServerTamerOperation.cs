@@ -706,6 +706,7 @@ namespace DigitalWorldOnline.GameHost
 
             if (!tamer.Partner.IsAttacking && tamer.TargetMob != null && tamer.TargetMob.Alive & tamer.Partner.Alive)
             {
+                if (tamer.TargetMob == null) return;
                 tamer.Partner.SetEndAttacking(tamer.Partner.AS);
                 tamer.SetHidden(false);
 
