@@ -166,7 +166,7 @@ namespace DigitalWorldOnline.Game.Managers
                     mob.SetId(mob.Id);
                     mob.SetLocation(mob.Location.MapId,mob.Location.X,mob.Location.Y);
                     mob.SetDuration();
-                    maps.AddSummonMobs(mob);
+                    maps.AddSummonMobs(mob.Location.MapId,mob);
                 }
             }
         }
