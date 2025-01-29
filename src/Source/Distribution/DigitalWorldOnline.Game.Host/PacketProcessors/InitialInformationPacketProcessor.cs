@@ -134,6 +134,10 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 {
                     character.SetCurrentChannel(0);
                 }
+                else if (client.Tamer.Location.MapId == 1)
+                {
+                    character.SetCurrentChannel(0);
+                }
                 else
                 {
                     var channels =
