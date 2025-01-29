@@ -1411,7 +1411,7 @@ namespace DigitalWorldOnline.GameHost
 
             // Atributte
             var attributeMultiplier = 0.00;
-            if (tamer.Partner.BaseInfo.Attribute.HasAttributeAdvantage(tamer.TargetMob.Attribute))
+            if (tamer.Partner.BaseInfo.Attribute.HasAttributeAdvantage(tamer.TargetSummonMob.Attribute))
             {
                 var attExp = tamer.Partner.GetAttributeExperience();
                 var attValue = tamer.Partner.ATT / 100.0;
@@ -1421,14 +1421,14 @@ namespace DigitalWorldOnline.GameHost
 
                 attributeMultiplier = ((bonusMax + attValuePercent) * attExp) / expMax;
             }
-            else if (tamer.TargetMob.Attribute.HasAttributeAdvantage(tamer.Partner.BaseInfo.Attribute))
+            else if (tamer.TargetSummonMob.Attribute.HasAttributeAdvantage(tamer.Partner.BaseInfo.Attribute))
             {
                 attributeMultiplier = -0.25;
             }
 
             // Element
             var elementMultiplier = 0.00;
-            if (tamer.Partner.BaseInfo.Element.HasElementAdvantage(tamer.TargetMob.Element))
+            if (tamer.Partner.BaseInfo.Element.HasElementAdvantage(tamer.TargetSummonMob.Element))
             {
                 var vlrAtual = tamer.Partner.GetElementExperience();
                 var bonusMax = 1;
@@ -1436,7 +1436,7 @@ namespace DigitalWorldOnline.GameHost
 
                 elementMultiplier = (bonusMax * vlrAtual) / expMax;
             }
-            else if (tamer.TargetMob.Element.HasElementAdvantage(tamer.Partner.BaseInfo.Element))
+            else if (tamer.TargetSummonMob.Element.HasElementAdvantage(tamer.Partner.BaseInfo.Element))
             {
                 elementMultiplier = -0.25;
             }
