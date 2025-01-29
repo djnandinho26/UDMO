@@ -136,8 +136,6 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                 }
                 else 
                 {
-                    if (client.Tamer.Location.MapId == 1) character.SetCurrentChannel(0);
-                        
                     var channels =
                         (Dictionary<byte, byte>)await _sender.Send(new ChannelsByMapIdQuery(character.Location.MapId));
                     byte? channel = GetTargetChannel(character.Channel, channels);
