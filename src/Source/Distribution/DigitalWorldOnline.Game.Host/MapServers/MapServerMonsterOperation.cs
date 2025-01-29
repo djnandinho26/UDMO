@@ -2034,7 +2034,7 @@ namespace DigitalWorldOnline.GameHost
                 {
                     var amount = UtilitiesFunctions.RandomInt(bitsReward.MinAmount, bitsReward.MaxAmount);
 
-                    targetClient.Send(new PickBitsPacket(targetClient.Tamer.GeneralHandler, amount));
+                   // targetClient.Send(new PickBitsPacket(targetClient.Tamer.GeneralHandler, amount));
 
                     targetClient.Tamer.Inventory.AddBits(amount);
 
