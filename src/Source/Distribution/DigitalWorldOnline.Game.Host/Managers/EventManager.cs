@@ -55,7 +55,7 @@ namespace DigitalWorldOnline.Game.Managers
             {
                 if (!restartMessageSent)
                 {
-                    map.BroadcastGlobal(new NoticeMessagePacket("All rounds completed. Restarting in 30 seconds...").Serialize());
+                    map.BroadcastGlobal(new NoticeMessagePacket("Waves have ended running on cooldown next waves in 2hrs 30 mins...").Serialize());
                     restartMessageSent = true;
                     eventStartMessageSent = false;
 
