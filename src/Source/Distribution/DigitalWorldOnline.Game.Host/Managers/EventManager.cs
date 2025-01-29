@@ -38,11 +38,11 @@ namespace DigitalWorldOnline.Game.Managers
         {
             var mobsList = new Dictionary<int,SummonModel?>
                 {
-                    { 1, _assets.SummonInfo.FirstOrDefault(x => x.Id == 75) }, //First number is Round,Second is Wave
-                    { 2, _assets.SummonInfo.FirstOrDefault(x => x.Id == 75) },
-                    { 3, _assets.SummonInfo.FirstOrDefault(x => x.Id == 75) },
-                    { 4, _assets.SummonInfo.FirstOrDefault(x => x.Id == 75) },
-                    { 5, _assets.SummonInfo.FirstOrDefault(x => x.Id == 75) }
+                    { 1, _assets.SummonInfo.FirstOrDefault(x => x.Id == 68) }, //First number is Round,Second is Wave
+                    { 2, _assets.SummonInfo.FirstOrDefault(x => x.Id == 68) },
+                    { 3, _assets.SummonInfo.FirstOrDefault(x => x.Id == 68) }
+                   // { 4, _assets.SummonInfo.FirstOrDefault(x => x.Id == 75) },
+                  //  { 5, _assets.SummonInfo.FirstOrDefault(x => x.Id == 75) }
                 };
                 
             if (roundCooldownStartTime != DateTime.MinValue &&
