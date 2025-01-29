@@ -2024,28 +2024,31 @@ namespace DigitalWorldOnline.GameHost
             ItemDropReward(map, mob, targetClient);
         }
 
-        private void BitDropReward(GameMap map, SummonMobModel mob, GameClient? targetClient)
+        private void BitDropReward(GameMap map,SummonMobModel mob,GameClient? targetClient)
         {
             var bitsReward = mob.DropReward.BitsDrop;
-
             if (bitsReward != null && bitsReward.Chance >= UtilitiesFunctions.RandomDouble())
             {
                 if (targetClient.Tamer.HasAura && targetClient.Tamer.Aura.ItemInfo.Section == 2100)
                 {
-                    var amount = UtilitiesFunctions.RandomInt(bitsReward.MinAmount, bitsReward.MaxAmount);
+                    var amount = UtilitiesFunctions.RandomInt(bitsReward.MinAmount,bitsReward.MaxAmount);
 
-                   // targetClient.Send(new PickBitsPacket(targetClient.Tamer.GeneralHandler, amount));
+                    targetClient.Send(
+                        new PickBitsPacket(
+                            targetClient.Tamer.GeneralHandler,
+                            amount
+                        )
+                    );
 
                     targetClient.Tamer.Inventory.AddBits(amount);
-                    targetClient.Send(new LoadInventoryPacket(targetClient.Tamer.Inventory,InventoryTypeEnum.Inventory).Serialize());
+                    _sender.Send(new UpdateItemListBitsCommand(targetClient.Tamer.Inventory));
+
                     _sender.Send(new UpdateItemsCommand(targetClient.Tamer.Inventory));
-                    _sender.Send(new UpdateItemListBitsCommand(targetClient.Tamer.Inventory.Id,
-                        targetClient.Tamer.Inventory.Bits));
-                    _logger.Verbose(
-                        $"Character {targetClient.TamerId} aquired {amount} bits from mob {mob.Id} with magnetic aura {targetClient.Tamer.Aura.ItemId}.");
+                    _logger.Verbose($"Character {targetClient.TamerId} aquired {amount} bits from mob {mob.Id} with magnetic aura {targetClient.Tamer.Aura.ItemId}.");
                 }
                 else
                 {
+
                     var drop = _dropManager.CreateBitDrop(
                         targetClient.TamerId,
                         targetClient.Tamer.GeneralHandler,
