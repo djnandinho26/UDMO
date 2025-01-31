@@ -262,7 +262,9 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
                 await ReceiveArenaPoints(client);
                 _logger.Debug($"Received arena points for tamer {client.Tamer.Name}");
-
+                
+                if (character.HaveActiveCashSkill) party = null;
+                
                 client.Send(new InitialInfoPacket(character, party));
                 _logger.Debug($"Send initial packet for tamer {client.Tamer.Name}");
 
