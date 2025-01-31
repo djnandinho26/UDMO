@@ -327,46 +327,39 @@ namespace DigitalWorldOnline.GameHost
                             .Serialize());
 
                      var party = _partyManager.FindParty(client.Tamer.Id);
-                    if (party == null)
-                    {
-                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(0).Serialize());
-                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(1).Serialize());
-                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(2).Serialize());
-                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(3).Serialize());
+                     if (party != null && party.Members.Count == 1)
+                     {
+                         BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(0).Serialize());
+                         BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(1).Serialize());
+                         BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(2).Serialize());
+                         BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(3).Serialize());
+                         _partyManager.RemoveParty(party.Id);
+                     }
+                     else if(party != null && party.Members.Count > 1)
+                     {
+               
+                        
+                         party.UpdateMember(party[client.Tamer.Id], client.Tamer);
 
-                    }
-                    else if (party != null && party.Members.Count == 1)
-                    {
-                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(0).Serialize());
-                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(1).Serialize());
-                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(2).Serialize());
-                        BroadcastForTargetTamers(client.Tamer.Id,new PartyMemberKickPacket(3).Serialize());
-                        _partyManager.RemoveParty(party.Id);
-                    }
-                    else
-                    {
-                        client.Send(new PartyMemberListPacket(party,client.Tamer.Id));
+                         map.BroadcastForTargetTamers(party.GetMembersIdList(),
+                             new PartyMemberInfoPacket(party[client.Tamer.Id]).Serialize());
 
-                        party.UpdateMember(party[client.Tamer.Id],client.Tamer);
+                         var memberEntry = party.GetMemberById(client.TamerId);
+                         var leaveTargetKey = memberEntry.Value.Key;
 
-                        map.BroadcastForTargetTamers(party.GetMembersIdList(),
-                            new PartyMemberInfoPacket(party[client.Tamer.Id]).Serialize());
+                         var currentLeaderEntry = party.GetMemberById(party.LeaderId);
+                         client.Send(new PartyMemberListPacket(party, client.Tamer.Id));
 
-                        var memberEntry = party.GetMemberById(client.TamerId);
-                        var leaveTargetKey = memberEntry.Value.Key;
+                         if (currentLeaderEntry != null)
+                         {
+                             var currentLeaderKey = currentLeaderEntry.Value.Key;
+                             party.LeaderSlot = currentLeaderKey;
 
-                        var currentLeaderEntry = party.GetMemberById(party.LeaderId);
+                             BroadcastForTargetTamers(party.GetMembersIdList(),
+                                 new PartyLeaderChangedPacket((int)currentLeaderKey).Serialize());
 
-                        if (currentLeaderEntry != null)
-                        {
-                            var currentLeaderKey = currentLeaderEntry.Value.Key;
-                            party.LeaderSlot = currentLeaderKey;
-
-                            BroadcastForTargetTamers(party.GetMembersIdList(),
-                                new PartyLeaderChangedPacket((int)currentLeaderKey).Serialize());
-
-                        }
-                    }
+                         }
+                     }
                 }
 
                 if (tamer.SaveResourcesTime)
