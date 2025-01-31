@@ -345,6 +345,8 @@ namespace DigitalWorldOnline.GameHost
                     }
                     else
                     {
+                        client.Send(new PartyMemberListPacket(party,client.Tamer.Id));
+
                         party.UpdateMember(party[client.Tamer.Id],client.Tamer);
 
                         map.BroadcastForTargetTamers(party.GetMembersIdList(),
