@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateScanConfigCommand : IRequest
+    public class UpdateScanConfigCommand : IRequest<Unit>
     {
         public ScanDetailAssetDTO Scan { get; }
 

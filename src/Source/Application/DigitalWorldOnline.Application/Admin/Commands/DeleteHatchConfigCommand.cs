@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteHatchConfigCommand : IRequest
+    public class DeleteHatchConfigCommand : IRequest<Unit>
     {
         public long Id { get; set; }
 

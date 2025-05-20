@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateItemSocketStatusCommandHandler : IRequestHandler<UpdateItemSocketStatusCommand>
+    public class UpdateItemSocketStatusCommandHandler : IRequestHandler<UpdateItemSocketStatusCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

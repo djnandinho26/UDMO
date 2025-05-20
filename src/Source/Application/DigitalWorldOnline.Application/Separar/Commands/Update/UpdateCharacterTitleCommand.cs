@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterTitleCommand : IRequest
+    public class UpdateCharacterTitleCommand : IRequest<Unit>
     {
         public long CharacterId { get; set; }
 

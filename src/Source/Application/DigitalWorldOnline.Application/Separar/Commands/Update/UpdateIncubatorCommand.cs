@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateIncubatorCommand : IRequest
+    public class UpdateIncubatorCommand : IRequest<Unit>
     {
         public CharacterIncubatorModel Incubator { get; }
 

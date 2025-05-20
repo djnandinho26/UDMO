@@ -4,7 +4,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateArenaRankingCommand : IRequest
+    public class UpdateArenaRankingCommand : IRequest<Unit>
     {
         public ArenaRankingModel Arena { get; private set; }
 

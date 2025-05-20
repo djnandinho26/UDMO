@@ -4,7 +4,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterEncyclopediaCommandHandler : IRequestHandler<UpdateCharacterEncyclopediaCommand>
+    public class UpdateCharacterEncyclopediaCommandHandler : IRequestHandler<UpdateCharacterEncyclopediaCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

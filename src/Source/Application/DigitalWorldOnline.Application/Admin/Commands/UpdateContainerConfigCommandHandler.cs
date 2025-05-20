@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateContainerConfigCommandHandler : IRequestHandler<UpdateContainerConfigCommand>
+    public class UpdateContainerConfigCommandHandler : IRequestHandler<UpdateContainerConfigCommand,Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

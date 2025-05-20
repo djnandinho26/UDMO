@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Create
 {
-    public class CreateGuildMemberCommandHandler : IRequestHandler<CreateGuildMemberCommand>
+    public class CreateGuildMemberCommandHandler : IRequestHandler<CreateGuildMemberCommand,Unit>
     {
         private readonly IServerCommandsRepository _repository;
 

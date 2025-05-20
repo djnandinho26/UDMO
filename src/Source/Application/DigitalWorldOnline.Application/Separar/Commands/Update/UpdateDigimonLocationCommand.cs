@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateDigimonLocationCommand : IRequest
+    public class UpdateDigimonLocationCommand : IRequest<Unit>
     {
         public DigimonLocationModel Location { get; set; }
 

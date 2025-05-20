@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterMapRegionCommand : IRequest
+    public class UpdateCharacterMapRegionCommand : IRequest<Unit>
     {
         public CharacterMapRegionModel MapRegion { get; }
 

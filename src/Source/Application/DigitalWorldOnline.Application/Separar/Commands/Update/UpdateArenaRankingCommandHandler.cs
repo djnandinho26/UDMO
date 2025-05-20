@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateArenaRankingCommandHandler : IRequestHandler<UpdateArenaRankingCommand>
+    public class UpdateArenaRankingCommandHandler : IRequestHandler<UpdateArenaRankingCommand,Unit>
     {
         private readonly IServerCommandsRepository _repository;
 

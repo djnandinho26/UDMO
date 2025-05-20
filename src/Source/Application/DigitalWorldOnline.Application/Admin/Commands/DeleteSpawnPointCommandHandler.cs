@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteSpawnPointCommandHandler : IRequestHandler<DeleteSpawnPointCommand>
+    public class DeleteSpawnPointCommandHandler : IRequestHandler<DeleteSpawnPointCommand,Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Create
 {
-    public class CreateGuildHistoricEntryCommand : IRequest
+    public class CreateGuildHistoricEntryCommand : IRequest<Unit>
     {
         public GuildHistoricModel? HistoricEntry { get; private set; }
         public long GuildId { get; private set; }

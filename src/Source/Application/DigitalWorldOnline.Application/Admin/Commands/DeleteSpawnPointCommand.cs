@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteSpawnPointCommand : IRequest
+    public class DeleteSpawnPointCommand : IRequest<Unit>
     {
         public long Id { get; set; }
 

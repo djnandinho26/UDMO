@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateMobConfigCommandHandler : IRequestHandler<UpdateMobConfigCommand>
+    public class UpdateMobConfigCommandHandler : IRequestHandler<UpdateMobConfigCommand,Unit>
     {
         private readonly IConfigCommandsRepository _repository;
 

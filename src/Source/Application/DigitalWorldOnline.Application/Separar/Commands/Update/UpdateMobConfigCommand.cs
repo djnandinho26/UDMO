@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateMobConfigCommand : IRequest
+    public class UpdateMobConfigCommand : IRequest<Unit>
     {
         public MobConfigModel MobConfig { get; set; }
 

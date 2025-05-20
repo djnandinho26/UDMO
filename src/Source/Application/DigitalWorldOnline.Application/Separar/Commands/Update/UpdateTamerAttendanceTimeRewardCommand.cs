@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateTamerAttendanceTimeRewardCommand : IRequest
+    public class UpdateTamerAttendanceTimeRewardCommand : IRequest<Unit>
     {
         public TimeRewardModel TimeRewardModel { get; set; }
 

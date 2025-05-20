@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteScanConfigCommand : IRequest
+    public class DeleteScanConfigCommand : IRequest<Unit>
     {
         public long Id { get; set; }
 

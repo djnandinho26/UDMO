@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Create
 {
-    public class CreateChatMessageCommandHandler : IRequestHandler<CreateChatMessageCommand>
+    public class CreateChatMessageCommandHandler : IRequestHandler<CreateChatMessageCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

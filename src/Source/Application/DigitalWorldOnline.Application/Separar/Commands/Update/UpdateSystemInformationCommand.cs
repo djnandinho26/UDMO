@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateSystemInformationCommand : IRequest
+    public class UpdateSystemInformationCommand : IRequest<Unit>
     {
         public long Id { get; set; }
 

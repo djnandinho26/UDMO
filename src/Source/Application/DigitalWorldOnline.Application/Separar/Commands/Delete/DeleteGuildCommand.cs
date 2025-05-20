@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteGuildCommand : IRequest
+    public class DeleteGuildCommand : IRequest<Unit>
     {
         public long GuildId { get; private set; }
 

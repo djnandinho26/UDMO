@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterExperienceCommand : IRequest
+    public class UpdateCharacterExperienceCommand : IRequest<Unit>
     {
         public long TamerId { get; set; }
         public long CurrentExperience { get; set; }

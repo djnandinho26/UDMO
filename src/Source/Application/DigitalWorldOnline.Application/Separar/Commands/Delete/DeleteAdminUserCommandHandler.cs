@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteAdminUserCommandHandler : IRequestHandler<DeleteAdminUserCommand>
+    public class DeleteAdminUserCommandHandler : IRequestHandler<DeleteAdminUserCommand,Unit>
     {
         private readonly IConfigCommandsRepository _repository;
 

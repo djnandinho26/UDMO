@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Routines.Commands
 {
-    public class ExecuteDailyQuestsRoutineCommand : IRequest
+    public class ExecuteDailyQuestsRoutineCommand : IRequest<Unit>
     {
         public List<short> QuestIdList { get; }
 

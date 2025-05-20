@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteConsignedShopCommandHandler : IRequestHandler<DeleteConsignedShopCommand>
+    public class DeleteConsignedShopCommandHandler : IRequestHandler<DeleteConsignedShopCommand,Unit>
     {
         private readonly IServerCommandsRepository _repository;
 

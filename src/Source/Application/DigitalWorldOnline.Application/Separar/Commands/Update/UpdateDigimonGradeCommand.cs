@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateDigimonGradeCommand : IRequest
+    public class UpdateDigimonGradeCommand : IRequest<Unit>
     {
         public long DigimonId { get; }
         public DigimonHatchGradeEnum Grade { get; }

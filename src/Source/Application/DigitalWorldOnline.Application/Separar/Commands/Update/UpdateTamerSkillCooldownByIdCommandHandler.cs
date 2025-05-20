@@ -4,7 +4,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateTamerSkillCooldownByIdCommandHandler : IRequestHandler<UpdateTamerSkillCooldownByIdCommand>
+    public class UpdateTamerSkillCooldownByIdCommandHandler : IRequestHandler<UpdateTamerSkillCooldownByIdCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

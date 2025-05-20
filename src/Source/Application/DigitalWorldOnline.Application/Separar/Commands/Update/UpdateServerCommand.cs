@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateServerCommand : IRequest
+    public class UpdateServerCommand : IRequest<Unit>
     {
         public long ServerId { get; set; }
         public string Name { get; set; }

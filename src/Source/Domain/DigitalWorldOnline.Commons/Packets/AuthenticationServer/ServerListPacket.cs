@@ -25,6 +25,8 @@ namespace DigitalWorldOnline.Commons.Packets.AuthenticationServer
                 WriteByte(Convert.ToByte(server.Overload));
                 WriteByte(server.CharacterCount);
                 WriteByte(Convert.ToByte(server.New));
+                WriteByte(Convert.ToByte(5));
+                WriteByte(Convert.ToByte(5));
             }
 
             WriteInt(0);

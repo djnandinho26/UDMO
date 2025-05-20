@@ -4,7 +4,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateEventMapConfigCommand : IRequest
+    public class UpdateEventMapConfigCommand : IRequest<Unit>
     {
         public EventMapsConfigDTO EventMap { get; }
 

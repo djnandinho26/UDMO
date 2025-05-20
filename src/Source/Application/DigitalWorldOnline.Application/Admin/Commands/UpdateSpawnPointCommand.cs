@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateSpawnPointCommand : IRequest
+    public class UpdateSpawnPointCommand : IRequest<Unit>
     {
         public long MapId { get; }
         public MapRegionAssetDTO SpawnPoint { get; }

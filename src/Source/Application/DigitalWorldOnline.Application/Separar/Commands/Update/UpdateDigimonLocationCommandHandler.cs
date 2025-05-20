@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateDigimonLocationCommandHandler : IRequestHandler<UpdateDigimonLocationCommand>
+    public class UpdateDigimonLocationCommandHandler : IRequestHandler<UpdateDigimonLocationCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

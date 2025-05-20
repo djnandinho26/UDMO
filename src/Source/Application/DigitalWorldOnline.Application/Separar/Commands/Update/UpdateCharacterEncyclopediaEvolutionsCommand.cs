@@ -5,7 +5,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterEncyclopediaEvolutionsCommand : IRequest
+    public class UpdateCharacterEncyclopediaEvolutionsCommand : IRequest<Unit>
     {
         public CharacterEncyclopediaEvolutionsModel CharacterEncyclopediaEvolutions { get; set; }
 

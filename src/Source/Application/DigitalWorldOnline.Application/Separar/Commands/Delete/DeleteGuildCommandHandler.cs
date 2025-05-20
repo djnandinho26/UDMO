@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteGuildCommandHandler : IRequestHandler<DeleteGuildCommand>
+    public class DeleteGuildCommandHandler : IRequestHandler<DeleteGuildCommand,Unit>
     {
         private readonly IServerCommandsRepository _repository;
 

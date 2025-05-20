@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateAccountMembershipCommand : IRequest
+    public class UpdateAccountMembershipCommand : IRequest<Unit>
     {
         public long AccountId { get; }
         public DateTime? MembershipExpirationDate { get; }

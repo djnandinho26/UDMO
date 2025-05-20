@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterInitialPacketSentOnceSentCommand : IRequest
+    public class UpdateCharacterInitialPacketSentOnceSentCommand : IRequest<Unit>
     {
         public long CharacterId { get; }
         public bool InitialPacketSentOnceSent { get; }

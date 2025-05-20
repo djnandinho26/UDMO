@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterMapRegionCommandHandler : IRequestHandler<UpdateCharacterMapRegionCommand>
+    public class UpdateCharacterMapRegionCommandHandler : IRequestHandler<UpdateCharacterMapRegionCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

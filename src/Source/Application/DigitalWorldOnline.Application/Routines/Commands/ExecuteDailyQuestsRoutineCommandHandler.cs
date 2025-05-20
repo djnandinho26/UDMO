@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Routines.Commands
 {
-    public class ExecuteDailyQuestsRoutineCommandHandler : IRequestHandler<ExecuteDailyQuestsRoutineCommand>
+    public class ExecuteDailyQuestsRoutineCommandHandler : IRequestHandler<ExecuteDailyQuestsRoutineCommand,Unit>
     {
         private readonly IRoutineRepository _repository;
 

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateDigimonExperienceCommandHandler : IRequestHandler<UpdateDigimonExperienceCommand>
+    public class UpdateDigimonExperienceCommandHandler : IRequestHandler<UpdateDigimonExperienceCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

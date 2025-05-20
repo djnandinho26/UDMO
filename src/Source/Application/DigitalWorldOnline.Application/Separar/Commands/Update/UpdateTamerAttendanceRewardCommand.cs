@@ -6,7 +6,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateTamerAttendanceRewardCommand: IRequest
+    public class UpdateTamerAttendanceRewardCommand: IRequest<Unit>
     {
     
         public AttendanceRewardModel AttendanceRewardModel { get; set; }

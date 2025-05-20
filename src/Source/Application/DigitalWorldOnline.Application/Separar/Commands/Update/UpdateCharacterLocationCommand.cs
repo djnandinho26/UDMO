@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterLocationCommand : IRequest
+    public class UpdateCharacterLocationCommand : IRequest<Unit>
     {
         public CharacterLocationModel Location { get; set; }
 

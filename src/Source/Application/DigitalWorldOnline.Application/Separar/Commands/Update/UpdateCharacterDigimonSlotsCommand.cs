@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterDigimonSlotsCommand : IRequest
+    public class UpdateCharacterDigimonSlotsCommand : IRequest<Unit>
     {
         public long CharacterId { get; }
         public byte Slots { get; }

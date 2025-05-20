@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateMapConfigCommandHandler : IRequestHandler<UpdateMapConfigCommand>
+    public class UpdateMapConfigCommandHandler : IRequestHandler<UpdateMapConfigCommand,Unit>
     {
         private readonly IConfigCommandsRepository _repository;
 

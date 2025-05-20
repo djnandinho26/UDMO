@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteAccountCommandHandler : IRequestHandler<DeleteAccountCommand>
+    public class DeleteAccountCommandHandler : IRequestHandler<DeleteAccountCommand,Unit>
     {
         private readonly IAccountCommandsRepository _repository;
 

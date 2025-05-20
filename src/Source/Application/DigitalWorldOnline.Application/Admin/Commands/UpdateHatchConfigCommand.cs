@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateHatchConfigCommand : IRequest
+    public class UpdateHatchConfigCommand : IRequest<Unit>
     {
         public HatchConfigDTO Hatch { get; }
 

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateAccountMembershipCommandHandler : IRequestHandler<UpdateAccountMembershipCommand>
+    public class UpdateAccountMembershipCommandHandler : IRequestHandler<UpdateAccountMembershipCommand,Unit>
     {
         private readonly IAccountCommandsRepository _repository;
 

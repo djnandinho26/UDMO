@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateAccountWelcomeFlagCommand : IRequest
+    public class UpdateAccountWelcomeFlagCommand : IRequest<Unit>
     {
         public long AccountId { get; private set; }
         public bool WelcomeFlag { get; private set; }

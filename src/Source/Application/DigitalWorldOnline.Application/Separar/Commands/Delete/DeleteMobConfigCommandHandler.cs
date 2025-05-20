@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteMobConfigCommandHandler : IRequestHandler<DeleteMobConfigCommand>
+    public class DeleteMobConfigCommandHandler : IRequestHandler<DeleteMobConfigCommand,Unit>
     {
         private readonly IConfigCommandsRepository _repository;
 

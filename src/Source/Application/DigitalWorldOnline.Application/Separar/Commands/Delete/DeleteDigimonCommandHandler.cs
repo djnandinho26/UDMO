@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteDigimonCommandHandler : IRequestHandler<DeleteDigimonCommand>
+    public class DeleteDigimonCommandHandler : IRequestHandler<DeleteDigimonCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

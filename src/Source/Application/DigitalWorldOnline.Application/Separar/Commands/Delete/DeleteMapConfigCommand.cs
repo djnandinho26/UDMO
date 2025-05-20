@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteMapConfigCommand : IRequest
+    public class DeleteMapConfigCommand : IRequest<Unit>
     {
         public long Id { get; set; }
 

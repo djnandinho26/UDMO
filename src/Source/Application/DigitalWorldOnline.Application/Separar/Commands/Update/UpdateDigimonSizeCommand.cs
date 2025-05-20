@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateDigimonSizeCommand : IRequest
+    public class UpdateDigimonSizeCommand : IRequest<Unit>
     {
         public long DigimonId { get; }
         public short Size { get; }

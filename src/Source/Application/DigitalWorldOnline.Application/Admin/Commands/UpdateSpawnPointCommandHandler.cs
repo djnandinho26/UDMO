@@ -4,7 +4,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateSpawnPointCommandHandler : IRequestHandler<UpdateSpawnPointCommand>
+    public class UpdateSpawnPointCommandHandler : IRequestHandler<UpdateSpawnPointCommand,Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

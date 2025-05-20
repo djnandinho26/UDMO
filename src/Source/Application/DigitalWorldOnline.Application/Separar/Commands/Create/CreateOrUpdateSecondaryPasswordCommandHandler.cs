@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Create
 {
-    public class CreateOrUpdateSecondaryPasswordCommandHandler : IRequestHandler<CreateOrUpdateSecondaryPasswordCommand>
+    public class CreateOrUpdateSecondaryPasswordCommandHandler : IRequestHandler<CreateOrUpdateSecondaryPasswordCommand,Unit>
     {
         private readonly IAccountCommandsRepository _repository;
 

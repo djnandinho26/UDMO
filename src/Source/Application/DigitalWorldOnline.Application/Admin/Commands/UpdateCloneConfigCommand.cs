@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateCloneConfigCommand : IRequest
+    public class UpdateCloneConfigCommand : IRequest<Unit>
     {
         public CloneConfigDTO Clone { get; }
 

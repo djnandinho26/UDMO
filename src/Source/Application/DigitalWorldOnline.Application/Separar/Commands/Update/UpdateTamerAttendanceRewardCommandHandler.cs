@@ -6,7 +6,7 @@ using MediatR;
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
 
-    public class UpdateTamerAttendanceRewardCommandHandler : IRequestHandler<UpdateTamerAttendanceRewardCommand>
+    public class UpdateTamerAttendanceRewardCommandHandler : IRequestHandler<UpdateTamerAttendanceRewardCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

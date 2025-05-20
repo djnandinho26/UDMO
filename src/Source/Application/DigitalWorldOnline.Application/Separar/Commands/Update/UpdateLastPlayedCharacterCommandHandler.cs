@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateLastPlayedCharacterCommandHandler : IRequestHandler<UpdateLastPlayedCharacterCommand>
+    public class UpdateLastPlayedCharacterCommandHandler : IRequestHandler<UpdateLastPlayedCharacterCommand,Unit>
     {
         private readonly IAccountCommandsRepository _repository;
 

@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateLastPlayedServerCommand : IRequest
+    public class UpdateLastPlayedServerCommand : IRequest<Unit>
     {
         public long AccountId { get; set; }
 

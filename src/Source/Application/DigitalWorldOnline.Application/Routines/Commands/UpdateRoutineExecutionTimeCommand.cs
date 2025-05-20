@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Routines.Commands
 {
-    public class UpdateRoutineExecutionTimeCommand : IRequest
+    public class UpdateRoutineExecutionTimeCommand : IRequest<Unit>
     {
         public long RoutineId { get; }
 

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Create
 {
-    public class CreateCharacterDigimonArchiveSlotCommand : IRequest
+    public class CreateCharacterDigimonArchiveSlotCommand : IRequest<Unit>
     {
         public CharacterDigimonArchiveItemModel ArchiveItem { get; }
         public Guid ArchiveId { get; }

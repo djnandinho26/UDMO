@@ -4,7 +4,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateAccountCommand : IRequest
+    public class UpdateAccountCommand : IRequest<Unit>
     {
         public AccountModel Account { get; set; }
 

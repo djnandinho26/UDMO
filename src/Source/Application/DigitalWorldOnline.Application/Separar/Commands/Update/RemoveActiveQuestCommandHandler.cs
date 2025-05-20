@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class RemoveActiveQuestCommandHandler : IRequestHandler<RemoveActiveQuestCommand>
+    public class RemoveActiveQuestCommandHandler : IRequestHandler<RemoveActiveQuestCommand,Unit>
     {
         private readonly IAccountCommandsRepository _repository;
 

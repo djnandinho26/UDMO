@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterChannelCommand : IRequest
+    public class UpdateCharacterChannelCommand : IRequest<Unit>
     {
         public long CharacterId { get; set; }
 

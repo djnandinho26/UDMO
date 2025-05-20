@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteCloneConfigCommandHandler : IRequestHandler<DeleteCloneConfigCommand>
+    public class DeleteCloneConfigCommandHandler : IRequestHandler<DeleteCloneConfigCommand, Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

@@ -5,7 +5,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateTamerSkillCooldownByIdCommand : IRequest
+    public class UpdateTamerSkillCooldownByIdCommand : IRequest<Unit>
     {
         public CharacterTamerSkillModel ActiveSkill { get; set; }   
 

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateEvolutionCommand : IRequest
+    public class UpdateEvolutionCommand : IRequest<Unit>
     {
         public DigimonEvolutionModel Evolution { get; }
 

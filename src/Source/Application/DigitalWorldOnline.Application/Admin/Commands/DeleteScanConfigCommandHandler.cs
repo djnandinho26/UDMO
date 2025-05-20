@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteScanConfigCommandHandler : IRequestHandler<DeleteScanConfigCommand>
+    public class DeleteScanConfigCommandHandler : IRequestHandler<DeleteScanConfigCommand,Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

@@ -88,8 +88,12 @@ namespace DigitalWorldOnline.Character
                     services.AddSingleton(ConfigureLogger(context.Configuration));
 
                     services.AddHostedService<CharacterServer>();
-                    services.AddMediatR(typeof(MediatorApplicationHandlerExtension).GetTypeInfo().Assembly);
                     services.AddTransient<Mediator>();
+
+                    // Registrar os handlers do MediatR
+                    services.AddMediatR(cfg => {
+                        cfg.RegisterServicesFromAssembly(typeof(DigitalWorldOnline.Application.Separar.Queries.CharacterByIdQueryHandler).Assembly);
+                    });
 
                     services.AddAutoMapper(typeof(AccountProfile));
                     services.AddAutoMapper(typeof(AssetsProfile));
@@ -114,21 +118,31 @@ namespace DigitalWorldOnline.Character
             return new LoggerConfiguration()
                 .MinimumLevel.Verbose()
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}", restrictedToMinimumLevel: LogEventLevel.Information)
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Verbose)
-                    .WriteTo.RollingFile(configuration["Log:VerboseRepository"] ?? "logs\\Verbose\\CharacterServer", retainedFileCountLimit: 10))
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Debug)
-                    .WriteTo.RollingFile(configuration["Log:DebugRepository"] ?? "logs\\Debug\\CharacterServer", retainedFileCountLimit: 5))
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Information)
-                    .WriteTo.RollingFile(configuration["Log:InformationRepository"] ?? "logs\\Information\\CharacterServer", retainedFileCountLimit: 5))
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Warning)
-                    .WriteTo.RollingFile(configuration["Log:WarningRepository"] ?? "logs\\Warning\\CharacterServer", retainedFileCountLimit: 5))
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Error)
-                    .WriteTo.RollingFile(configuration["Log:ErrorRepository"] ?? "logs\\Error\\CharacterServer", retainedFileCountLimit: 5))
+                .WriteTo.File(
+                    path: configuration["Log:VerboseRepository"] ?? "logs\\Verbose\\CharacterServer",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 10,
+                    restrictedToMinimumLevel: LogEventLevel.Verbose)
+                .WriteTo.File(
+                    path: configuration["Log:DebugRepository"] ?? "logs\\Debug\\CharacterServer",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 5,
+                    restrictedToMinimumLevel: LogEventLevel.Debug)
+                .WriteTo.File(
+                    path: configuration["Log:InformationRepository"] ?? "logs\\Information\\CharacterServer",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 5,
+                    restrictedToMinimumLevel: LogEventLevel.Information)
+                .WriteTo.File(
+                    path: configuration["Log:WarningRepository"] ?? "logs\\Warning\\CharacterServer",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 5,
+                    restrictedToMinimumLevel: LogEventLevel.Warning)
+                .WriteTo.File(
+                    path: configuration["Log:ErrorRepository"] ?? "logs\\Error\\CharacterServer",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 5,
+                    restrictedToMinimumLevel: LogEventLevel.Error)
                 .CreateLogger();
         }
     }

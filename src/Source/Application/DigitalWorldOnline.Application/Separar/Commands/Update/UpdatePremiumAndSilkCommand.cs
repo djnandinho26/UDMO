@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdatePremiumAndSilkCommand : IRequest
+    public class UpdatePremiumAndSilkCommand : IRequest<Unit>
     {
         public int Premium { get; set; }
 

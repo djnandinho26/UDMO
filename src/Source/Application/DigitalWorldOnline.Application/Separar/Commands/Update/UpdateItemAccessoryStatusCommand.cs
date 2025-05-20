@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateItemAccessoryStatusCommand : IRequest
+    public class UpdateItemAccessoryStatusCommand : IRequest<Unit>
     {
         public ItemModel Item { get; }
 

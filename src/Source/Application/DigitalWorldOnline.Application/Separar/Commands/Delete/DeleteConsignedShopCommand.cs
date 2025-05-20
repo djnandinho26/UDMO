@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteConsignedShopCommand : IRequest
+    public class DeleteConsignedShopCommand : IRequest<Unit>
     {
         public long GeneralHandler { get; private set; }
 

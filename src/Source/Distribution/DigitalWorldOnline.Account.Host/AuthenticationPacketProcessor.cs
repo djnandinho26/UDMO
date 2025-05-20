@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using DigitalWorldOnline.Application.Separar.Commands.Create;
+﻿using DigitalWorldOnline.Application.Separar.Commands.Create;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Commands.Delete;
 using DigitalWorldOnline.Application.Separar.Queries;
@@ -20,16 +19,17 @@ using System.Text;
 using DigitalWorldOnline.Application.Admin.Commands;
 using Microsoft.Extensions.Options;
 using System.Security;
+using AutoMapper;
 
 namespace DigitalWorldOnline.Account
 {
     public sealed class AuthenticationPacketProcessor : IProcessor, IDisposable
     {
-        private readonly IConfiguration _configuration;
-        private readonly IMapper _mapper;
-        private readonly ISender _sender;
-        private readonly ILogger _logger;
-        private readonly AuthenticationServerConfigurationModel _authenticationServerConfiguration;
+        private readonly IConfiguration _configuration;               // Configurações da aplicação
+        private readonly IMapper _mapper;                            // AutoMapper para mapeamento de objetos
+        private readonly ISender _sender;                            // MediatR para enviar comandos/consultas
+        private readonly ILogger _logger;                            // Serilog para logging
+        private readonly AuthenticationServerConfigurationModel _authenticationServerConfiguration;  // Configurações do servidor
 
         private const string CharacterServerAddress = "CharacterServer:Address";
 
@@ -44,6 +44,33 @@ namespace DigitalWorldOnline.Account
             _mapper = mapper;
             _sender = sender;
             _logger = logger;
+        }
+        
+        public static string ExtractString(AuthenticationPacketReader packet) => ExtractData(packet);
+        
+        private static string ExtractData(AuthenticationPacketReader packet)
+        {
+            try
+            {
+                int size = packet.ReadByte();
+                if (size < 0)
+                    throw new InvalidDataException("Invalid size value");
+                if (size < 1)
+                {
+                    string nulldata;
+                    nulldata = "";
+                    return nulldata;
+                }
+
+               // Leia os dados reais da string
+                string data = Encoding.ASCII.GetString(packet.ReadBytes(size+1)).TrimEnd('\0');
+                
+                return data;
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Failed to extract packet data", ex);
+            }
         }
 
         /// <summary>
@@ -74,10 +101,15 @@ namespace DigitalWorldOnline.Account
 
                 case AuthenticationServerPacketEnum.LoginRequest:
                 {
-                    var username = ExtractUsername(packet);
-                    var password = ExtractPassword(packet, username);
-                    var cpu = ExtractCpu(packet, username, password);
-                    var gpu = ExtractGpu(packet, username, password, cpu);
+                    var g_nNetVersion = packet.ReadUInt();
+                    var GetUserType = ExtractString(packet);
+                    var username = ExtractString(packet);
+                    var password = ExtractString(packet);
+                    var szCpuName = ExtractString(packet);
+                    var szGpuName = ExtractString(packet);
+                    var nPhyMemory = packet.ReadInt() / 1024;
+                    var szOS = ExtractString(packet);
+                    var szDxVersion = ExtractString(packet);
 
                     _logger.Debug("Validating login data for {Username}", username);
                     var account = await _sender.Send(new AccountByUsernameQuery(username));
@@ -149,13 +181,13 @@ namespace DigitalWorldOnline.Account
                     {
                         DebugLog($"Creating system information...");
                         await _sender.Send(
-                            new CreateSystemInformationCommand(account.Id, cpu, gpu, client.ClientAddress));
+                            new CreateSystemInformationCommand(account.Id, szCpuName, szGpuName, client.ClientAddress));
                     }
                     else
                     {
                         DebugLog($"Updating system information...");
                         await _sender.Send(new UpdateSystemInformationCommand(account.SystemInformation.Id, account.Id,
-                            cpu, gpu, client.ClientAddress));
+                            szCpuName, szGpuName, client.ClientAddress));
                     }
                 }
                     break;
@@ -312,60 +344,6 @@ namespace DigitalWorldOnline.Account
                 }
                     break;
             }
-        }
-
-        private static string ExtractGpu(AuthenticationPacketReader packet, string username, string password,
-            string cpu)
-        {
-            packet.Seek(9 + username.Length + 2 + password.Length + 2 + cpu.Length + 2);
-
-            var gpuSize = packet.ReadByte();
-
-            var gpuArray = new byte[gpuSize];
-
-            for (int i = 0; i < gpuSize; i++)
-                gpuArray[i] = packet.ReadByte();
-
-            return Encoding.ASCII.GetString(gpuArray).Trim();
-        }
-
-        private static string ExtractCpu(AuthenticationPacketReader packet, string username, string password)
-        {
-            packet.Seek(9 + username.Length + 2 + password.Length + 2);
-
-            var cpuSize = packet.ReadByte();
-
-            var cpuArray = new byte[cpuSize];
-
-            for (int i = 0; i < cpuSize; i++)
-                cpuArray[i] = packet.ReadByte();
-
-            return Encoding.ASCII.GetString(cpuArray).Trim();
-        }
-
-        private static string ExtractPassword(AuthenticationPacketReader packet, string username)
-        {
-            packet.Seek(9 + username.Length + 2);
-            var passwordSize = packet.ReadByte();
-
-            var passwordArray = new byte[passwordSize];
-
-            for (int i = 0; i < passwordSize; i++)
-                passwordArray[i] = packet.ReadByte();
-
-            return Encoding.ASCII.GetString(passwordArray).Trim();
-        }
-
-        private static string ExtractUsername(AuthenticationPacketReader packet)
-        {
-            packet.Seek(9);
-            var usernameSize = packet.ReadByte();
-            var usernameArray = new byte[usernameSize];
-
-            for (int i = 0; i < usernameSize; i++)
-                usernameArray[i] = packet.ReadByte();
-
-            return Encoding.ASCII.GetString(usernameArray).Trim();
         }
 
         /// <summary>

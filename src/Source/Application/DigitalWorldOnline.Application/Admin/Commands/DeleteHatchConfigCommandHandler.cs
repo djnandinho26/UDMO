@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteHatchConfigCommandHandler : IRequestHandler<DeleteHatchConfigCommand>
+    public class DeleteHatchConfigCommandHandler : IRequestHandler<DeleteHatchConfigCommand,Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

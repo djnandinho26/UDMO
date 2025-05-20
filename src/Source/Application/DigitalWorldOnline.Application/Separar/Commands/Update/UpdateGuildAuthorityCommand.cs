@@ -4,7 +4,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateGuildAuthorityCommand : IRequest
+    public class UpdateGuildAuthorityCommand : IRequest<Unit>
     {
         public GuildAuthorityModel Authority { get; private set; }
 

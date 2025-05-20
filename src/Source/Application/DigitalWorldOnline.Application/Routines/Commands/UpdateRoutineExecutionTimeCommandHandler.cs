@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Routines.Commands
 {
-    public class UpdateRoutineExecutionTimeCommandHandler : IRequestHandler<UpdateRoutineExecutionTimeCommand>
+    public class UpdateRoutineExecutionTimeCommandHandler : IRequestHandler<UpdateRoutineExecutionTimeCommand,Unit>
     {
         private readonly IRoutineRepository _repository;
 

@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DuplicateMobCommand : IRequest
+    public class DuplicateMobCommand : IRequest<Unit>
     {
         public long Id { get; set; }
 

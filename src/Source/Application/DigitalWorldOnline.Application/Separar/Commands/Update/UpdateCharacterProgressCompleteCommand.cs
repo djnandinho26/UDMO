@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterProgressCompleteCommand : IRequest
+    public class UpdateCharacterProgressCompleteCommand : IRequest<Unit>
     {
         public CharacterProgressModel Progress { get; set; }
 

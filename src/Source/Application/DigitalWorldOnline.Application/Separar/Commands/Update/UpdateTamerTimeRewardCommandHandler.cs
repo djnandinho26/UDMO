@@ -4,7 +4,7 @@ using MediatR;
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
 
-    public class UpdateTamerTimeRewardCommandHandler : IRequestHandler<UpdateTamerTimeRewardCommand>
+    public class UpdateTamerTimeRewardCommandHandler : IRequestHandler<UpdateTamerTimeRewardCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

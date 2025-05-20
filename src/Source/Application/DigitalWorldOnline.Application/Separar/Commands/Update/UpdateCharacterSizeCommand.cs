@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterSizeCommand : IRequest
+    public class UpdateCharacterSizeCommand : IRequest<Unit>
     {
         public long CharacterId { get; }
         public short Size { get; }

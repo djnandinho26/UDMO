@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateCharacterDeckBuffCommandHandler : IRequestHandler<UpdateCharacterDeckBuffCommand>
+    public class UpdateCharacterDeckBuffCommandHandler : IRequestHandler<UpdateCharacterDeckBuffCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

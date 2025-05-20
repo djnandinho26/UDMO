@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Create
 {
-    public class CreateGuildMemberCommand : IRequest
+    public class CreateGuildMemberCommand : IRequest<Unit>
     {
         public GuildMemberModel? Member { get; private set; }
         public long GuildId { get; private set; }

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateUserCommand : IRequest
+    public class UpdateUserCommand : IRequest<Unit>
     {
         public long Id { get; set; }
         public string UserName { get; set; }

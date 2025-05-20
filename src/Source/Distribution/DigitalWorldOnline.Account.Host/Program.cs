@@ -95,8 +95,12 @@ namespace DigitalWorldOnline.Account
                     services.AddSingleton(ConfigureLogger(context.Configuration));
 
                     services.AddHostedService<AuthenticationServer>();
-                    services.AddMediatR(typeof(MediatorApplicationHandlerExtension).GetTypeInfo().Assembly);
                     services.AddTransient<Mediator>();
+
+                    // Registrar os handlers do MediatR
+                    services.AddMediatR(cfg => {
+                        cfg.RegisterServicesFromAssembly(typeof(DigitalWorldOnline.Application.Separar.Queries.AccountByUsernameQueryHandler).Assembly);
+                    });
 
                     services.AddAutoMapper(typeof(AccountProfile));
                     services.AddAutoMapper(typeof(AssetsProfile));

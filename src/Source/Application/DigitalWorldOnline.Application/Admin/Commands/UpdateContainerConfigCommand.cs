@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateContainerConfigCommand : IRequest
+    public class UpdateContainerConfigCommand : IRequest<Unit>
     {
         public ContainerAssetDTO Container { get; }
 

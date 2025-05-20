@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateItemListSizeCommandHandler : IRequestHandler<UpdateItemListSizeCommand>
+    public class UpdateItemListSizeCommandHandler : IRequestHandler<UpdateItemListSizeCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

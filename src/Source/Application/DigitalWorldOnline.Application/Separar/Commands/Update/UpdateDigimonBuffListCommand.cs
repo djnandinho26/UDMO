@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateDigimonBuffListCommand : IRequest
+    public class UpdateDigimonBuffListCommand : IRequest<Unit>
     {
         public DigimonBuffListModel BuffList { get; set; }
 

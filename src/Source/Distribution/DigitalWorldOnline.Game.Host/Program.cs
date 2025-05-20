@@ -61,7 +61,7 @@ namespace DigitalWorldOnline.Game
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionHandler;
             Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-            var host =  Host.CreateDefaultBuilder(args)
+            var host = Host.CreateDefaultBuilder(args)
                 .UseSerilog()
                 .UseEnvironment("Development")
                 .ConfigureServices((context, services) =>
@@ -94,7 +94,6 @@ namespace DigitalWorldOnline.Game
                     services.AddSingleton<PartyManager>();
                     services.AddSingleton<EventManager>();
 
-
                     services.AddSingleton<EventQueueManager>();
 
                     services.AddSingleton<MapServer>();
@@ -110,7 +109,9 @@ namespace DigitalWorldOnline.Game
                     services.AddSingleton(ConfigureLogger(context.Configuration));
                     services.AddHostedService<GameServer>();
 
-                    services.AddMediatR(typeof(MediatorApplicationHandlerExtension).GetTypeInfo().Assembly);
+                    services.AddMediatR(cfg => {
+                        cfg.RegisterServicesFromAssembly(typeof(DigitalWorldOnline.Application.Separar.Queries.EventsConfigQueryHandler).Assembly);
+                    });
                     services.AddTransient<Mediator>();
 
                     AddAutoMapper(services);
@@ -148,33 +149,32 @@ namespace DigitalWorldOnline.Game
 
             packetProcessors.ForEach(processor => { services.AddSingleton(typeof(IGamePacketProcessor), processor); });
         }
-
         private static ILogger ConfigureLogger(IConfiguration configuration)
         {
             return new LoggerConfiguration()
                 .MinimumLevel.Verbose()
                 .WriteTo.Console(outputTemplate: "[{Timestamp:HH:mm:ss} {Level:u3}] {Message:lj}{NewLine}{Exception}",
                     restrictedToMinimumLevel: LogEventLevel.Information)
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Verbose)
-                    .WriteTo.RollingFile(configuration["Log:VerboseRepository"] ?? "logs\\Verbose\\GameServer",
-                        retainedFileCountLimit: 10))
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Debug)
-                    .WriteTo.RollingFile(configuration["Log:DebugRepository"] ?? "logs\\Debug\\GameServer",
-                        retainedFileCountLimit: 5))
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Information)
-                    .WriteTo.RollingFile(configuration["Log:InformationRepository"] ?? "logs\\Information\\GameServer",
-                        retainedFileCountLimit: 5))
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Warning)
-                    .WriteTo.RollingFile(configuration["Log:WarningRepository"] ?? "logs\\Warning\\GameServer",
-                        retainedFileCountLimit: 5))
-                .WriteTo.Logger(lc => lc
-                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Error)
-                    .WriteTo.RollingFile(configuration["Log:ErrorRepository"] ?? "logs\\Error\\GameServer",
-                        retainedFileCountLimit: 5))
+                .WriteTo.File(configuration["Log:VerboseRepository"] ?? "logs\\Verbose\\GameServer",
+                    rollingInterval: RollingInterval.Day,
+                    restrictedToMinimumLevel: LogEventLevel.Verbose,
+                    retainedFileCountLimit: 10)
+                .WriteTo.File(configuration["Log:DebugRepository"] ?? "logs\\Debug\\GameServer",
+                    rollingInterval: RollingInterval.Day,
+                    restrictedToMinimumLevel: LogEventLevel.Debug,
+                    retainedFileCountLimit: 5)
+                .WriteTo.File(configuration["Log:InformationRepository"] ?? "logs\\Information\\GameServer",
+                    rollingInterval: RollingInterval.Day,
+                    restrictedToMinimumLevel: LogEventLevel.Information,
+                    retainedFileCountLimit: 5)
+                .WriteTo.File(configuration["Log:WarningRepository"] ?? "logs\\Warning\\GameServer",
+                    rollingInterval: RollingInterval.Day,
+                    restrictedToMinimumLevel: LogEventLevel.Warning,
+                    retainedFileCountLimit: 5)
+                .WriteTo.File(configuration["Log:ErrorRepository"] ?? "logs\\Error\\GameServer",
+                    rollingInterval: RollingInterval.Day,
+                    restrictedToMinimumLevel: LogEventLevel.Error,
+                    retainedFileCountLimit: 5)
                 .CreateLogger();
         }
     }

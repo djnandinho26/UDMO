@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateEventMapConfigCommandHandler : IRequestHandler<UpdateEventMapConfigCommand>
+    public class UpdateEventMapConfigCommandHandler : IRequestHandler<UpdateEventMapConfigCommand,Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

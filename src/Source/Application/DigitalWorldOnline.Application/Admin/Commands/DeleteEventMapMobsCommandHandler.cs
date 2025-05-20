@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteEventMapMobsCommandHandler : IRequestHandler<DeleteEventMapMobsCommand>
+    public class DeleteEventMapMobsCommandHandler : IRequestHandler<DeleteEventMapMobsCommand,Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Create
 {
-    public class CreateOrUpdateSecondaryPasswordCommand : IRequest
+    public class CreateOrUpdateSecondaryPasswordCommand : IRequest<Unit>
     {
         public long AccountId { get; set; }
 

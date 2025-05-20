@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteSummonMobCommand : IRequest
+    public class DeleteSummonMobCommand : IRequest<Unit>
     {
         public long Id { get; set; }
 

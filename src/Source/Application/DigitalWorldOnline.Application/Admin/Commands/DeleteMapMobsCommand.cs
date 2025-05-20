@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteMapMobsCommand : IRequest
+    public class DeleteMapMobsCommand : IRequest<Unit>
     {
         public long Id { get; set; }
 

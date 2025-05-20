@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateItemListSizeCommand : IRequest
+    public class UpdateItemListSizeCommand : IRequest<Unit>
     {
         public long ItemListId { get; }
         public byte NewSize { get; }

@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 {
-    public class DeleteDigimonCommand : IRequest
+    public class DeleteDigimonCommand : IRequest<Unit>
     {
         public long DigimonId { get; set; }
 

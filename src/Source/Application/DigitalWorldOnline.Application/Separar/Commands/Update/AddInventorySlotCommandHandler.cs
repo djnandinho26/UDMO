@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class AddInventorySlotCommandHandler : IRequestHandler<AddInventorySlotCommand>
+    public class AddInventorySlotCommandHandler : IRequestHandler<AddInventorySlotCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

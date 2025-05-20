@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DuplicateSummonMobCommandHandler : IRequestHandler<DuplicateSummonMobCommand>
+    public class DuplicateSummonMobCommandHandler : IRequestHandler<DuplicateSummonMobCommand,Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

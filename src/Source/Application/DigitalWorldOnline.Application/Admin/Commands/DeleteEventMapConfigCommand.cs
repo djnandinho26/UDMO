@@ -2,7 +2,7 @@
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class DeleteEventMapConfigCommand : IRequest
+    public class DeleteEventMapConfigCommand : IRequest<Unit>
     {
         public long Id { get; set; }
 

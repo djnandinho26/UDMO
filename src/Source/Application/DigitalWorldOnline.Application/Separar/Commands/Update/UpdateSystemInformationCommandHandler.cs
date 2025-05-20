@@ -4,7 +4,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateSystemInformationCommandHandler : IRequestHandler<UpdateSystemInformationCommand>
+    public class UpdateSystemInformationCommandHandler : IRequestHandler<UpdateSystemInformationCommand,Unit>
     {
         private readonly IAccountCommandsRepository _repository;
 

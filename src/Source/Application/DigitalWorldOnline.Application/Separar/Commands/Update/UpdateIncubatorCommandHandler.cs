@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateIncubatorCommandHandler : IRequestHandler<UpdateIncubatorCommand>
+    public class UpdateIncubatorCommandHandler : IRequestHandler<UpdateIncubatorCommand,Unit>
     {
         private readonly ICharacterCommandsRepository _repository;
 

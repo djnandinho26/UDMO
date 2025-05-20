@@ -4,7 +4,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Admin.Commands
 {
-    public class UpdateServerCommandHandler : IRequestHandler<UpdateServerCommand>
+    public class UpdateServerCommandHandler : IRequestHandler<UpdateServerCommand,Unit>
     {
         private readonly IAdminCommandsRepository _repository;
 

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Commands.Update
 {
-    public class UpdateDigicloneCommand : IRequest
+    public class UpdateDigicloneCommand : IRequest<Unit>
     {
         public DigimonDigicloneModel Digiclone { get; set; }
 

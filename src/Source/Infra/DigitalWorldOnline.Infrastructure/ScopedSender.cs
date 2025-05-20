@@ -21,6 +21,14 @@ namespace DigitalWorldOnline.Infrastructure
             return await sender.Send(request, ct);
         }
 
+        public async Task Send<TRequest>(TRequest request, CancellationToken ct) where TRequest : IRequest
+        {
+            using var scope = Provider.CreateScope();
+            var sender = scope.ServiceProvider.GetRequiredService<TSender>();
+
+            await sender.Send(request, ct);
+        }
+
         public IAsyncEnumerable<TResponse> CreateStream<TResponse>(
             IStreamRequest<TResponse> request, CancellationToken ct)
         {
