@@ -1,10 +1,7 @@
 ﻿using DigitalWorldOnline.Application.Admin.Repositories;
-using DigitalWorldOnline.Application.Extensions;
-using DigitalWorldOnline.Application.Services;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Repositories.Admin;
 using DigitalWorldOnline.Infrastructure;
-using DigitalWorldOnline.Infrastructure.Extensions;
 using DigitalWorldOnline.Infrastructure.Mapping;
 using DigitalWorldOnline.Infrastructure.Repositories.Account;
 using DigitalWorldOnline.Infrastructure.Repositories.Admin;
@@ -19,7 +16,6 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 using System.Globalization;
-using System.Reflection;
 using DigitalWorldOnline.Commons.Utils;
 
 namespace DigitalWorldOnline.Character
@@ -45,10 +41,10 @@ namespace DigitalWorldOnline.Character
                 }
                 Console.WriteLine($"{message}");
                 Console.WriteLine($"{exceptionStackTrace}");
-                Console.WriteLine("Terminating by unhandled exception...");
+                Console.WriteLine("Terminando por exceção não tratada ...");
             }
             else
-                Console.WriteLine("Received unhandled exception.");
+                Console.WriteLine("Recebeu exceção não atendida.");
 
             Console.ReadLine();
         }
@@ -109,6 +105,7 @@ namespace DigitalWorldOnline.Character
                     hostConfig.SetBasePath(Directory.GetCurrentDirectory())
                               .AddEnvironmentVariables(Constants.Configuration.EnvironmentPrefix)
                               .AddUserSecrets<Program>();
+                    hostConfig.AddEnvironmentVariables("DMO_");
                 })
                 .Build();
         }

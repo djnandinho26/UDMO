@@ -30,323 +30,186 @@ namespace DigitalWorldOnline.Account
         private readonly ISender _sender;                            // MediatR para enviar comandos/consultas
         private readonly ILogger _logger;                            // Serilog para logging
         private readonly AuthenticationServerConfigurationModel _authenticationServerConfiguration;  // Configurações do servidor
+        private readonly IEnumerable<IAuthePacketProcessor> _packetProcessors;
 
         private const string CharacterServerAddress = "CharacterServer:Address";
 
-        private const int HandshakeDegree = 32321;
-
-        public AuthenticationPacketProcessor(IMapper mapper, ILogger logger, ISender sender,
+        public AuthenticationPacketProcessor(
+            IEnumerable<IAuthePacketProcessor> packetProcessors,
+            IMapper mapper, 
+            ILogger logger, 
+            ISender sender,
             IConfiguration configuration,
             IOptions<AuthenticationServerConfigurationModel> authenticationServerConfiguration)
         {
+            _packetProcessors = packetProcessors;
             _configuration = configuration;
             _authenticationServerConfiguration = authenticationServerConfiguration.Value;
             _mapper = mapper;
             _sender = sender;
             _logger = logger;
         }
-        
-        public static string ExtractString(AuthenticationPacketReader packet) => ExtractData(packet);
-        
-        private static string ExtractData(AuthenticationPacketReader packet)
+
+        private const int HandshakeDegree = 32321;
+
+        /// <summary>
+        /// Processa pacotes TCP recebidos do cliente do jogo.
+        /// </summary>
+        /// <param name="client">O cliente do jogo que enviou o pacote</param>
+        /// <param name="data">Os bytes do pacote</param>
+        /// <returns>Uma tarefa representando a operação assíncrona</returns>
+        /// <summary>
+        /// Processa pacotes TCP recebidos do cliente do jogo.
+        /// </summary>
+        /// <param name="client">O cliente do jogo que enviou o pacote</param>
+        /// <param name="data">Os bytes do pacote</param>
+        /// <returns>Uma tarefa representando a operação assíncrona</returns>
+        public async Task ProcessPacketAsync(GameClient client, byte[] data)
         {
+            ArgumentNullException.ThrowIfNull(client, nameof(client));
+            ArgumentNullException.ThrowIfNull(data, nameof(data));
+
+            if (data.Length < 4)
+            {
+                _logger?.Warning("Pacote recebido muito pequeno para ser válido. Tamanho: {Length}", data.Length);
+                return;
+            }
+
             try
             {
-                int size = packet.ReadByte();
-                if (size < 0)
-                    throw new InvalidDataException("Invalid size value");
-                if (size < 1)
+                // Passa o cliente para o construtor do PacketReader para permitir desconexão quando necessário
+                var packet = new AuthenticationPacketReader(data, client);
+
+                // Se o pacote não for válido e não for um pacote de conexão, ignoramos o processamento
+                if (!packet.IsValid && packet.Enum != AuthenticationServerPacketEnum.Connection)
                 {
-                    string nulldata;
-                    nulldata = "";
-                    return nulldata;
+                    _logger?.Warning("Ignorando pacote inválido tipo {Type} de {Address}",
+                        packet.Enum, client.ClientAddress);
+                    return;
                 }
 
-               // Leia os dados reais da string
-                string data = Encoding.ASCII.GetString(packet.ReadBytes(size+1)).TrimEnd('\0');
-                
-                return data;
+                _logger?.Debug("Pacote recebido tipo {Type} de {Address}", packet.Enum, client.ClientAddress);
+
+                // Tratamento especial para pacotes Unknown
+                if (packet.Enum == AuthenticationServerPacketEnum.Unknown)
+                {
+                    _logger?.Warning("Pacote desconhecido. Tipo: {Type}, Tamanho: {Length}, Cliente: {Address}",
+                        packet.Type, packet.Length, client.ClientAddress);
+                    return;
+                }
+
+                // Busca o processador correspondente
+                var processor = _packetProcessors?.FirstOrDefault(x => x.Type == packet.Enum);
+
+                if (processor != null)
+                {
+                    // Executa o processador correspondente
+                    try
+                    {
+                        await processor.Process(client, data);
+                        _logger?.Debug("Processado pacote {Type} com sucesso", packet.Enum);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.Error(ex, "Erro ao processar pacote {Type}: {Message}", packet.Enum, ex.Message);
+                    }
+                }
+                else
+                {
+                    // Tratamento de fallback para tipos de pacotes específicos que não têm processador dedicado
+                    switch (packet.Enum)
+                    {
+                        case AuthenticationServerPacketEnum.Connection:
+                            await HandleConnectionPacket(client, packet);
+                            break;
+
+                        case AuthenticationServerPacketEnum.KeepConnection:
+                            // Apenas reconhece o pacote de keepalive, não requer processamento
+                            _logger?.Debug("Keepalive recebido de {Address}", client.ClientAddress);
+                            break;
+
+                        default:
+                            _logger?.Warning("Nenhum processador encontrado para o pacote tipo {Type} do cliente {Address}",
+                                packet.Enum, client.ClientAddress);
+                            break;
+                    }
+                }
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException("Failed to extract packet data", ex);
+                _logger?.Error(ex, "Erro ao analisar ou processar pacote de {Address}: {Message}",
+                    client.ClientAddress, ex.Message);
+
+                // Se houver um erro grave na análise do pacote, desconecta o cliente
+                // exceto para erros conhecidos de checksum que já são tratados no AuthenticationPacketReader
+                if (!(ex.Message?.Contains("Checksum inválido") ?? false))
+                {
+                    _logger?.Warning("Desconectando cliente {ClientAddress} devido a erro de processamento",
+                        client.ClientAddress);
+                    client.Disconnect();
+                }
             }
         }
 
         /// <summary>
-        /// Process the arrived TCP packet, sent from the game client
+        /// Converte um valor Int64 (long) para uma string de endereço MAC formatada
         /// </summary>
-        /// <param name="client">The game client whos sended the packet</param>
-        /// <param name="data">The packet bytes array</param>
-        public async Task ProcessPacketAsync(GameClient client, byte[] data)
+        /// <param name="macAddressLong">Valor long representando o endereço MAC</param>
+        /// <returns>String formatada do endereço MAC (formato XX:XX:XX:XX:XX:XX)</returns>
+        private string ConvertMacAddressToString(long macAddressLong)
         {
-            var packet = new AuthenticationPacketReader(data);
+            // Os bytes do MAC estão contidos no valor Int64
+            byte[] allBytes = BitConverter.GetBytes(macAddressLong);
 
-            _logger.Debug("Received packet type {Type} from {Address}", packet.Enum, client.ClientAddress);
-            switch (packet.Enum)
+            // Log dos bytes para depuração
+            _logger?.Debug("MAC bytes: {0}", BitConverter.ToString(allBytes));
+
+            // Supondo que a ordem real dos bytes é a ordem em que aparecem no valor Int64
+            // Formato a partir da ordem original dos bytes
+            if (BitConverter.IsLittleEndian)
             {
-                case AuthenticationServerPacketEnum.Connection:
-                {
-                    var kind = packet.ReadByte();
-
-                    var handshakeTimestamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                    var handshake = (short)(client.Handshake ^ HandshakeDegree);
-
-                    client.Send(new ConnectionPacket(handshake, handshakeTimestamp));
-                }
-                    break;
-
-                case AuthenticationServerPacketEnum.KeepConnection:
-                    break;
-
-                case AuthenticationServerPacketEnum.LoginRequest:
-                {
-                    var g_nNetVersion = packet.ReadUInt();
-                    var GetUserType = ExtractString(packet);
-                    var username = ExtractString(packet);
-                    var password = ExtractString(packet);
-                    var szCpuName = ExtractString(packet);
-                    var szGpuName = ExtractString(packet);
-                    var nPhyMemory = packet.ReadInt() / 1024;
-                    var szOS = ExtractString(packet);
-                    var szDxVersion = ExtractString(packet);
-
-                    _logger.Debug("Validating login data for {Username}", username);
-                    var account = await _sender.Send(new AccountByUsernameQuery(username));
-
-                    if (account == null)
-                    {
-                        _logger.Debug("Saving {Username} login try for incorrect username...", username);
-
-                        await _sender.Send(new CreateLoginTryCommand(username, client.ClientAddress, LoginTryResultEnum.IncorrectUsername));
-
-                        client.Send(new LoginRequestAnswerPacket(LoginFailReasonEnum.UserNotFound));
-
-                        break;
-                    }
-
-                    client.SetAccountId(account.Id);
-                    client.SetAccessLevel(account.AccessLevel);
-
-                    if (account.AccountBlock != null)
-                    {
-                        var blockInfo =
-                            _mapper.Map<AccountBlockModel>(
-                                await _sender.Send(new AccountBlockByIdQuery(account.AccountBlock.Id)));
-
-                        if (blockInfo.EndDate > DateTime.Now)
-                        {
-                            TimeSpan timeRemaining = blockInfo.EndDate - DateTime.Now;
-
-                            uint secondsRemaining = (uint)timeRemaining.TotalSeconds;
-                            _logger.Debug($"Saving {username} login try for blocked account...");
-
-                            await _sender.Send(new CreateLoginTryCommand(username, client.ClientAddress,
-                                LoginTryResultEnum.AccountBlocked));
-                            client.Send(new LoginRequestBannedAnswerPacket(secondsRemaining, blockInfo.Reason));
-                            break;
-                        }
-                        else
-                        {
-                            await _sender.Send(new DeleteBanCommand(blockInfo.Id));
-                        }
-                    }
-
-                    if (account.Password != password.Encrypt())
-                    {
-                        DebugLog($"Saving {username} login try for incorrect password...");
-                        await _sender.Send(new CreateLoginTryCommand(username, client.ClientAddress,
-                            LoginTryResultEnum.IncorrectPassword));
-
-                        client.Send(new LoginRequestAnswerPacket(LoginFailReasonEnum.IncorrectPassword));
-                        break;
-                    }
-
-                    /*client.Send(account.SecondaryPassword == null
-                        ? new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.RequestSetup)
-                        : new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.RequestInput));*/
-
-                    client.Send(new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.Hide));
-
-                    if (_authenticationServerConfiguration.UseHash)
-                    {
-                        _logger.Debug("Getting resources hash from database !!");
-                        var hashString = await _sender.Send(new ResourcesHashQuery());
-
-                        _logger.Debug("Sending Hash to client");
-                        client.Send(new ResourcesHashPacket(hashString));
-                    }
-
-                    if (account.SystemInformation == null)
-                    {
-                        DebugLog($"Creating system information...");
-                        await _sender.Send(
-                            new CreateSystemInformationCommand(account.Id, szCpuName, szGpuName, client.ClientAddress));
-                    }
-                    else
-                    {
-                        DebugLog($"Updating system information...");
-                        await _sender.Send(new UpdateSystemInformationCommand(account.SystemInformation.Id, account.Id,
-                            szCpuName, szGpuName, client.ClientAddress));
-                    }
-                }
-                    break;
-
-                case AuthenticationServerPacketEnum.SecondaryPasswordRegister:
-                {
-                    DebugLog("Reading packet parameters...");
-                    var securityPassword = packet.ReadZString();
-
-                    DebugLog($"Updating {client.AccountId} account information...");
-                    await _sender.Send(new CreateOrUpdateSecondaryPasswordCommand(client.AccountId, securityPassword));
-
-                    client.Send(new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.RequestInput));
-                }
-                    break;
-
-                case AuthenticationServerPacketEnum.SecondaryPasswordCheck:
-                {
-                    DebugLog("Reading packet first part parameters...");
-                    var needToCheck = packet.ReadShort() == SecondaryPasswordCheckEnum.Check.GetHashCode();
-
-                    DebugLog($"Searching account with id {client.AccountId}...");
-                    var account = await _sender.Send(new AccountByIdQuery(client.AccountId));
-
-                    if (account == null)
-                        throw new KeyNotFoundException(nameof(account));
-
-                    if (needToCheck)
-                    {
-                        DebugLog("Reading packet second part parameters...");
-                        var securityCode = packet.ReadZString();
-
-                        if (account.SecondaryPassword == securityCode)
-                        {
-                            _logger.Debug("Saving login try for skipping secondary password...");
-                            await _sender.Send(new CreateLoginTryCommand(account.Username, client.ClientAddress,
-                                LoginTryResultEnum.Success));
-                            client.Send(
-                                new SecondaryPasswordCheckResultPacket(SecondaryPasswordCheckEnum.CorrectOrSkipped));
-                        }
-                        else
-                        {
-                            _logger.Debug("Saving login try for incorrect secondary password...");
-                            await _sender.Send(new CreateLoginTryCommand(account.Username, client.ClientAddress,
-                                LoginTryResultEnum.IncorrectSecondaryPassword));
-                            client.Send(new SecondaryPasswordCheckResultPacket(SecondaryPasswordCheckEnum.Incorrect));
-                        }
-                    }
-                    else
-                    {
-                        DebugLog("Saving login try for skipping secondary password...");
-                        await _sender.Send(new CreateLoginTryCommand(account.Username, client.ClientAddress,
-                            LoginTryResultEnum.Success));
-
-                        DebugLog($"Sending answer for skipped secondary password check...");
-                        client.Send(new SecondaryPasswordCheckResultPacket(SecondaryPasswordCheckEnum.CorrectOrSkipped)
-                            .Serialize());
-                    }
-                }
-                    break;
-
-                case AuthenticationServerPacketEnum.SecondaryPasswordChange:
-                {
-                    DebugLog("Getting packet parameters...");
-                    var currentSecurityCode = packet.ReadZString();
-                    var newSecurityCode = packet.ReadZString();
-
-                    var account = await _sender.Send(new AccountByIdQuery(client.AccountId));
-
-                    if (account == null)
-                        throw new KeyNotFoundException(nameof(account));
-
-                    if (account.SecondaryPassword == currentSecurityCode)
-                    {
-                        DebugLog($"Saving new secondary password...");
-                        await _sender.Send(
-                            new CreateOrUpdateSecondaryPasswordCommand(client.AccountId, newSecurityCode));
-
-                        client.Send(new SecondaryPasswordChangeResultPacket(SecondaryPasswordChangeEnum.Changed)
-                            .Serialize());
-                    }
-                    else
-                    {
-                        DebugLog($"Sending answer for incorrect secondary password change...");
-                        client.Send(
-                            new SecondaryPasswordChangeResultPacket(SecondaryPasswordChangeEnum.IncorretCurrentPassword)
-                                .Serialize());
-                    }
-                }
-                    break;
-
-                case AuthenticationServerPacketEnum.LoadServerList:
-                {
-                    DebugLog($"Getting server list...");
-                    var servers =
-                        _mapper.Map<IEnumerable<ServerObject>>(
-                            await _sender.Send(new ServersQuery(client.AccessLevel)));
-
-                    var serverObjects = servers.ToList();
-                    foreach (var server in serverObjects)
-                    {
-                        server.UpdateCharacterCount(
-                            await _sender.Send(new CharactersInServerQuery(client.AccountId, server.Id)));
-                    }
-
-                    DebugLog($"Sending server list...");
-                    client.Send(new ServerListPacket(serverObjects).Serialize());
-                }
-                    break;
-
-                case AuthenticationServerPacketEnum.ConnectCharacterServer:
-                {
-                    DebugLog($"Reading packet parameters...");
-                    var serverId = packet.ReadInt();
-
-                    await _sender.Send(new UpdateLastPlayedServerCommand(client.AccountId, serverId));
-
-                    if (_authenticationServerConfiguration.UseHash)
-                    {
-                        _logger.Debug("Getting resources hash.");
-                        var hashString = await _sender.Send(new ResourcesHashQuery());
-
-                        client.Send(new ResourcesHashPacket(hashString));
-                    }
-
-                    DebugLog($"Getting server list...");
-                    var servers =
-                        _mapper.Map<IEnumerable<ServerObject>>(
-                            await _sender.Send(new ServersQuery(client.AccessLevel)));
-
-                    var targetServer = servers.First(x => x.Id == serverId);
-
-                    DebugLog($"Sending selected server info...");
-                    client.Send(new ConnectCharacterServerPacket(client.AccountId,
-                        _configuration[CharacterServerAddress], targetServer.Port.ToString()));
-                }
-                    break;
-
-                case AuthenticationServerPacketEnum.Unknown:
-                case AuthenticationServerPacketEnum.ResourcesHash:
-                    {
-                        _logger.Information($"Verifying Hash -> Packet 10003");
-
-                        int hashLength = BitConverter.ToInt16(data, 0);
-                        string clientHash = BitConverter.ToString(data, 2, hashLength).Replace("-", "");
-
-                        _logger.Information($"Hash received:\n{clientHash}");
-                    }
-                    break;
-
-                default:
-                {
-                    _logger.Warning($"Unknown packet. Type: {packet.Type} Length: {packet.Length}.");
-                }
-                    break;
+                // No formato little-endian, os bytes estão invertidos
+                // Para obter o MAC original "8C:B0:E9:D3:A9:42" precisamos converter
+                return string.Format("{0:X2}:{1:X2}:{2:X2}:{3:X2}:{4:X2}:{5:X2}",
+                    allBytes[0], allBytes[1], allBytes[2],
+                    allBytes[3], allBytes[4], allBytes[5]);
+            }
+            else
+            {
+                // No formato big-endian, precisamos selecionar os bytes corretos
+                // Se os últimos dois bytes forem zeros (como 00 00 no exemplo)
+                return string.Format("{0:X2}:{1:X2}:{2:X2}:{3:X2}:{4:X2}:{5:X2}",
+                    allBytes[2], allBytes[3], allBytes[4],
+                    allBytes[5], allBytes[6], allBytes[7]);
             }
         }
 
         /// <summary>
+        /// Manipula pacotes de conexão quando não há um processador dedicado disponível.
+        /// </summary>
+        private async Task HandleConnectionPacket(GameClient client, AuthenticationPacketReader packet)
+        {
+            try
+            {
+                var macAdress = ConvertMacAddressToString(packet.ReadInt64());
+                var Timestamp = packet.ReadUInt();
+                var palavraCodificada = packet.ReadUShort();
+                var IdCliente = packet.ReadInt();
+                var CobyteCodificado1 = packet.ReadByte();
+                var CobyteCodificado2 = packet.ReadByte();
+
+                var handshakeTimestamp = (uint)DateTimeOffset.Now.ToUnixTimeSeconds();
+                var handshake = (short)(client.Handshake ^ HandshakeDegree);
+
+                _logger?.Debug("Enviando resposta de conexão para {Address}", client.ClientAddress);
+                client.Send(new ConnectionPacket(handshake, handshakeTimestamp));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Erro ao processar pacote de conexão: {Message}", ex.Message);
+            }
+        }
+        /// <summary>       
         /// Shortcut for debug logging with client and packet info.
         /// </summary>
         /// <param name="message">The message to log</param>

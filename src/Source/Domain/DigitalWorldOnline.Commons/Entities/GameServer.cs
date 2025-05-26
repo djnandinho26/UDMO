@@ -34,7 +34,7 @@ namespace DigitalWorldOnline.Commons.Entities
 
         private readonly object ClientLock;
 
-        private const string NullObjectExceptionMessage = "Received null object";
+        private const string NullObjectExceptionMessage = "Objeto nulo recebeu";
 
         public bool IsListening => ServerListener != null && ServerListener.IsBound;
 
@@ -62,7 +62,7 @@ namespace DigitalWorldOnline.Commons.Entities
 
             if (IsListening)
             {
-                throw new InvalidOperationException($"Server already running on {address} : {port}.");
+                throw new InvalidOperationException($"Servidor já em execução em {address} : {port}.");
             }
 
             try
@@ -106,34 +106,6 @@ namespace DigitalWorldOnline.Commons.Entities
                 ServerListener.BeginAccept(AcceptCallback, null);
             }
             catch { }
-        }
-
-        protected bool InvalidConnection(string? clientIpAddress)
-        {
-            if (string.IsNullOrEmpty(clientIpAddress))
-                return true;
-
-            if (RefusedAddresses.Contains(clientIpAddress))
-                return true;
-
-            if (!IPAddress.TryParse(clientIpAddress, out var ipAddress))
-                return true;
-
-            if (!ConnectionOccurrences.ContainsKey(clientIpAddress))
-            {
-                ConnectionOccurrences[clientIpAddress] = new List<DateTime>();
-            }
-
-            ConnectionOccurrences[clientIpAddress].Add(DateTime.Now);
-
-            if (ConnectionOccurrences.TryGetValue(clientIpAddress, out List<DateTime> timestamps))
-            {
-                var now = DateTime.Now;
-                var recentTimestamps = timestamps.FindAll(ts => (now - ts).TotalSeconds <= 30);
-                return recentTimestamps.Count >= 2;
-            }
-
-            return false;
         }
 
         private void ReceiveCallback(IAsyncResult result)

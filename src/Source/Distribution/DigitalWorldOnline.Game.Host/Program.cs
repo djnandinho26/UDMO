@@ -122,6 +122,7 @@ namespace DigitalWorldOnline.Game
                     hostConfig.SetBasePath(Directory.GetCurrentDirectory())
                         .AddEnvironmentVariables(Constants.Configuration.EnvironmentPrefix)
                         .AddUserSecrets<Program>();
+                    hostConfig.AddEnvironmentVariables("DMO_");
                 })
                 .Build();
             SingletonResolver.Services = host.Services;

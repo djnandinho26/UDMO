@@ -26,10 +26,10 @@ namespace DigitalWorldOnline.Game
         }
 
         /// <summary>
-        /// Process the arrived TCP packet, sent from the game client
+        /// Processar o pacote TCP chegado, enviado do cliente do jogo
         /// </summary>
-        /// <param name="client">The game client whos sent the packet</param>
-        /// <param name="data">The packet bytes array</param>
+        /// <param name = "client"> o cliente do jogo, que enviou o pacote </am Param>
+        /// <param name = "dados"> o pacote Bytes Array </amon>
         public async Task ProcessPacketAsync(GameClient client, byte[] data)
         {
             while (_assets.Loading || _configs.Loading) await Task.Delay(1000);
@@ -39,7 +39,7 @@ namespace DigitalWorldOnline.Game
             switch (packet.Enum)
             {
                 case GameServerPacketEnum.Unknown:
-                    _logger.Warning($"Unknown packet. Type: {packet.Type}. Length: {packet.Length}.");
+                    _logger.Warning($"Pacote desconhecido. Type: {packet.Type}. Length: {packet.Length}.");
                     break;
 
                 default:
@@ -52,8 +52,7 @@ namespace DigitalWorldOnline.Game
                         }
                         else
                         {
-                            _logger.Error($"No processor for packet {packet.Type} to player {client.Tamer.Name}.");
-                            //throw new NotImplementedException();
+                            _logger.Error($"No processor for packet {packet.Type} para o jogador {client.Tamer.Name}.");
                         }
                     }
                     break;

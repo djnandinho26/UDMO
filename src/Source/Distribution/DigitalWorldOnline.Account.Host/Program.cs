@@ -1,10 +1,9 @@
-﻿using DigitalWorldOnline.Application.Admin.Repositories;
-using DigitalWorldOnline.Application.Extensions;
-using DigitalWorldOnline.Application.Services;
+﻿using DigitalWorldOnline.Account.Models.Configuration;
+using DigitalWorldOnline.Application.Admin.Repositories;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Repositories.Admin;
+using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Infrastructure;
-using DigitalWorldOnline.Infrastructure.Extensions;
 using DigitalWorldOnline.Infrastructure.Mapping;
 using DigitalWorldOnline.Infrastructure.Repositories.Account;
 using DigitalWorldOnline.Infrastructure.Repositories.Admin;
@@ -13,6 +12,7 @@ using DigitalWorldOnline.Infrastructure.Repositories.Config;
 using DigitalWorldOnline.Infrastructure.Repositories.Routine;
 using DigitalWorldOnline.Infrastructure.Repositories.Server;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,9 +20,6 @@ using Serilog;
 using Serilog.Events;
 using System.Globalization;
 using System.Reflection;
-using DigitalWorldOnline.Account.Models.Configuration;
-using DigitalWorldOnline.Commons.Utils;
-using Microsoft.EntityFrameworkCore;
 
 namespace DigitalWorldOnline.Account
 {
@@ -47,10 +44,10 @@ namespace DigitalWorldOnline.Account
                 }
                 Console.WriteLine($"{message}");
                 Console.WriteLine($"{exceptionStackTrace}");
-                Console.WriteLine("Terminating by unhandled exception...");
+                Console.WriteLine("Terminando por exceção não tratada ...");
             }
             else
-                Console.WriteLine("Received unhandled exception.");
+                Console.WriteLine("Recebeu exceção não atendida.");
 
             Console.ReadLine();
         }
@@ -97,6 +94,7 @@ namespace DigitalWorldOnline.Account
                     services.AddHostedService<AuthenticationServer>();
                     services.AddTransient<Mediator>();
 
+
                     // Registrar os handlers do MediatR
                     services.AddMediatR(cfg => {
                         cfg.RegisterServicesFromAssembly(typeof(DigitalWorldOnline.Application.Separar.Queries.AccountByUsernameQueryHandler).Assembly);
@@ -110,12 +108,16 @@ namespace DigitalWorldOnline.Account
                     services.AddAutoMapper(typeof(GameProfile));
                     services.AddAutoMapper(typeof(SecurityProfile));
                     services.AddAutoMapper(typeof(ShopProfile));
+
+                    // Registrar os processadores de pacotes de autenticação
+                    AddProcessors(services);
                 })
                 .ConfigureHostConfiguration(hostConfig =>
                 {
                     hostConfig.SetBasePath(Directory.GetCurrentDirectory())
                         .AddEnvironmentVariables(Constants.Configuration.EnvironmentPrefix)
                         .AddUserSecrets<Program>();
+                    hostConfig.AddEnvironmentVariables("DMO_");
                 }).Build();
 
             // Applying migrations. It's enough to do this on the AccountServer, for now.
@@ -126,6 +128,18 @@ namespace DigitalWorldOnline.Account
 
             return host;
         }
+
+
+        private static void AddProcessors(IServiceCollection services)
+        {
+            var packetProcessors = Assembly.GetExecutingAssembly()
+                .GetTypes()
+                .Where(t => typeof(IAuthePacketProcessor).IsAssignableFrom(t) && !t.IsInterface)
+                .ToList();
+
+            packetProcessors.ForEach(processor => { services.AddSingleton(typeof(IAuthePacketProcessor), processor); });
+        }
+
 
         private static ILogger ConfigureLogger(IConfiguration configuration)
         {

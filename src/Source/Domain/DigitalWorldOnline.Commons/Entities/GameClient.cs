@@ -21,7 +21,14 @@ namespace DigitalWorldOnline.Commons.Entities
 
         public bool IsConnected => Socket.Connected;
 
-        public string ClientAddress => Socket?.RemoteEndPoint?.ToString();
+        public string ClientAddress
+        {
+            get
+            {
+                var remoteEndPoint = Socket?.RemoteEndPoint as System.Net.IPEndPoint;
+                return remoteEndPoint?.Address.ToString();
+            }
+        }
 
         public string HiddenAddress
         {
@@ -171,13 +178,13 @@ namespace DigitalWorldOnline.Commons.Entities
         {
             if (MembershipExpirationDate == null)
             {
-                MembershipExpirationDate = DateTime.UtcNow.AddSeconds(seconds);
+                MembershipExpirationDate = DateTime.Now.AddSeconds(seconds);
             }
             else
             {
-                if (MembershipExpirationDate < DateTime.UtcNow)
+                if (MembershipExpirationDate < DateTime.Now)
                 {
-                    MembershipExpirationDate = DateTime.UtcNow.AddSeconds(seconds);
+                    MembershipExpirationDate = DateTime.Now.AddSeconds(seconds);
                 }
                 else
                     MembershipExpirationDate = MembershipExpirationDate.Value.AddSeconds(seconds);
@@ -186,7 +193,7 @@ namespace DigitalWorldOnline.Commons.Entities
 
         public void RemoveMembership()
         {
-            MembershipExpirationDate = DateTime.UtcNow;
+            MembershipExpirationDate = DateTime.Now;
         }
 
         // ----------------------------------------------------------------------------------
