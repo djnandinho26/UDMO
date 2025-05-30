@@ -1,4 +1,6 @@
-﻿using System.Net;
+﻿using DigitalWorldOnline.Commons.Interfaces;
+using DigitalWorldOnline.Commons.Packet;
+using System.Net;
 using System.Net.Sockets;
 
 namespace DigitalWorldOnline.Commons.Entities
@@ -151,6 +153,9 @@ namespace DigitalWorldOnline.Commons.Entities
 
             int totalBytesSent = 0;
             int bytesRemaining = buffer.Length;
+           
+
+            SysCons.LogPacketSend($"\r\n{Dump.HexDump(buffer, buffer.Length)}");
 
             try
             {

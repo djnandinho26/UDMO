@@ -1,6 +1,9 @@
-﻿using DigitalWorldOnline.Application.Separar.Commands.Create;
-using DigitalWorldOnline.Application.Separar.Commands.Update;
+﻿using AutoMapper;
+using DigitalWorldOnline.Account.Models.Configuration;
+using DigitalWorldOnline.Application.Admin.Commands;
+using DigitalWorldOnline.Application.Separar.Commands.Create;
 using DigitalWorldOnline.Application.Separar.Commands.Delete;
+using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.Account;
@@ -10,16 +13,15 @@ using DigitalWorldOnline.Commons.Extensions;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Servers;
+using DigitalWorldOnline.Commons.Packet;
 using DigitalWorldOnline.Commons.Packets.AuthenticationServer;
-using DigitalWorldOnline.Account.Models.Configuration;
 using MediatR;
 using Microsoft.Extensions.Configuration;
-using Serilog;
-using System.Text;
-using DigitalWorldOnline.Application.Admin.Commands;
 using Microsoft.Extensions.Options;
+using Serilog;
+using System;
 using System.Security;
-using AutoMapper;
+using System.Text;
 
 namespace DigitalWorldOnline.Account
 {
@@ -79,6 +81,10 @@ namespace DigitalWorldOnline.Account
             {
                 // Passa o cliente para o construtor do PacketReader para permitir desconexão quando necessário
                 var packet = new AuthenticationPacketReader(data, client);
+
+                PacketReaderExtensions.SaveAsync(data, packet.Type, packet.Length).Wait();
+
+                SysCons.LogPacketRecv($"{packet.Type} \r\n{Dump.HexDump(data, packet.Length)}");
 
                 // Se o pacote não for válido e não for um pacote de conexão, ignoramos o processamento
                 if (!packet.IsValid && packet.Enum != AuthenticationServerPacketEnum.Connection)

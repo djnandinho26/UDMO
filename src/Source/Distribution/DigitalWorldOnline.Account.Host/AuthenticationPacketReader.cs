@@ -1,7 +1,10 @@
 ﻿using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
+using DigitalWorldOnline.Commons.Packet;
 using DigitalWorldOnline.Commons.Readers;
 using Serilog;
+using System.Net.Sockets;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace DigitalWorldOnline.Account
 {
@@ -76,6 +79,8 @@ namespace DigitalWorldOnline.Account
                     {
                         IsValid = false;
                         _logger?.Warning(ex, "Erro de validação de checksum para pacote {PacketType}", Enum);
+                        SysCons.LogPacketRecv($"{Type} \r\n{Dump.HexDump(buffer,Length)}");
+                        _logger?.Error("Buffer recebido: {Buffer}", BitConverter.ToString(buffer));
 
                         // Se não for pacote de conexão, desconecta o cliente
                         if (client != null)
@@ -91,6 +96,7 @@ namespace DigitalWorldOnline.Account
             catch (Exception)
             {
                 IsValid = false;
+                _logger?.Error("Buffer recebido: {Buffer}", BitConverter.ToString(buffer));
                 throw;
             }
             finally
