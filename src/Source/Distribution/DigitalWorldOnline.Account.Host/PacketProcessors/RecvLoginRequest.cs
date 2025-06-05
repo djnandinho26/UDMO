@@ -153,16 +153,15 @@ public class RecvLoginRequest : IAuthePacketProcessor
                 return;
             }
 
-            // Login bem-sucedido - Envia resposta ao cliente
-            /*
-            // Código comentado para configuração de senha secundária
-            client.Send(conta.SecondaryPassword == null
-                ? new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.RequestSetup)
-                : new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.RequestInput));
-            */
+            // Envia o pacote solicitando configuração ou entrada da senha secundária, conforme necessário
+            var secPassScreen = conta.SecondaryPassword == null
+                ? SecondaryPasswordScreenEnum.RequestSetup
+                : SecondaryPasswordScreenEnum.RequestInput;
+
+            client.Send(new LoginRequestAnswerPacket(secPassScreen));
 
             // Configura para esconder a tela de senha secundária
-            client.Send(new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.Hide));
+            //client.Send(new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.Hide));
 
             // Verifica se deve enviar hash de recursos
             if (_authenticationServerConfiguration?.UseHash == true)
