@@ -308,8 +308,10 @@ namespace DigitalWorldOnline.Account
                 return;
             }
 
-            _logger.Information($"{GetType().Name} iniciado com limite de {MaxConcurrentConnections} conexões simultâneas na porta {port}.");
-            _logger.Information($"IPs que se conectarem em menos de {MinTimeBetweenConnections} segundos serão bloqueados por {BlockDurationMinutes} minutos.");
+            _logger.Information($"{GetType().Name} iniciado Ip: {address} porta {port}.");
+
+            //_logger.Information($"{GetType().Name} iniciado com limite de {MaxConcurrentConnections} conexões simultâneas na porta {port}.");
+            //_logger.Information($"IPs que se conectarem em menos de {MinTimeBetweenConnections} segundos serão bloqueados por {BlockDurationMinutes} minutos.");
         }
 
         /// <summary>

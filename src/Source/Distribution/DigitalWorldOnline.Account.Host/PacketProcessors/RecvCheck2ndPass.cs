@@ -57,7 +57,6 @@ namespace DigitalWorldOnline.Account.PacketProcessors
         {
             const int size = 32;
             string data = Encoding.ASCII.GetString(packet.ReadBytes(size)).Trim();
-            // O próximo byte é lido mas não utilizado, pode ser removido se não for necessário
             packet.ReadByte();
             return data;
         }
@@ -110,7 +109,6 @@ namespace DigitalWorldOnline.Account.PacketProcessors
             catch (Exception ex)
             {
                 _logger.Error(ex, "Erro ao processar requisição de login: {Mensagem}", ex.Message);
-                // Considere rethrow se necessário
             }
         }
 
