@@ -16,7 +16,6 @@ namespace DigitalWorldOnline.Commons.Packets.AuthenticationServer
 
             Type(PacketNumber);
             WriteByte((byte)serverObjects.Count());
-
             foreach (var server in serverObjects)
             {
                 WriteInt((int)server.Id);
@@ -28,7 +27,6 @@ namespace DigitalWorldOnline.Commons.Packets.AuthenticationServer
                 WriteByte(Convert.ToByte(5));
                 WriteByte(Convert.ToByte(5));
             }
-
             WriteInt(0);
         }
     }

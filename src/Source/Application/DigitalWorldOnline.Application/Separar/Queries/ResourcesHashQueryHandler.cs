@@ -1,9 +1,10 @@
-﻿using DigitalWorldOnline.Commons.Interfaces;
+﻿using DigitalWorldOnline.Commons.DTOs.Config;
+using DigitalWorldOnline.Commons.Interfaces;
 using MediatR;
 
 namespace DigitalWorldOnline.Application.Separar.Queries
 {
-    public class ResourcesHashQueryHandler : IRequestHandler<ResourcesHashQuery, string>
+    public class ResourcesHashQueryHandler : IRequestHandler<ResourcesHashQuery, List<HashDTO>>
     {
         private readonly IServerQueriesRepository _repository;
 
@@ -12,7 +13,7 @@ namespace DigitalWorldOnline.Application.Separar.Queries
             _repository = repository;
         }
 
-        public async Task<string> Handle(ResourcesHashQuery request, CancellationToken cancellationToken)
+        public async Task<List<HashDTO> > Handle(ResourcesHashQuery request, CancellationToken cancellationToken)
         {
             return await _repository.GetResourcesHashAsync();
         }

@@ -95,6 +95,13 @@ namespace DigitalWorldOnline.Game
 
             switch (command[0].ToLower())
             {
+                case "packet":
+                    var text = command[1];
+                    byte[] buffer2 = File.ReadAllBytes(text);
+                    //client.Send((buffer2));
+                    client.Send(new PacketInject(buffer2).Serialize());
+                    break;
+                
                 case "players":
                     if (command.Length == 1)
                     {

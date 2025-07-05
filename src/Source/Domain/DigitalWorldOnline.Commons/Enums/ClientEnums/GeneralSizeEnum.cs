@@ -57,7 +57,7 @@
         /// <summary>
         /// Tamer equipment size.
         /// </summary>
-        Equipment = 14, //654=14
+        Equipment = 13, //654=14
 
         /// <summary>
         /// Max size for secondary password.

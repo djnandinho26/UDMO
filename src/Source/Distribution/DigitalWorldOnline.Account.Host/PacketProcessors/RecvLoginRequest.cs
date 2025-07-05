@@ -4,6 +4,7 @@ using DigitalWorldOnline.Application.Separar.Commands.Create;
 using DigitalWorldOnline.Application.Separar.Commands.Delete;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
+using DigitalWorldOnline.Commons.DTOs.Config;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.Account;
 using DigitalWorldOnline.Commons.Enums.ClientEnums;
@@ -11,12 +12,15 @@ using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Extensions;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Account;
+using DigitalWorldOnline.Commons.Packet;
 using DigitalWorldOnline.Commons.Packets.AuthenticationServer;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
-using System.Text;
 using Serilog;
+using System;
+using System.Diagnostics;
+using System.Text;
 
 
 namespace DigitalWorldOnline.Account.PacketProcessors;
@@ -73,6 +77,8 @@ public class RecvLoginRequest : IAuthePacketProcessor
         {
             // Cria um leitor de pacotes para processar os dados recebidos
             var packet = new AuthenticationPacketReader(packetData);
+
+            Debug.WriteLine($"Packet RECV : {packet.Type} \r\n{Dump.HexDump(packetData, packet.Length)}");
 
             // Extrai as informações do pacote
             var g_nNetVersion = packet.ReadUInt();
@@ -164,13 +170,57 @@ public class RecvLoginRequest : IAuthePacketProcessor
             //client.Send(new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.Hide));
 
             // Verifica se deve enviar hash de recursos
+            // Verifica se deve enviar informações de hash de recursos
+            // Verifica se deve enviar hash de recursos
             if (_authenticationServerConfiguration?.UseHash == true)
             {
                 _logger.Debug("Obtendo hash de recursos do banco de dados...");
-                var stringHash = await _sender.Send(new ResourcesHashQuery());
+                List<HashDTO> hashList = await _sender.Send(new ResourcesHashQuery());
 
-                _logger.Debug("Enviando hash para o cliente");
-                client.Send(new ResourcesHashPacket(stringHash));
+                if (hashList != null && hashList.Any())
+                {
+                    _logger.Information("Recebidos {Count} hashes de recursos", hashList.Count);
+
+                    // Verifica se a versão do cliente é a específica que estamos procurando (20031701)
+                    if (g_nNetVersion == 20031701)
+                    {
+                        // Busca um hash com ClientVersion = 1
+                        var clientVersionHash = hashList.FirstOrDefault(h => h.ClientVersion == 1);
+
+                        if (clientVersionHash != null && !string.IsNullOrEmpty(clientVersionHash.Hash))
+                        {
+                            _logger.Debug("Enviando hash para o cliente com versão 20031701: {Hash}", clientVersionHash.Hash);
+                            client.Send(new ResourcesHashPacket(clientVersionHash.Hash));
+                        }
+                        else
+                        {
+                            _logger.Warning("Hash de recursos para ClientVersion=1 não encontrado");
+                        }
+                    }
+                    if (g_nNetVersion == 22011101)
+                    {
+                        // Busca um hash com ClientVersion = 1
+                        var clientVersionHash = hashList.FirstOrDefault(h => h.ClientVersion == 2);
+
+                        if (clientVersionHash != null && !string.IsNullOrEmpty(clientVersionHash.Hash))
+                        {
+                            _logger.Debug("Enviando hash para o cliente com versão 20031701: {Hash}", clientVersionHash.Hash);
+                            client.Send(new ResourcesHashPacket(clientVersionHash.Hash));
+                        }
+                        else
+                        {
+                            _logger.Warning("Hash de recursos para ClientVersion=1 não encontrado");
+                        }
+                    }
+                    else
+                    {
+                        _logger.Debug("Versão do cliente {ClientVersion} não corresponde à versão específica (20031701)", g_nNetVersion);
+                    }
+                }
+                else
+                {
+                    _logger.Warning("Nenhum hash de recurso disponível no banco de dados");
+                }
             }
 
             // Atualiza ou cria informações do sistema do usuário

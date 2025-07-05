@@ -115,7 +115,7 @@ namespace DigitalWorldOnline.Commons.Interfaces
 
         Task<List<AccessoryRollAssetDTO>> GetAccessoryRollInfoAsync();
 
-        Task<string> GetResourcesHashAsync();
+        Task<List<HashDTO> >GetResourcesHashAsync();
 
         Task<List<PortalAssetDTO>> GetPortalAssetsAsync();
 

@@ -454,14 +454,11 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Server
                 .ToListAsync();
         }
 
-        public async Task<string> GetResourcesHashAsync()
+        public async Task<List<HashDTO>> GetResourcesHashAsync()
         {
-            var dto = await _context.HashConfig
+            return await _context.HashConfig
                 .AsNoTracking()
-                .OrderByDescending(x => x.CreatedAt)
-                .FirstOrDefaultAsync();
-
-            return dto?.Hash;
+                .ToListAsync();
         }
 
         public async Task<List<PortalAssetDTO>> GetPortalAssetsAsync()

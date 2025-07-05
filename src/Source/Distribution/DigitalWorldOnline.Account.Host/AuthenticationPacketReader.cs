@@ -32,6 +32,12 @@ namespace DigitalWorldOnline.Account
         /// <param name="buffer">Array de bytes contendo os dados do pacote</param>
         /// <param name="client">Cliente que enviou o pacote (opcional)</param>
         /// <exception cref="ArgumentException">Lançada quando o buffer é muito pequeno</exception>
+        /// <summary>
+        /// Inicializa uma nova instância do leitor de pacotes com o buffer fornecido
+        /// </summary>
+        /// <param name="buffer">Array de bytes contendo os dados do pacote</param>
+        /// <param name="client">Cliente que enviou o pacote (opcional)</param>
+        /// <exception cref="ArgumentException">Lançada quando o buffer é muito pequeno</exception>
         public AuthenticationPacketReader(byte[] buffer, GameClient client = null)
         {
             if (buffer == null || buffer.Length < 6) // Verifica se o buffer tem pelo menos o tamanho mínimo necessário
@@ -46,7 +52,26 @@ namespace DigitalWorldOnline.Account
                 Type = ReadShort();
 
                 // Verifica se o tamanho declarado é válido
-                if (Length > buffer.Length || Length < 6)
+                if (Length == 0)
+                {
+                    IsValid = false;
+                    _logger?.Warning("Pacote com tamanho zero detectado. Tipo: {Type}, Buffer: {Buffer}",
+                        Type, BitConverter.ToString(buffer));
+
+                    // Se não for um pacote de conexão, considera inválido
+                    if (Enum != AuthenticationServerPacketEnum.Connection &&
+                        Enum != AuthenticationServerPacketEnum.KeepConnection)
+                    {
+                        if (client != null)
+                        {
+                            _logger?.Warning("Desconectando cliente {ClientAddress} devido a pacote com tamanho zero",
+                                client.ClientAddress);
+                            client.Disconnect();
+                        }
+                        throw new ArgumentException("Pacote com tamanho zero");
+                    }
+                }
+                else if (Length > buffer.Length || Length < 6)
                 {
                     IsValid = false;
                     _logger?.Warning("Pacote com tamanho inválido: declarado {DeclaredLength}, real {ActualLength}",
@@ -69,21 +94,25 @@ namespace DigitalWorldOnline.Account
                 }
 
                 // Verifica o checksum apenas se o pacote não for de conexão ou o checksum for necessário
-                if (Enum != AuthenticationServerPacketEnum.Connection && Enum != AuthenticationServerPacketEnum.KeepConnection)
+                // E também verifica se o tamanho é maior que 0
+                if (Length > 1 && Enum != AuthenticationServerPacketEnum.Connection &&
+                    Enum != AuthenticationServerPacketEnum.KeepConnection)
                 {
                     try
                     {
+                        SysCons.LogPacketRecv($"{Type} \r\n{Dump.HexDump(buffer, Length)}");
+                        _logger?.Error("Buffer recebido: {Buffer}", BitConverter.ToString(buffer));
                         ValidateChecksum();
                     }
                     catch (Exception ex)
                     {
                         IsValid = false;
-                        _logger?.Warning(ex, "Erro de validação de checksum para pacote {PacketType}", Enum);
-                        SysCons.LogPacketRecv($"{Type} \r\n{Dump.HexDump(buffer,Length)}");
+                        _logger?.Warning(ex, "Erro de validação de checksum para pacote {PacketType}, Tamanho: {Length}",
+                            Enum, Length);
                         _logger?.Error("Buffer recebido: {Buffer}", BitConverter.ToString(buffer));
 
                         // Se não for pacote de conexão, desconecta o cliente
-                        if (client != null)
+                        if (client != null && Length > 0)
                         {
                             _logger?.Warning("Desconectando cliente {ClientAddress} devido a checksum inválido",
                                 client.ClientAddress);
@@ -93,10 +122,11 @@ namespace DigitalWorldOnline.Account
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 IsValid = false;
-                _logger?.Error("Buffer recebido: {Buffer}", BitConverter.ToString(buffer));
+                _logger?.Error(ex, "Erro ao processar pacote: {Message}. Buffer: {Buffer}",
+                    ex.Message, BitConverter.ToString(buffer));
                 throw;
             }
             finally
@@ -128,9 +158,16 @@ namespace DigitalWorldOnline.Account
 
             // Move para a posição do checksum (fim do pacote menos 2 bytes)
             Packet.Seek(Length - 2, SeekOrigin.Begin);
-
             // Lê o checksum e valida
             int checksum = ReadShort();
+
+            // Se o checksum for 0, aceita o pacote sem validação
+            if (checksum == 0)
+            {
+                _logger?.Debug("Checksum com valor 0 recebido. Ignorando validação de checksum.");
+                return;
+            }
+
             int expectedChecksum = Length ^ CheckSumValidation;
 
             if (checksum != expectedChecksum)

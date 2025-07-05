@@ -13,6 +13,7 @@ using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Asset;
 using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Digimon;
+using DigitalWorldOnline.Commons.Packet;
 using DigitalWorldOnline.Commons.Packets.CharacterServer;
 using DigitalWorldOnline.Commons.Utils;
 using MediatR;
@@ -53,6 +54,10 @@ namespace DigitalWorldOnline.Character
         public async Task ProcessPacketAsync(GameClient client, byte[] data)
         {
             var packet = new CharacterPacketReader(data);
+
+            PacketReaderExtensions.SaveAsync(data, packet.Type, packet.Length).Wait();
+
+            SysCons.LogPacketRecv($"{packet.Type} \r\n{Dump.HexDump(data, packet.Length)}");
 
             switch (packet.Enum)
             {

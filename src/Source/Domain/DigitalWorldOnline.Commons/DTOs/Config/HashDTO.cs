@@ -8,6 +8,11 @@
         public long Id { get; set; }
 
         /// <summary>
+        /// Client Version
+        /// </summary>
+        public long ClientVersion { get; set; }
+
+        /// <summary>
         /// The hash itself.
         /// </summary>
         public string Hash{ get; set; }
@@ -16,5 +21,6 @@
         /// Hash create date.
         /// </summary>
         public DateTime CreatedAt { get; set; }
+
     }
 }

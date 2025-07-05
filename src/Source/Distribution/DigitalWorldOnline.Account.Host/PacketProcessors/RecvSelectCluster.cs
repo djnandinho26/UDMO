@@ -2,6 +2,7 @@
 using DigitalWorldOnline.Account.Models.Configuration;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
+using DigitalWorldOnline.Commons.DTOs.Config;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
@@ -75,16 +76,6 @@ namespace DigitalWorldOnline.Account.PacketProcessors
 
                 // Atualiza o último servidor utilizado pelo jogador no banco de dados
                 await _sender.Send(new UpdateLastPlayedServerCommand(client.AccountId, serverId));
-
-                // Verifica se deve enviar informações de hash de recursos
-                if (_authenticationServerConfiguration.UseHash == true)
-                {
-                    _logger.Debug("Obtendo recursos de hash.");
-                    var hashString = await _sender.Send(new ResourcesHashQuery());
-
-                    // Envia o hash de recursos para o cliente
-                    client.Send(new ResourcesHashPacket(hashString));
-                }
 
                 DebugLog($"Obtendo a lista de servidores ...");
                 // Consulta a lista de servidores disponíveis para o nível de acesso do cliente

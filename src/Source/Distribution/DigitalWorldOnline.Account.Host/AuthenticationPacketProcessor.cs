@@ -77,6 +77,12 @@ namespace DigitalWorldOnline.Account
                 return;
             }
 
+            if (data == null || data.Length == 0)
+            {
+                _logger?.Warning($"Pacote vazio recebido de {client.ClientAddress}. Desconectando cliente.");
+                return;
+            }
+
             try
             {
                 // Passa o cliente para o construtor do PacketReader para permitir desconexão quando necessário
