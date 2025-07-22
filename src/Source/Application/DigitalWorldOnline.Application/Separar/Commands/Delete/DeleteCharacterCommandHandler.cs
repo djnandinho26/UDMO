@@ -15,7 +15,7 @@ namespace DigitalWorldOnline.Application.Separar.Commands.Delete
 
         public async Task<DeleteCharacterResultEnum> Handle(DeleteCharacterCommand request, CancellationToken cancellationToken)
         {
-            return await _repository.DeleteCharacterByAccountAndPositionAsync(request.AccountId, request.CharacterPosition);
+            return await _repository.DeleteCharacterByAccountAndPositionAsync(request.AccountId, request.CharacterId);
         }
     }
 }

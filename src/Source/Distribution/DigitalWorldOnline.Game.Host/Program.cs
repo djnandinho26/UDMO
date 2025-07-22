@@ -131,14 +131,17 @@ namespace DigitalWorldOnline.Game
 
         private static void AddAutoMapper(IServiceCollection services)
         {
-            services.AddAutoMapper(typeof(AccountProfile));
-            services.AddAutoMapper(typeof(AssetsProfile));
-            services.AddAutoMapper(typeof(CharacterProfile));
-            services.AddAutoMapper(typeof(ConfigProfile));
-            services.AddAutoMapper(typeof(DigimonProfile));
-            services.AddAutoMapper(typeof(GameProfile));
-            services.AddAutoMapper(typeof(SecurityProfile));
-            services.AddAutoMapper(typeof(ArenaProfile));
+            services.AddAutoMapper(cfg =>
+            {
+                cfg.AddProfile<AccountProfile>();
+                cfg.AddProfile<AssetsProfile>();
+                cfg.AddProfile<CharacterProfile>();
+                cfg.AddProfile<ConfigProfile>();
+                cfg.AddProfile<DigimonProfile>();
+                cfg.AddProfile<GameProfile>();
+                cfg.AddProfile<SecurityProfile>();
+                cfg.AddProfile<ArenaProfile>();
+            });
         }
 
         private static void AddProcessors(IServiceCollection services)

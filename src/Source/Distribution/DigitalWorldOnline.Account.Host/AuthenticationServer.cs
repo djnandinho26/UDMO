@@ -274,7 +274,10 @@ namespace DigitalWorldOnline.Account
 
                 // Buffer para processar os dados recebidos
                 int offset = 0;
-                while (offset < data.Length)
+                int processedPackets = 0;
+                const int maxPacketsPerBatch = 512; // Limite de pacotes por lote
+
+                while (offset < data.Length && processedPackets < maxPacketsPerBatch)
                 {
                     // Verificar se temos bytes suficientes para ler o tamanho do pacote
                     if (data.Length - offset < 2)
@@ -284,17 +287,17 @@ namespace DigitalWorldOnline.Account
                     }
 
                     // Ler o tamanho do pacote (primeiros 2 bytes em little-endian)
-                    int packetSize = BitConverter.ToUInt16(data, offset);
+                    int packetSize = BitConverter.ToInt32(data, offset);
 
                     // Se encontrar um pacote com tamanho 0, registra e SAIR completamente do processamento
-                    if (packetSize == 0)
+                    if (packetSize <= 0)
                     {
                         //_logger.Warning($"Pacote com tamanho 0 recebido de {gameClientEvent.Client.ClientAddress}. Interrompendo processamento.");
                         return; // Sai imediatamente do método
                     }
 
                     // Verificar se o tamanho do pacote é válido
-                    if (packetSize < 0 || packetSize > 1024 * 16)
+                    if (packetSize <= 0 || packetSize > 131072)
                     {
                         //_logger.Warning($"Tamanho de pacote inválido ({packetSize}) recebido de {gameClientEvent.Client.ClientAddress}");
                         return;
@@ -308,7 +311,7 @@ namespace DigitalWorldOnline.Account
                     }
 
                     // Verificar se há bytes suficientes para ler o checksum (se necessário)
-                    int checksumIndex = offset + (packetSize - 2);
+                    int checksumIndex = offset + (packetSize - 4);
                     bool checksumValid = true;
 
                     // Verificar se o índice do checksum está dentro dos limites do array
@@ -316,7 +319,7 @@ namespace DigitalWorldOnline.Account
                     {
                         try
                         {
-                            int packetChecksum = BitConverter.ToUInt16(data, checksumIndex);
+                            int packetChecksum = BitConverter.ToInt32(data, checksumIndex);
 
                             // Se o checksum for 0, ignorar o pacote
                             if (packetChecksum == 0)
@@ -371,6 +374,7 @@ namespace DigitalWorldOnline.Account
 
                     // Avançar o offset para o próximo pacote
                     offset += packetSize;
+                    processedPackets++;
                 }
             }
             catch (Exception ex)

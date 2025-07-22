@@ -11,10 +11,10 @@
     <ItemGroup>
       <PackageReference Include="FubarDev.FtpServer" Version="3.1.2" />
       <PackageReference Include="FubarDev.FtpServer.FileSystem.DotNet" Version="3.1.2" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.5" />
-      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.5" />
-      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.5" />
-      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.5" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.7" />
+      <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.7" />
+      <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.7" />
+      <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="9.0.7" />
       <PackageReference Include="Serilog" Version="4.3.0" />
     </ItemGroup>
 

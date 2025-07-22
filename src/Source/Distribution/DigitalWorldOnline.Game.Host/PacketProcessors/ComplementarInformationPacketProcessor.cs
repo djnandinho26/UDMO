@@ -214,7 +214,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
                         channels.Add(channel.Key, channel.Value);
                     }
 
-                    if (!channels.IsNullOrEmpty())
+                    if (channels != null && channels.Count > 0)
                     {
                         client.Send(new AvailableChannelsPacket(channels).Serialize());
                     }

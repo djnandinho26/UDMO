@@ -69,10 +69,11 @@ namespace DigitalWorldOnline.Account.PacketProcessors
             {
                 DebugLog($"Leitura de parâmetros de pacotes ...");
 
-                var packet = new AuthenticationPacketReader(packetData);
+                using var stream = new MemoryStream(packetData);
+                using var reader = new BinaryReader(stream);
 
                 // Lê o ID do servidor selecionado pelo cliente
-                var serverId = packet.ReadInt();
+                var serverId = reader.ReadInt32();
 
                 // Atualiza o último servidor utilizado pelo jogador no banco de dados
                 await _sender.Send(new UpdateLastPlayedServerCommand(client.AccountId, serverId));

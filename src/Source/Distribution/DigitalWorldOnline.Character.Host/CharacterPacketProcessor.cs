@@ -29,21 +29,26 @@ namespace DigitalWorldOnline.Character
         private readonly ILogger _logger;
         private readonly IMapper _mapper;
 
+        private readonly IEnumerable<ICharacterPacketProcessor> _packetProcessors;
+
         private const string GameServerAddress = "GameServer:Address";
         private const string GamerServerPublic = "GameServer:PublicAddress";
         private const string GameServerPort = "GameServer:Port";
         private const int HandshakeDegree = 32321;
         private const int HandshakeStampDegree = 65535;
 
-        public CharacterPacketProcessor(ILogger logger,
+        public CharacterPacketProcessor(
+            ILogger logger,
             ISender sender,
             IConfiguration configuration,
-            IMapper mapper)
+            IMapper mapper,
+            IEnumerable<ICharacterPacketProcessor> packetProcessors) // Adicionar injeção de dependência
         {
             _configuration = configuration;
             _sender = sender;
             _logger = logger;
             _mapper = mapper;
+            _packetProcessors = packetProcessors; // Inicializar a coleção
         }
 
         /// <summary>
@@ -53,215 +58,276 @@ namespace DigitalWorldOnline.Character
         /// <param name="data">The packet bytes array</param>
         public async Task ProcessPacketAsync(GameClient client, byte[] data)
         {
-            var packet = new CharacterPacketReader(data);
+            ArgumentNullException.ThrowIfNull(client, nameof(client));
+            ArgumentNullException.ThrowIfNull(data, nameof(data));
 
-            PacketReaderExtensions.SaveAsync(data, packet.Type, packet.Length).Wait();
-
-            SysCons.LogPacketRecv($"{packet.Type} \r\n{Dump.HexDump(data, packet.Length)}");
-
-            switch (packet.Enum)
+            if (data.Length < 4)
             {
-                case CharacterServerPacketEnum.Connection:
+                _logger?.Warning("Pacote recebido muito pequeno para ser válido. Tamanho: {Length}", data.Length);
+                return;
+            }
+
+            if (data == null || data.Length == 0)
+            {
+                _logger?.Warning($"Pacote vazio recebido de {client.ClientAddress}. Desconectando cliente.");
+                return;
+            }
+
+            try
+            {
+                // Passa o cliente para o construtor do PacketReader para permitir desconexão quando necessário
+                var packet = new CharacterPacketReader(data, client);
+
+                PacketReaderExtensions.SaveAsync(data, packet.Type, packet.Length).Wait();
+
+                // Log do hex dump tanto no console quanto nos arquivos
+                string hexDumpOutput = $"RECV [{client.ClientAddress}] Tipo: {packet.Type} ({packet.Enum}) | Tamanho: {packet.Length}\r\n{Dump.HexDump(data, packet.Length)}";
+
+                // Exibe no console com cores
+                //DisplayPacketHexInConsole(client.ClientAddress, packet.Type, packet.Enum.ToString(), packet.Length, data);
+
+                // Log nos arquivos
+                SysCons.LogPacketRecv(hexDumpOutput);
+
+                // Se o pacote não for válido e não for um pacote de conexão, ignoramos o processamento
+                if (!packet.IsValid && packet.Enum != CharacterServerPacketEnum.Connection)
+                {
+                    _logger?.Warning("Ignorando pacote inválido tipo {Type} de {Address}",
+                        packet.Enum, client.ClientAddress);
+                    return;
+                }
+                // Se o pacote não for válido e não for um pacote de conexão, ignoramos o processamento
+                if (!packet.IsValid && packet.Enum != CharacterServerPacketEnum.KeepConnection)
+                {
+                    _logger?.Warning("Ignorando pacote inválido tipo {Type} de {Address}",
+                        packet.Enum, client.ClientAddress);
+                    return;
+                }
+
+                _logger?.Debug("Pacote recebido tipo {Type} de {Address}", packet.Enum, client.ClientAddress);
+
+                // Tratamento especial para pacotes Unknown
+                if (packet.Enum == CharacterServerPacketEnum.Unknown)
+                {
+                    _logger?.Warning("Pacote desconhecido. Tipo: {Type}, Tamanho: {Length}, Cliente: {Address}",
+                        packet.Type, packet.Length, client.ClientAddress);
+                    DisplayPacketHexInConsole(client.ClientAddress, packet.Type, packet.Enum.ToString(), packet.Length, data);
+                    return;
+                }
+
+                // Busca o processador correspondente
+                var processor = _packetProcessors?.FirstOrDefault(x => x.Type == packet.Enum);
+
+                if (processor != null)
+                {
+                    // Extrai apenas os dados do payload, removendo header e checksum
+                    byte[] payloadData = ExtractPayloadData(data, packet.Length, packet.Type);
+
+                    // Executa o processador correspondente com apenas os dados úteis
+                    try
                     {
-                        _logger.Debug("Reading packet parameters...");
-                        var kind = packet.ReadByte();
-
-                        var handshakeTimestamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                        var handshake = (short)(client.Handshake ^ HandshakeDegree);
-
-                        client.Send(new ConnectionPacket(handshake, handshakeTimestamp).Serialize());
+                        await processor.Process(client, payloadData);
+                        _logger?.Debug("Processado pacote {Type} com sucesso", packet.Enum);
                     }
-                    break;
-
-                case CharacterServerPacketEnum.KeepConnection:
-                    break;
-
-                case CharacterServerPacketEnum.RequestCharacters:
+                    catch (Exception ex)
                     {
-                        packet.Seek(8);
-
-                        _logger.Debug("Requesting Characters");
-                        var accountId = packet.ReadUInt();
-
-                        _logger.Information($"Getting account {accountId} character list...");
-                        var characters = _mapper.Map<List<CharacterModel>>(await _sender.Send(new CharactersByAccountIdQuery(accountId)));
-
-                        characters.ForEach(character => 
-                        {
-                            if(character.Partner.CurrentType != character.Partner.BaseType)
-                            {
-                                _logger.Debug($"Updating partner's current type...");
-                                character.Partner.UpdateCurrentType(character.Partner.BaseType);
-                                _sender.Send(new UpdatePartnerCurrentTypeCommand(character.Partner));
-                            }
-                        });
-
-                        client.Send(new CharacterListPacket(characters));
-
-                        client.SetAccountId(accountId);
+                        _logger?.Error(ex, "Erro ao processar pacote {Type}: {Message}", packet.Enum, ex.Message);
                     }
-                    break;
-
-                case CharacterServerPacketEnum.CreateCharacter:
+                }
+                else
+                {
+                    // Tratamento de fallback para tipos de pacotes específicos que não têm processador dedicado
+                    switch (packet.Enum)
                     {
-                        _logger.Debug("Reading packet parameters...");
-                        var position = packet.ReadByte();
-                        var tamerModel = packet.ReadInt();
-                        var tamerName = packet.ReadZString();
-                        packet.Seek(42);
-                        var digimonModel = packet.ReadInt();
-                        var digimonName = packet.ReadZString();
+                        case CharacterServerPacketEnum.Connection:
+                            await HandleConnectionPacket(client, packet);
+                            break;
 
-                        _logger.Debug($"Searching account with id {client.AccountId}...");
-                        var account = _mapper.Map<AccountModel>(await _sender.Send(new AccountByIdQuery(client.AccountId)));
+                        case CharacterServerPacketEnum.KeepConnection:
+                            // Apenas reconhece o pacote de keepalive, não requer processamento
+                            _logger?.Debug("Keepalive recebido de {Address}", client.ClientAddress);
+                            break;
 
-                        //tamerName = tamerName.ModeratorPrefix(account.AccessLevel);
-                        //DebugLog($"{tamerName}");
-
-                        _logger.Debug("Creating character...");
-                        var character = CharacterModel.Create(
-                            client.AccountId,
-                            tamerName,
-                            tamerModel,
-                            position,
-                            account.LastPlayedServer);
-
-                        _logger.Debug("Creating digimon...");
-                        var digimon = DigimonModel.Create(
-                            digimonName,
-                            digimonModel,
-                            digimonModel,
-                            DigimonHatchGradeEnum.Perfect,
-                            UtilitiesFunctions.RandomShort(12000, 12000),
-                            0);
-
-                        character.AddDigimon(digimon);
-
-                        var handshakeTimestamp = (uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                        var handshake = (short)(handshakeTimestamp & HandshakeStampDegree);
-
-                        client.Send(new CharacterCreatedPacket(character, handshake));
-
-                        //TODO: remover busca de status assets daqui
-                        _logger.Debug("Getting tamer status information...");
-                        character.SetBaseStatus(
-                            _mapper.Map<CharacterBaseStatusAssetModel>(
-                                await _sender.Send(
-                                    new TamerBaseStatusQuery(character.Model)
-                                )));
-
-                        character.SetLevelStatus(
-                            _mapper.Map<CharacterLevelStatusAssetModel>(
-                                await _sender.Send(
-                                    new TamerLevelStatusQuery(character.Model,
-                                    character.Level)
-                                )));
-
-                        character.Partner.SetBaseInfo(
-                            _mapper.Map<DigimonBaseInfoAssetModel>(
-                                await _sender.Send(
-                                    new DigimonBaseInfoQuery(character.Partner.CurrentType)
-                                )));
-
-                        _logger.Debug($"Registering tamer and digimon for account {account.Username}...");
-                        character.Partner.AddEvolutions(await _sender.Send(new DigimonEvolutionAssetsByTypeQuery(digimonModel)));
-                        await _sender.Send(new CreateCharacterCommand(character));
+                        default:
+                            _logger?.Warning("Nenhum processador encontrado para o pacote tipo {Type} do cliente {Address}",
+                                packet.Enum, client.ClientAddress);
+                            DisplayPacketHexInConsole(client.ClientAddress, packet.Type, packet.Enum.ToString(), packet.Length, data);
+                            break;
                     }
-                    break;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Erro ao analisar ou processar pacote de {Address}: {Message}",
+                    client.ClientAddress, ex.Message);
 
-                case CharacterServerPacketEnum.CheckNameDuplicity:
-                    {
-                        _logger.Debug("Getting parameters...");
-                        var tamerName = packet.ReadString();
+                // Se houver um erro grave na análise do pacote, desconecta o cliente
+                // exceto para erros conhecidos de checksum que já são tratados no AuthenticationPacketReader
+                if (!(ex.Message?.Contains("Checksum inválido") ?? false))
+                {
+                    _logger?.Warning("Desconectando cliente {ClientAddress} devido a erro de processamento",
+                        client.ClientAddress);
+                    client.Disconnect();
+                }
+            }
+        }
 
-                        _logger.Debug($"Account: {client.AccountId} - {tamerName}");
+        /// <summary>
+        /// Exibe o hex dump do pacote no console com formatação colorida.
+        /// </summary>
+        /// <param name="clientAddress">Endereço do cliente</param>
+        /// <param name="packetType">Tipo do pacote (valor numérico)</param>
+        /// <param name="packetEnum">Nome do enum do pacote</param>
+        /// <param name="packetLength">Tamanho do pacote</param>
+        /// <param name="data">Dados do pacote</param>
+        private void DisplayPacketHexInConsole(string clientAddress, int packetType, string packetEnum, int packetLength, byte[] data)
+        {
+            try
+            {
+                string timestamp = DateTime.Now.ToString("HH:mm:ss");
+                string hexDump = Dump.HexDump(data, packetLength);
 
-                        _logger.Debug("Searching account...");
-                        var account = _mapper.Map<AccountModel>(await _sender.Send(new AccountByIdQuery(client.AccountId)));
+                // Usar lock para evitar que diferentes threads misturem saídas do console
+                lock (Console.Out)
+                {
+                    // Header do pacote
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.Write($"[{timestamp}] ");
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write($"[PACKET-RECV] ");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write($"Cliente: ");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.Write($"{clientAddress} ");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write($"| Tipo: ");
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                    Console.Write($"{packetType} ");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write($"({packetEnum}) | Tamanho: ");
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"{packetLength} bytes");
 
-                        tamerName = tamerName.ModeratorPrefix(account.AccessLevel);
-                        _logger.Debug($"{tamerName}");
+                    // Hex dump
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Console.WriteLine(hexDump);
 
-                        _logger.Debug("Checking tamer name duplicity...");
-                        var availableName = await _sender.Send(new CharacterByNameQuery(tamerName)) == null;
+                    // Linha separadora
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine(new string('-', 80));
 
-                        _logger.Debug($"{availableName}");
+                    Console.ResetColor();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Fallback em caso de erro na exibição
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[ERRO AO EXIBIR HEX] {ex.Message}");
+                Console.ResetColor();
+            }
+        }
 
-                        _logger.Debug("Sending answer...");
-                        client.Send(new AvailableNamePacket(availableName).Serialize());
-                    }
-                    break;
+        /// <summary>
+        /// Extrai apenas os dados do payload do pacote, removendo o header e checksum.
+        /// </summary>
+        /// <param name="rawData">Dados brutos do pacote</param>
+        /// <param name="packetLength">Tamanho declarado do pacote</param>
+        /// <returns>Array de bytes contendo apenas os dados do payload</returns>
+        private byte[] ExtractPayloadData(byte[] rawData, int packetLength, int type)
+        {
+            // Estrutura do pacote:
+            // [4 bytes: Length] [2 bytes: Type] [payload data] [4 bytes: Checksum]
 
-                case CharacterServerPacketEnum.DeleteCharacter:
-                    {
-                        _logger.Debug($"Reading packet parameters...");
-                        var position = packet.ReadByte();
-                        packet.Skip(3);
-                        var validation = packet.ReadString();
+            const int headerSize = 6; // Length (4) + Type (2)
+            const int checksumSize = 4; // Checksum (4)
 
-                        _logger.Debug($"Searching account with id {client.AccountId}...");
-                        var account = _mapper.Map<AccountModel>(await _sender.Send(new AccountByIdQuery(client.AccountId)));
+            // Calcula o tamanho do payload (dados úteis)
+            int payloadSize = packetLength - headerSize - checksumSize;
 
-                        if (account.CharacterDeleteValidation(validation))
-                        {
-                            _logger.Debug($"Deleting character...");
-                            var deletedCharacter = await _sender.Send(new DeleteCharacterCommand(client.AccountId, position));
+            // Verifica se o tamanho é válido e exibe informações adicionais no console
+            if (payloadSize < 0 || headerSize + payloadSize > rawData.Length)
+            {
+                _logger?.Warning("Tamanho de payload inválido: {PayloadSize}, tamanho do pacote: {PacketLength},Type: {type}",
+                    payloadSize, packetLength);
 
-                            client.Send(new CharacterDeletedPacket(deletedCharacter).Serialize());
-                        }
-                        else
-                        {
-                            _logger.Debug($"Validation fail for deleting character in account {account.Username}.");
+                // Exibe aviso também no console
+                lock (Console.Out)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"[AVISO] Payload inválido - Type: {type}, Size: {payloadSize}, PacketLength: {packetLength}, RawDataLength: {rawData.Length}");
+                    Console.ResetColor();
+                }
 
-                            client.Send(new CharacterDeletedPacket(DeleteCharacterResultEnum.ValidationFail).Serialize());
-                        }
-                    }
-                    break;
+                return Array.Empty<byte>();
+            }
 
-                case CharacterServerPacketEnum.GetCharacterPosition:
-                    {
-                        var position = packet.ReadByte();
+            // Extrai apenas os dados do payload
+            byte[] payload = new byte[payloadSize];
+            Array.Copy(rawData, headerSize, payload, 0, payloadSize);
 
-                        _logger.Debug($"Searching character...");
-                        var character = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterByAccountIdAndPositionQuery(client.AccountId, position)));
+            _logger?.Debug("Payload extraído: {PayloadSize} bytes de um pacote de {PacketLength} bytes",
+                payloadSize, packetLength);
 
-                        while (character == null)
-                        {
-                            await Task.Delay(1500);
-                            _logger.Debug($"Searching character again...");
-                            character = _mapper.Map<CharacterModel>(await _sender.Send(new CharacterByAccountIdAndPositionQuery(client.AccountId, position)));
-                        }
+            return payload;
+        }
 
-                        _logger.Debug($"Updating access information for account {client.AccountId}.");
-                        await _sender.Send(new UpdateLastPlayedCharacterCommand(client.AccountId, character.Id));
+        /// <summary>
+        /// Converte um valor Int64 (long) para uma string de endereço MAC formatada
+        /// </summary>
+        /// <param name="macAddressLong">Valor long representando o endereço MAC</param>
+        /// <returns>String formatada do endereço MAC (formato XX:XX:XX:XX:XX:XX)</returns>
+        private string ConvertMacAddressToString(long macAddressLong)
+        {
+            // Os bytes do MAC estão contidos no valor Int64
+            byte[] allBytes = BitConverter.GetBytes(macAddressLong);
 
-                        _logger.Debug($"Updating character's channel...");
-                        await _sender.Send(new UpdateCharacterChannelCommand(character.Id));
+            // Log dos bytes para depuração
+            _logger?.Debug("MAC bytes: {0}", BitConverter.ToString(allBytes));
 
-                        _logger.Debug($"Updating account welcome flag...");
-                        await _sender.Send(new UpdateAccountWelcomeFlagCommand(character.AccountId));
+            // Supondo que a ordem real dos bytes é a ordem em que aparecem no valor Int64
+            // Formato a partir da ordem original dos bytes
+            if (BitConverter.IsLittleEndian)
+            {
+                // No formato little-endian, os bytes estão invertidos
+                // Para obter o MAC original "8C:B0:E9:D3:A9:42" precisamos converter
+                return string.Format("{0:X2}:{1:X2}:{2:X2}:{3:X2}:{4:X2}:{5:X2}",
+                    allBytes[0], allBytes[1], allBytes[2],
+                    allBytes[3], allBytes[4], allBytes[5]);
+            }
+            else
+            {
+                // No formato big-endian, precisamos selecionar os bytes corretos
+                // Se os últimos dois bytes forem zeros (como 00 00 no exemplo)
+                return string.Format("{0:X2}:{1:X2}:{2:X2}:{3:X2}:{4:X2}:{5:X2}",
+                    allBytes[2], allBytes[3], allBytes[4],
+                    allBytes[5], allBytes[6], allBytes[7]);
+            }
+        }
 
-                        _logger.Debug($"Updating character send once packet...");
-                        await _sender.Send(new UpdateCharacterInitialPacketSentOnceSentCommand(character.Id, false));
+        /// <summary>
+        /// Manipula pacotes de conexão quando não há um processador dedicado disponível.
+        /// </summary>
+        private async Task HandleConnectionPacket(GameClient client, CharacterPacketReader packet)
+        {
+            try
+            {
+                var macAdress = ConvertMacAddressToString(packet.ReadInt64());
+                var Timestamp = packet.ReadUInt();
+                var palavraCodificada = packet.ReadUShort();
+                var IdCliente = packet.ReadInt();
+                var CobyteCodificado1 = packet.ReadByte();
+                var CobyteCodificado2 = packet.ReadByte();
 
-                        _logger.Debug($"Sending selected server info...");
-                        client.Send(new ConnectGameServerInfoPacket(
-                            _configuration[GameServerAddress],
-                            _configuration[GameServerPort],
-                            character.Location.MapId).Serialize());
-                    }
-                    break;
+                var handshakeTimestamp = (uint)DateTimeOffset.Now.ToUnixTimeSeconds();
+                var handshake = (short)(client.Handshake ^ HandshakeDegree);
 
-                case CharacterServerPacketEnum.ConnectGameServer:
-                    {
-                        _logger.Debug("Sending answer to connect to game server...");
-                        client.Send(new ConnectGameServerPacket().Serialize());
-                    }
-                    break;
-
-                default:
-                    _logger.Warning($"Unknown packet. Type: {packet.Type} Length: {packet.Length}.");
-                    break;
+                _logger?.Debug("Enviando resposta de conexão para {Address}", client.ClientAddress);
+                client.Send(new ConnectionPacket(handshake, handshakeTimestamp));
+            }
+            catch (Exception ex)
+            {
+                _logger?.Error(ex, "Erro ao processar pacote de conexão: {Message}", ex.Message);
             }
         }
 

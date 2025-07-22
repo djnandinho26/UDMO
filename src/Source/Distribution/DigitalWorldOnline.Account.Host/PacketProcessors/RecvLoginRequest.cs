@@ -64,7 +64,7 @@ public class RecvLoginRequest : IAuthePacketProcessor
     /// Processa a requisição de login do cliente.
     /// </summary>
     /// <param name="client">Cliente do jogo que enviou o pacote</param>
-    /// <param name="packetData">Dados do pacote recebido</param>
+    /// <param name="packetData">Dados do pacote recebido (apenas payload, sem header)</param>
     /// <exception cref="ArgumentNullException">Lançada quando client ou packetData são nulos</exception>
     /// <returns>Task representando a operação assíncrona</returns>
     public async Task Process(GameClient client, byte[] packetData)
@@ -75,21 +75,26 @@ public class RecvLoginRequest : IAuthePacketProcessor
 
         try
         {
-            // Cria um leitor de pacotes para processar os dados recebidos
-            var packet = new AuthenticationPacketReader(packetData);
+            // Cria um MemoryStream diretamente com os dados do payload
+            using var stream = new MemoryStream(packetData);
+            using var reader = new BinaryReader(stream);
 
-            Debug.WriteLine($"Packet RECV : {packet.Type} \r\n{Dump.HexDump(packetData, packet.Length)}");
+            Debug.WriteLine($"Processing login packet with {packetData.Length} bytes of payload data");
 
-            // Extrai as informações do pacote
-            var g_nNetVersion = packet.ReadUInt();
-            var GetUserType = ExtractString(packet);
-            var username = ExtractString(packet);
-            var password = ExtractString(packet);
-            var szCpuName = ExtractString(packet);
-            var szGpuName = ExtractString(packet);
-            var nPhyMemory = packet.ReadInt() / 1024;
-            var szOS = ExtractString(packet);
-            var szDxVersion = ExtractString(packet);
+            // Lê diretamente os dados do payload sem criar AuthenticationPacketReader
+            var g_nNetVersion = BitConverter.ToUInt32(reader.ReadBytes(4), 0);
+            var GetUserType = ExtractString(reader);
+            var username = ExtractString(reader);
+            var password = ExtractString(reader);
+            var szCpuName = ExtractString(reader);
+            var szGpuName = ExtractString(reader);
+            var nPhyMemory = BitConverter.ToInt32(reader.ReadBytes(4), 0) / 1024;
+            var szOS = ExtractString(reader);
+            var szDxVersion = ExtractString(reader);
+
+            // Debug para verificar se os valores estão sendo lidos corretamente
+            _logger.Debug("Dados extraídos - Versão: {Version}, Tipo: {Type}, Usuário: {Username}",
+                g_nNetVersion, GetUserType, username);
 
             // Registra início da validação de login no log
             _logger.Debug("Validando dados de login para {Usuario}", username);
@@ -159,18 +164,16 @@ public class RecvLoginRequest : IAuthePacketProcessor
                 return;
             }
 
-            // Envia o pacote solicitando configuração ou entrada da senha secundária, conforme necessário
-            var secPassScreen = conta.SecondaryPassword == null
-                ? SecondaryPasswordScreenEnum.RequestSetup
-                : SecondaryPasswordScreenEnum.RequestInput;
+            //// Envia o pacote solicitando configuração ou entrada da senha secundária, conforme necessário
+            //var secPassScreen = conta.SecondaryPassword == null
+            //    ? SecondaryPasswordScreenEnum.RequestSetup
+            //    : SecondaryPasswordScreenEnum.RequestInput;
+
+
+            var secPassScreen = SecondaryPasswordScreenEnum.Hide;
 
             client.Send(new LoginRequestAnswerPacket(secPassScreen));
 
-            // Configura para esconder a tela de senha secundária
-            //client.Send(new LoginRequestAnswerPacket(SecondaryPasswordScreenEnum.Hide));
-
-            // Verifica se deve enviar hash de recursos
-            // Verifica se deve enviar informações de hash de recursos
             // Verifica se deve enviar hash de recursos
             if (_authenticationServerConfiguration?.UseHash == true)
             {
@@ -197,24 +200,24 @@ public class RecvLoginRequest : IAuthePacketProcessor
                             _logger.Warning("Hash de recursos para ClientVersion=1 não encontrado");
                         }
                     }
-                    if (g_nNetVersion == 22011101)
+                    else if (g_nNetVersion == 22011101)
                     {
-                        // Busca um hash com ClientVersion = 1
+                        // Busca um hash com ClientVersion = 2
                         var clientVersionHash = hashList.FirstOrDefault(h => h.ClientVersion == 2);
 
                         if (clientVersionHash != null && !string.IsNullOrEmpty(clientVersionHash.Hash))
                         {
-                            _logger.Debug("Enviando hash para o cliente com versão 20031701: {Hash}", clientVersionHash.Hash);
+                            _logger.Debug("Enviando hash para o cliente com versão 22011101: {Hash}", clientVersionHash.Hash);
                             client.Send(new ResourcesHashPacket(clientVersionHash.Hash));
                         }
                         else
                         {
-                            _logger.Warning("Hash de recursos para ClientVersion=1 não encontrado");
+                            _logger.Warning("Hash de recursos para ClientVersion=2 não encontrado");
                         }
                     }
                     else
                     {
-                        _logger.Debug("Versão do cliente {ClientVersion} não corresponde à versão específica (20031701)", g_nNetVersion);
+                        _logger.Debug("Versão do cliente {ClientVersion} não corresponde às versões conhecidas", g_nNetVersion);
                     }
                 }
                 else
@@ -248,23 +251,22 @@ public class RecvLoginRequest : IAuthePacketProcessor
         }
     }
 
-    public static string ExtractString(AuthenticationPacketReader packet) => ExtractData(packet);
-
     /// <summary>
-    /// Extrai uma string do pacote de autenticação, lidando com o formato específico dos dados.
+    /// Extrai uma string do BinaryReader, lidando com o formato específico dos dados.
     /// </summary>
-    /// <param name="packet">O pacote de autenticação a ser processado</param>
-    /// <returns>A string extraída do pacote</returns>
+    /// <param name="reader">O BinaryReader para ler os dados</param>
+    /// <returns>A string extraída</returns>
     /// <exception cref="InvalidDataException">Lançada quando o tamanho da string é inválido</exception>
     /// <exception cref="InvalidOperationException">Lançada quando ocorre um erro ao extrair os dados</exception>
-    private static string ExtractData(AuthenticationPacketReader packet)
+    private static string ExtractString(BinaryReader reader)
     {
-        ArgumentNullException.ThrowIfNull(packet, nameof(packet));
+        ArgumentNullException.ThrowIfNull(reader, nameof(reader));
 
         try
         {
-            // Lê o tamanho da string (o primeiro byte indica o tamanho)
-            int size = packet.ReadByte();
+            // Lê o tamanho da string (2 bytes - short)
+            byte[] sizeBytes = reader.ReadBytes(2);
+            int size = BitConverter.ToInt16(sizeBytes, 0);
 
             // Verifica se o tamanho é válido
             if (size < 0)
@@ -274,11 +276,13 @@ public class RecvLoginRequest : IAuthePacketProcessor
             if (size == 0)
                 return string.Empty;
 
-            // Lê os bytes da string (tamanho + 1 para incluir o byte nulo de terminação)
-            byte[] stringBytes = packet.ReadBytes(size + 1);
+            // Lê os bytes da string apenas se o tamanho for maior que zero
+            byte[] stringBytes = reader.ReadBytes(size);
 
-            // Converte os bytes para string, removendo caracteres nulos no final
-            return Encoding.ASCII.GetString(stringBytes).TrimEnd('\0');
+            // Converte os bytes para string usando ASCII e remove caracteres nulos
+            string result = Encoding.ASCII.GetString(stringBytes).TrimEnd('\0');
+
+            return result;
         }
         catch (Exception ex) when (ex is not InvalidDataException && ex is not ArgumentNullException)
         {

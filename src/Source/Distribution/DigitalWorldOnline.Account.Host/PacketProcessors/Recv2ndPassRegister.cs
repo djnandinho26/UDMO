@@ -51,15 +51,37 @@ internal class Recv2ndPassRegister : IAuthePacketProcessor
         _logger?.Debug($"{message}");
     }
 
-    public static string ExtractMD5Hash(AuthenticationPacketReader packet) => ExtractData(packet);
-
-
-    private static string ExtractData(AuthenticationPacketReader packet)
+    private static string ExtractSecondaryPassword(BinaryReader reader)
     {
-        int size = 32;
-        string data = Encoding.ASCII.GetString(packet.ReadBytes(size)).Trim();
-        int sizenull = packet.ReadByte();
-        return data;
+        ArgumentNullException.ThrowIfNull(reader, nameof(reader));
+
+        try
+        {
+            // Lê o tamanho da string (2 bytes - short)
+            byte[] sizeBytes = reader.ReadBytes(2);
+            int size = BitConverter.ToInt16(sizeBytes, 0);
+
+            // Verifica se o tamanho é válido
+            if (size < 0)
+                throw new InvalidDataException("Valor do tamanho inválido: não pode ser negativo");
+
+            // Caso o tamanho seja zero, retorna string vazia
+            if (size == 0)
+                return string.Empty;
+
+            // Lê os bytes da string apenas se o tamanho for maior que zero
+            byte[] stringBytes = reader.ReadBytes(size);
+
+            // Converte os bytes para string usando ASCII e remove caracteres nulos
+            string result = Encoding.ASCII.GetString(stringBytes).TrimEnd('\0');
+
+            return result;
+        }
+        catch (Exception ex) when (ex is not InvalidDataException && ex is not ArgumentNullException)
+        {
+            // Captura e relança exceções com informações de contexto adicionais
+            throw new InvalidOperationException("Falha ao extrair dados do pacote de autenticação", ex);
+        }
     }
 
     public async Task Process(GameClient client, byte[] packetData)
@@ -71,10 +93,11 @@ internal class Recv2ndPassRegister : IAuthePacketProcessor
         try
         {
             // Cria um leitor de pacotes para processar os dados recebidos
-            var packet = new AuthenticationPacketReader(packetData);
+            using var stream = new MemoryStream(packetData);
+            using var reader = new BinaryReader(stream);
 
             DebugLog("Leitura de parâmetros de pacotes...");
-            var securityPassword = ExtractMD5Hash(packet);
+            var securityPassword = ExtractSecondaryPassword(reader);
 
             DebugLog($"Atualizando {client.AccountId} Informações da conta ...");
             await _sender.Send(new CreateOrUpdateSecondaryPasswordCommand(client.AccountId, securityPassword));

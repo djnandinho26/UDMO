@@ -1,6 +1,7 @@
 ﻿using DigitalWorldOnline.Application.Admin.Repositories;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Repositories.Admin;
+using DigitalWorldOnline.Commons.Utils;
 using DigitalWorldOnline.Infrastructure;
 using DigitalWorldOnline.Infrastructure.Mapping;
 using DigitalWorldOnline.Infrastructure.Repositories.Account;
@@ -16,7 +17,7 @@ using Microsoft.Extensions.Hosting;
 using Serilog;
 using Serilog.Events;
 using System.Globalization;
-using DigitalWorldOnline.Commons.Utils;
+using System.Reflection;
 
 namespace DigitalWorldOnline.Character
 {
@@ -91,14 +92,20 @@ namespace DigitalWorldOnline.Character
                         cfg.RegisterServicesFromAssembly(typeof(DigitalWorldOnline.Application.Separar.Queries.CharacterByIdQueryHandler).Assembly);
                     });
 
-                    services.AddAutoMapper(typeof(AccountProfile));
-                    services.AddAutoMapper(typeof(AssetsProfile));
-                    services.AddAutoMapper(typeof(CharacterProfile));
-                    services.AddAutoMapper(typeof(ConfigProfile));
-                    services.AddAutoMapper(typeof(DigimonProfile));
-                    services.AddAutoMapper(typeof(GameProfile));
-                    services.AddAutoMapper(typeof(SecurityProfile));
-                    services.AddAutoMapper(typeof(ArenaProfile));
+                    services.AddAutoMapper(cfg =>
+                    {
+                        cfg.AddProfile<AccountProfile>();
+                        cfg.AddProfile<AssetsProfile>();
+                        cfg.AddProfile<CharacterProfile>();
+                        cfg.AddProfile<ConfigProfile>();
+                        cfg.AddProfile<DigimonProfile>();
+                        cfg.AddProfile<GameProfile>();
+                        cfg.AddProfile<SecurityProfile>();
+                        cfg.AddProfile<ArenaProfile>();
+                    });
+
+                    // Registrar os processadores de pacotes de autenticação
+                    AddProcessors(services);
                 })
                 .ConfigureHostConfiguration(hostConfig =>
                 {
@@ -109,6 +116,17 @@ namespace DigitalWorldOnline.Character
                 })
                 .Build();
         }
+
+        private static void AddProcessors(IServiceCollection services)
+        {
+            var packetProcessors = Assembly.GetExecutingAssembly()
+                .GetTypes()
+                .Where(t => typeof(ICharacterPacketProcessor).IsAssignableFrom(t) && !t.IsInterface)
+                .ToList();
+
+            packetProcessors.ForEach(processor => { services.AddSingleton(typeof(ICharacterPacketProcessor), processor); });
+        }
+
 
         private static ILogger ConfigureLogger(IConfiguration configuration)
         {

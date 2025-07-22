@@ -60,12 +60,6 @@ namespace DigitalWorldOnline.Account
         /// <param name="client">O cliente do jogo que enviou o pacote</param>
         /// <param name="data">Os bytes do pacote</param>
         /// <returns>Uma tarefa representando a operação assíncrona</returns>
-        /// <summary>
-        /// Processa pacotes TCP recebidos do cliente do jogo.
-        /// </summary>
-        /// <param name="client">O cliente do jogo que enviou o pacote</param>
-        /// <param name="data">Os bytes do pacote</param>
-        /// <returns>Uma tarefa representando a operação assíncrona</returns>
         public async Task ProcessPacketAsync(GameClient client, byte[] data)
         {
             ArgumentNullException.ThrowIfNull(client, nameof(client));
@@ -90,10 +84,24 @@ namespace DigitalWorldOnline.Account
 
                 PacketReaderExtensions.SaveAsync(data, packet.Type, packet.Length).Wait();
 
-                SysCons.LogPacketRecv($"{packet.Type} \r\n{Dump.HexDump(data, packet.Length)}");
+                // Log do hex dump tanto no console quanto nos arquivos
+                string hexDumpOutput = $"RECV [{client.ClientAddress}] Tipo: {packet.Type} ({packet.Enum}) | Tamanho: {packet.Length}\r\n{Dump.HexDump(data, packet.Length)}";
+
+                // Exibe no console com cores
+                //DisplayPacketHexInConsole(client.ClientAddress, packet.Type, packet.Enum.ToString(), packet.Length, data);
+
+                // Log nos arquivos
+                SysCons.LogPacketRecv(hexDumpOutput);
 
                 // Se o pacote não for válido e não for um pacote de conexão, ignoramos o processamento
                 if (!packet.IsValid && packet.Enum != AuthenticationServerPacketEnum.Connection)
+                {
+                    _logger?.Warning("Ignorando pacote inválido tipo {Type} de {Address}",
+                        packet.Enum, client.ClientAddress);
+                    return;
+                }
+                // Se o pacote não for válido e não for um pacote de conexão, ignoramos o processamento
+                if (!packet.IsValid && packet.Enum != AuthenticationServerPacketEnum.KeepConnection)
                 {
                     _logger?.Warning("Ignorando pacote inválido tipo {Type} de {Address}",
                         packet.Enum, client.ClientAddress);
@@ -115,10 +123,13 @@ namespace DigitalWorldOnline.Account
 
                 if (processor != null)
                 {
-                    // Executa o processador correspondente
+                    // Extrai apenas os dados do payload, removendo header e checksum
+                    byte[] payloadData = ExtractPayloadData(data, packet.Length,packet.Type);
+
+                    // Executa o processador correspondente com apenas os dados úteis
                     try
                     {
-                        await processor.Process(client, data);
+                        await processor.Process(client, payloadData);
                         _logger?.Debug("Processado pacote {Type} com sucesso", packet.Enum);
                     }
                     catch (Exception ex)
@@ -161,6 +172,106 @@ namespace DigitalWorldOnline.Account
                     client.Disconnect();
                 }
             }
+        }
+
+        /// <summary>
+        /// Exibe o hex dump do pacote no console com formatação colorida.
+        /// </summary>
+        /// <param name="clientAddress">Endereço do cliente</param>
+        /// <param name="packetType">Tipo do pacote (valor numérico)</param>
+        /// <param name="packetEnum">Nome do enum do pacote</param>
+        /// <param name="packetLength">Tamanho do pacote</param>
+        /// <param name="data">Dados do pacote</param>
+        private void DisplayPacketHexInConsole(string clientAddress, int packetType, string packetEnum, int packetLength, byte[] data)
+        {
+            try
+            {
+                string timestamp = DateTime.Now.ToString("HH:mm:ss");
+                string hexDump = Dump.HexDump(data, packetLength);
+
+                // Usar lock para evitar que diferentes threads misturem saídas do console
+                lock (Console.Out)
+                {
+                    // Header do pacote
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.Write($"[{timestamp}] ");
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write($"[PACKET-RECV] ");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write($"Cliente: ");
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.Write($"{clientAddress} ");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write($"| Tipo: ");
+                    Console.ForegroundColor = ConsoleColor.Magenta;
+                    Console.Write($"{packetType} ");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    Console.Write($"({packetEnum}) | Tamanho: ");
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine($"{packetLength} bytes");
+
+                    // Hex dump
+                    Console.ForegroundColor = ConsoleColor.Gray;
+                    Console.WriteLine(hexDump);
+
+                    // Linha separadora
+                    Console.ForegroundColor = ConsoleColor.DarkGray;
+                    Console.WriteLine(new string('-', 80));
+
+                    Console.ResetColor();
+                }
+            }
+            catch (Exception ex)
+            {
+                // Fallback em caso de erro na exibição
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"[ERRO AO EXIBIR HEX] {ex.Message}");
+                Console.ResetColor();
+            }
+        }
+
+        /// <summary>
+        /// Extrai apenas os dados do payload do pacote, removendo o header e checksum.
+        /// </summary>
+        /// <param name="rawData">Dados brutos do pacote</param>
+        /// <param name="packetLength">Tamanho declarado do pacote</param>
+        /// <returns>Array de bytes contendo apenas os dados do payload</returns>
+        private byte[] ExtractPayloadData(byte[] rawData, int packetLength,int type)
+        {
+            // Estrutura do pacote:
+            // [4 bytes: Length] [2 bytes: Type] [payload data] [4 bytes: Checksum]
+
+            const int headerSize = 6; // Length (4) + Type (2)
+            const int checksumSize = 4; // Checksum (4)
+
+            // Calcula o tamanho do payload (dados úteis)
+            int payloadSize = packetLength - headerSize - checksumSize;
+
+            // Verifica se o tamanho é válido e exibe informações adicionais no console
+            if (payloadSize < 0 || headerSize + payloadSize > rawData.Length)
+            {
+                _logger?.Warning("Tamanho de payload inválido: {PayloadSize}, tamanho do pacote: {PacketLength},Type: {type}",
+                    payloadSize, packetLength);
+
+                // Exibe aviso também no console
+                lock (Console.Out)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"[AVISO] Payload inválido - Type: {type}, Size: {payloadSize}, PacketLength: {packetLength}, RawDataLength: {rawData.Length}");
+                    Console.ResetColor();
+                }
+
+                return Array.Empty<byte>();
+            }
+
+            // Extrai apenas os dados do payload
+            byte[] payload = new byte[payloadSize];
+            Array.Copy(rawData, headerSize, payload, 0, payloadSize);
+
+            _logger?.Debug("Payload extraído: {PayloadSize} bytes de um pacote de {PacketLength} bytes",
+                payloadSize, packetLength);
+
+            return payload;
         }
 
         /// <summary>

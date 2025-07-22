@@ -613,7 +613,7 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// <param name="serverId">Target server id.</param>
         public static CharacterModel Create(
             long accountId, string name,
-            int model, byte position,
+            int model,
             long serverId)
         {
             var character = new CharacterModel()
@@ -621,7 +621,6 @@ namespace DigitalWorldOnline.Commons.Models.Character
                 AccountId = accountId,
                 Name = name,
                 Model = (CharacterModelEnum)model,
-                Position = position,
                 ServerId = serverId
             };
 

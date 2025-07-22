@@ -8,24 +8,24 @@ namespace DigitalWorldOnline.Commons.Readers
         public int Length {get; set; }
         public int Type { get; set; }
 
-        public const int CheckSumValidation = 6716;
+        public const int CheckSumValidation = 0x2B4D1A3C;
 
         protected PacketReaderBase() => Packet = new();
 
         #region [Position]
-        public virtual void Seek(long position)
+        public void Seek(long position)
         {
             Packet.Seek(position, SeekOrigin.Begin);
         }
 
-        public virtual void Skip(long bytes)
+        public void Skip(long bytes)
         {
             Packet.Seek(bytes, SeekOrigin.Current);
         }
         #endregion
 
         #region [Read Data]
-        public virtual byte ReadByte()
+        public byte ReadByte()
         {
             byte[] buffer = new byte[1];
             Packet.Read(buffer, 0, 1);
@@ -41,7 +41,7 @@ namespace DigitalWorldOnline.Commons.Readers
             return buffer;
         }
 
-        public virtual short ReadShort()
+        public short ReadShort()
         {
             byte[] buffer = new byte[2];
             Packet.Read(buffer, 0, 2);
@@ -49,7 +49,7 @@ namespace DigitalWorldOnline.Commons.Readers
             return BitConverter.ToInt16(buffer, 0);
         }
 
-        public virtual ushort ReadUShort()
+        public ushort ReadUShort()
         {
             byte[] buffer = new byte[2];
             Packet.Read(buffer, 0, 2);
@@ -57,7 +57,7 @@ namespace DigitalWorldOnline.Commons.Readers
             return BitConverter.ToUInt16(buffer, 0);
         }
 
-        public virtual int ReadInt()
+        public int ReadInt()
         {
             byte[] buffer = new byte[4];
             Packet.Read(buffer, 0, 4);
@@ -65,7 +65,7 @@ namespace DigitalWorldOnline.Commons.Readers
             return BitConverter.ToInt32(buffer, 0);
         }
 
-        public virtual uint ReadUInt()
+        public uint ReadUInt()
         {
             byte[] buffer = new byte[4];
             Packet.Read(buffer, 0, 4);
@@ -73,7 +73,7 @@ namespace DigitalWorldOnline.Commons.Readers
             return BitConverter.ToUInt32(buffer, 0);
         }
 
-        public virtual long ReadInt64()
+        public long ReadInt64()
         {
             byte[] buffer = new byte[8];
             Packet.Read(buffer, 0, 8);
@@ -89,7 +89,7 @@ namespace DigitalWorldOnline.Commons.Readers
             return BitConverter.ToInt32(buffer, 0);
         }
 
-        public virtual float ReadFloat()
+        public float ReadFloat()
         {
             byte[] buffer = new byte[4];
             Packet.Read(buffer, 0, 4);
@@ -99,11 +99,11 @@ namespace DigitalWorldOnline.Commons.Readers
 
         public string ReadString()
         {
-            int len = Packet.ReadByte();
+            int len = ReadShort();
 
             byte[] buffer = new byte[len];
             Packet.Read(buffer, 0, len);
-            
+
             return Encoding.ASCII.GetString(buffer).Trim();
         }
 
@@ -113,7 +113,11 @@ namespace DigitalWorldOnline.Commons.Readers
 
             while (Packet.CanRead)
             {
-                int data = Packet.ReadByte();
+                // Verifica se há pelo menos 2 bytes para ler um Int16
+                if (Packet.Position + 1 >= Packet.Length)
+                    break;
+
+                int data = ReadShort();
 
                 if (data == 0)
                     break;

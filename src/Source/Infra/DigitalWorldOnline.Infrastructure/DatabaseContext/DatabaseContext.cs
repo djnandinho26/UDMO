@@ -33,12 +33,12 @@ namespace DigitalWorldOnline.Infrastructure
             }
             catch (SqlException ex)
             {
-                Console.WriteLine("Error connecting to the database:\n" + ex.Message);
+                Console.WriteLine("Erro se conectando ao banco de dados:\n" + ex.Message);
                 throw;
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error configuring the database connection:\n" + ex.Message);
+                Console.WriteLine("Erro de configuração da conexão do banco de dados:\n" + ex.Message);
                 throw;
             }
         }

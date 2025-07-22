@@ -22,7 +22,7 @@ namespace DigitalWorldOnline.Commons.Interfaces
 
         //Task<AccountBlockDTO> AddBanAsync(AccountBlockModel ban);
 
-        Task<DeleteCharacterResultEnum> DeleteCharacterByAccountAndPositionAsync(long accountId, byte characterPosition);
+        Task<DeleteCharacterResultEnum> DeleteCharacterByAccountAndPositionAsync(long accountId, long CharacterId);
 
         Task UpdateDigicloneAsync(DigimonDigicloneModel digiclone);
 

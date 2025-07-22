@@ -40,7 +40,7 @@ namespace DigitalWorldOnline.Account
         /// <exception cref="ArgumentException">Lançada quando o buffer é muito pequeno</exception>
         public AuthenticationPacketReader(byte[] buffer, GameClient client = null)
         {
-            if (buffer == null || buffer.Length < 6) // Verifica se o buffer tem pelo menos o tamanho mínimo necessário
+            if (buffer == null || buffer.Length < 10) // Verifica se o buffer tem pelo menos o tamanho mínimo necessário
                 throw new ArgumentException("Buffer de pacote inválido ou muito pequeno", nameof(buffer));
 
             Packet = new(buffer);
@@ -48,7 +48,7 @@ namespace DigitalWorldOnline.Account
             try
             {
                 // Lê o tamanho e o tipo do pacote
-                Length = ReadShort();
+                Length = ReadInt();
                 Type = ReadShort();
 
                 // Verifica se o tamanho declarado é válido
@@ -151,15 +151,15 @@ namespace DigitalWorldOnline.Account
         private void ValidateChecksum()
         {
             // Verificar se o pacote tem tamanho suficiente para conter um checksum
-            if (Packet.Length < Length || Length < 6)
+            if (Packet.Length < Length || Length < 8)
             {
                 throw new Exception($"Pacote muito pequeno para conter checksum válido: {Length} bytes");
             }
 
-            // Move para a posição do checksum (fim do pacote menos 2 bytes)
-            Packet.Seek(Length - 2, SeekOrigin.Begin);
+            // Move para a posição do checksum (fim do pacote menos 4 bytes)
+            Packet.Seek(Length - 4, SeekOrigin.Begin);
             // Lê o checksum e valida
-            int checksum = ReadShort();
+            int checksum = ReadInt();
 
             // Se o checksum for 0, aceita o pacote sem validação
             if (checksum == 0)

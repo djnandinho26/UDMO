@@ -100,14 +100,18 @@ namespace DigitalWorldOnline.Account
                         cfg.RegisterServicesFromAssembly(typeof(DigitalWorldOnline.Application.Separar.Queries.AccountByUsernameQueryHandler).Assembly);
                     });
 
-                    services.AddAutoMapper(typeof(AccountProfile));
-                    services.AddAutoMapper(typeof(AssetsProfile));
-                    services.AddAutoMapper(typeof(CharacterProfile));
-                    services.AddAutoMapper(typeof(ConfigProfile));
-                    services.AddAutoMapper(typeof(DigimonProfile));
-                    services.AddAutoMapper(typeof(GameProfile));
-                    services.AddAutoMapper(typeof(SecurityProfile));
-                    services.AddAutoMapper(typeof(ShopProfile));
+                    // Corrigir a chamada para AddAutoMapper passando o tipo de perfil corretamente
+                    services.AddAutoMapper(cfg =>
+                    {
+                        cfg.AddProfile<AccountProfile>();
+                        cfg.AddProfile<AssetsProfile>();
+                        cfg.AddProfile<CharacterProfile>();
+                        cfg.AddProfile<ConfigProfile>();
+                        cfg.AddProfile<DigimonProfile>();
+                        cfg.AddProfile<GameProfile>();
+                        cfg.AddProfile<SecurityProfile>();
+                        cfg.AddProfile<ShopProfile>();
+                    });
 
                     // Registrar os processadores de pacotes de autenticação
                     AddProcessors(services);

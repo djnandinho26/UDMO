@@ -7,12 +7,12 @@ namespace DigitalWorldOnline.Application.Separar.Commands.Delete
     {
         public long AccountId { get; set; }
 
-        public byte CharacterPosition { get; set; }
+        public long CharacterId { get; set; }
 
-        public DeleteCharacterCommand(long accountId, byte characterPosition)
+        public DeleteCharacterCommand(long accountId, long characterId)
         {
             AccountId = accountId;
-            CharacterPosition = characterPosition;
+            CharacterId = characterId;
         }
     }
 }

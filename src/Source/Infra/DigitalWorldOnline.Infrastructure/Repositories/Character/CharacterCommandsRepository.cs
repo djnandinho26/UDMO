@@ -108,7 +108,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
         }
 
         public async Task<DeleteCharacterResultEnum> DeleteCharacterByAccountAndPositionAsync(long accountId,
-            byte characterPosition)
+            long CharacterId)
         {
             try
             {
@@ -143,7 +143,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                     .Include(x => x.Digimons)
                     .ThenInclude(z => z.Evolutions)
                     .SingleOrDefaultAsync(x => x.AccountId == accountId &&
-                                               x.Position == characterPosition);
+                                               x.Id == CharacterId);
 
                 if (dto != null)
                 {
@@ -1423,7 +1423,7 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
                     .ToListAsync();
             }
 
-            if (!dto.IsNullOrEmpty())
+            if (dto != null && dto.Count > 0)
             {
                 dto.ForEach(friend => friend.SetConnected(connected));
                 await _context.SaveChangesAsync();

@@ -7,7 +7,7 @@ namespace DigitalWorldOnline.Commons.Writers
         public MemoryStream Packet { get; set; }
         public int Length => (int)Packet.Length;
 
-        public const int CheckSumValidation = 6716;
+        public const int CheckSumValidation = 0x2B4D1A3C;
 
         public PacketWriterBase()
         {
@@ -27,7 +27,7 @@ namespace DigitalWorldOnline.Commons.Writers
         #endregion
 
         #region [Write Data]
-        public void Type(int type)
+        public virtual void Type(int type)
         {
             Packet.Write(BitConverter.GetBytes(type), 0, 2);
         }
@@ -88,18 +88,44 @@ namespace DigitalWorldOnline.Commons.Writers
         {
             if (value == null) value = String.Empty;
             byte[] buffer = Encoding.ASCII.GetBytes(value);
-            Packet.WriteByte((byte)buffer.Length);
+            WriteShort((short)buffer.Length);
             Packet.Write(buffer, 0, buffer.Length);
-            Packet.WriteByte(0);
         }
 
         public void WriteString(string value, int pos)
         {
             Packet.Seek(pos, SeekOrigin.Begin);
             byte[] buffer = Encoding.ASCII.GetBytes(value);
-            Packet.WriteByte((byte)value.Length);
+            WriteShort((short)buffer.Length);
             Packet.Write(buffer, 0, buffer.Length);
-            Packet.WriteByte(0);
+        }
+
+
+        public void WriteZString(string value)
+        {
+            if (value == null) value = String.Empty;
+            byte[] buffer = Encoding.UTF8.GetBytes(value);
+            WriteShort((short)(buffer.Length / 2)); // Comprimento em caracteres wide
+
+            // Escreve cada caractere como wchar_t (2 bytes)
+            foreach (char c in value)
+            {
+                WriteShort((short)c);
+            }
+        }
+
+        public void WriteZString(string value, int pos)
+        {
+            Packet.Seek(pos, SeekOrigin.Begin);
+            if (value == null) value = String.Empty;
+
+            WriteShort((short)value.Length); // Comprimento em caracteres wide
+
+            // Escreve cada caractere como wchar_t (2 bytes)
+            foreach (char c in value)
+            {
+                WriteShort((short)c);
+            }
         }
 
         public void WriteFloat(float value)

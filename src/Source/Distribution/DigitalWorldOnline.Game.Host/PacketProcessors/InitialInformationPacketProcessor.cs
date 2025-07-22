@@ -331,7 +331,7 @@ namespace DigitalWorldOnline.Game.PacketProcessors
 
         private byte? GetTargetChannel(byte currentChannel, Dictionary<byte, byte> channels)
         {
-            if (currentChannel == byte.MaxValue && !channels.IsNullOrEmpty())
+            if (currentChannel == byte.MaxValue && channels != null && channels.Count > 0)
             {
                 return SelectRandomChannel(channels.Keys);
             }

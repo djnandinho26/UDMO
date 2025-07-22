@@ -4,7 +4,7 @@ namespace DigitalWorldOnline.Commons.Packets.AuthenticationServer
 {
     public class OnConnectEventConnectionPacket : PacketWriter
     {
-        private const int PacketNumber = 65535;
+        private const ushort PacketNumber = 65535;
 
         /// <summary>
         /// Used on the listener for OnConnectEvent

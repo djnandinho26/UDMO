@@ -12,9 +12,9 @@ namespace DigitalWorldOnline.Commons.Packets.AuthenticationServer
         public ConnectCharacterServerPacket(long accountId, string ipAddress, string port)
         {
             Type(PacketNumber);
-            WriteUInt((uint)accountId, 4);
-            WriteInt((int)accountId, 8); 
-            WriteString(ipAddress, 12);
+            WriteUInt((uint)accountId);
+            WriteInt((int)accountId); 
+            WriteString(ipAddress);
             WriteUInt(uint.Parse(port));
         }
     }

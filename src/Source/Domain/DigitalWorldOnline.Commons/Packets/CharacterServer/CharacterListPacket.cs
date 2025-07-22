@@ -12,9 +12,17 @@ namespace DigitalWorldOnline.Commons.Packets.CharacterServer
         {
             Type(PacketNumber);
 
-            foreach (var character in characters.Where(x => x.Partner != null))
+            // Filtra e converte para lista uma única vez para evitar múltiplas enumerações
+            var validCharacters = characters?.Where(character => character?.Partner != null).ToList() ?? new List<CharacterModel>();
+
+            WriteInt(validCharacters.Count);
+
+            // Usa for loop para melhor performance e controle de exceções
+            for (int index = 0; index < validCharacters.Count; index++)
             {
-                WriteByte(character.Position);
+                var character = validCharacters[index];
+
+                WriteInt64(character.Id);
                 WriteShort(character.Location.MapId);
                 WriteInt(character.Model.GetHashCode());
                 WriteByte(character.Level);
@@ -22,10 +30,8 @@ namespace DigitalWorldOnline.Commons.Packets.CharacterServer
 
                 for (int i = 0; i < GeneralSizeEnum.Equipment.GetHashCode(); i++)
                 {
-                    if(i == 11)
-                        WriteBytes(character.Digivice.Items[0].ToArray(true));
-                    else
-                        WriteBytes(character.Equipment.Items[i].ToArray(true));
+                    //WriteBytes(character.Equipment.Items[i].ToArray(true));
+                    WriteBytes(new byte[59]);
                 }
 
                 WriteInt(character.Partner.BaseType);
@@ -35,11 +41,9 @@ namespace DigitalWorldOnline.Commons.Packets.CharacterServer
 
                 //TODO: Ver o que esses 2 mudam
                 WriteShort(0); //??
-                WriteShort(0); //??
                 WriteShort(character.SealList.SealLeaderId);
+                WriteShort(0); //??
             }
-
-            WriteByte(99);
         }
     }
 }
