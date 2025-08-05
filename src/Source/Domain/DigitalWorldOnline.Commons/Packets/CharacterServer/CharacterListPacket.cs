@@ -62,7 +62,7 @@ namespace DigitalWorldOnline.Commons.Packets.CharacterServer
             WriteInt(character.Partner.BaseType);
             WriteByte(character.Partner.Level);
             WriteString(character.Partner.Name);
-            WriteShort(character.Partner.Size);
+            WriteInt(character.Partner.Size);
         }
 
         /// <summary>
@@ -71,13 +71,11 @@ namespace DigitalWorldOnline.Commons.Packets.CharacterServer
         /// <param name="character">Modelo do personagem</param>
         private void WriteReservedFields(CharacterModel character)
         {
-            // Primeiro campo reservado (2 bytes)
-            WriteShort(ReservedFieldValue); 
-            WriteShort(ReservedFieldValue);
+            WriteShort((short)character.EffectType);
 
             // SealLeaderId (1 byte) - com proteção null
             byte sealLeaderId = (byte)(character.SealList?.SealLeaderId ?? 0);
-            WriteByte(2);
+            WriteByte(sealLeaderId);
 
             // Segundo campo reservado (2 bytes)
             WriteShort((short)character.ServerTranf);

@@ -83,6 +83,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
 
         public int ServerTranf { get; private set; }
 
+        public int EffectType { get; private set; }
+
         /// <summary>
         /// Current connected channel.
         /// </summary>
