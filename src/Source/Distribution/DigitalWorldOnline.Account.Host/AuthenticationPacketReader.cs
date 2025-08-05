@@ -38,7 +38,7 @@ namespace DigitalWorldOnline.Account
         /// <param name="buffer">Array de bytes contendo os dados do pacote</param>
         /// <param name="client">Cliente que enviou o pacote (opcional)</param>
         /// <exception cref="ArgumentException">Lançada quando o buffer é muito pequeno</exception>
-        public AuthenticationPacketReader(byte[] buffer, GameClient client = null)
+        public AuthenticationPacketReader(byte[] buffer, GameClient? client = null)
         {
             if (buffer == null || buffer.Length < 10) // Verifica se o buffer tem pelo menos o tamanho mínimo necessário
                 throw new ArgumentException("Buffer de pacote inválido ou muito pequeno", nameof(buffer));
@@ -49,7 +49,7 @@ namespace DigitalWorldOnline.Account
             {
                 // Lê o tamanho e o tipo do pacote
                 Length = ReadInt();
-                Type = ReadShort();
+                Type = ReadUShort();
 
                 // Verifica se o tamanho declarado é válido
                 if (Length == 0)

@@ -75,22 +75,30 @@ namespace DigitalWorldOnline.Routine
                     services.AddScoped<ICharacterCommandsRepository, CharacterCommandsRepository>();
                     services.AddScoped<IConfigQueriesRepository, ConfigQueriesRepository>();
                     services.AddScoped<IConfigCommandsRepository, ConfigCommandsRepository>();
-                    services.AddAutoMapper(typeof(AccountProfile));
-                    services.AddAutoMapper(typeof(AssetsProfile));
-                    services.AddAutoMapper(typeof(CharacterProfile));
-                    services.AddAutoMapper(typeof(ConfigProfile));
-                    services.AddAutoMapper(typeof(DigimonProfile));
-                    services.AddAutoMapper(typeof(GameProfile));
-                    services.AddAutoMapper(typeof(SecurityProfile));
-                    services.AddAutoMapper(typeof(ArenaProfile));
-                    services.AddAutoMapper(typeof(RoutineProfile));
+                    
+                    // Configure AutoMapper
+                    services.AddAutoMapper(cfg =>
+                    {
+                        cfg.AddProfile<AccountProfile>();
+                        cfg.AddProfile<AssetsProfile>();
+                        cfg.AddProfile<CharacterProfile>();
+                        cfg.AddProfile<ConfigProfile>();
+                        cfg.AddProfile<DigimonProfile>();
+                        cfg.AddProfile<GameProfile>();
+                        cfg.AddProfile<SecurityProfile>();
+                        cfg.AddProfile<ArenaProfile>();
+                        cfg.AddProfile<RoutineProfile>();
+                    });
+                    
                     services.AddScoped<IRoutineRepository, RoutineRepository>();
                     services.AddSingleton<ISender, ScopedSender<Mediator>>();
                     services.AddSingleton(ConfigureLogger(context.Configuration));
                     services.AddHostedService<RoutineServer>();
                     services.AddTransient<Mediator>();
                     services.AddSingleton<AssetsLoader>();
-                    services.AddMediatR(typeof(MediatorApplicationHandlerExtension).GetTypeInfo().Assembly);
+                    
+                    // Configure MediatR
+                    services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(MediatorApplicationHandlerExtension).Assembly));
                 })
                 .ConfigureHostConfiguration(hostConfig =>
                 {

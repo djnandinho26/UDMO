@@ -28,7 +28,7 @@ namespace DigitalWorldOnline.Character
         /// <exception cref="ArgumentNullException">Lançada quando o buffer é nulo.</exception>
         /// <exception cref="ArgumentException">Lançada quando o buffer é muito pequeno para ser um pacote válido.</exception>
         /// <exception cref="Exception">Lançada quando o checksum do pacote é inválido.</exception>
-        public CharacterPacketReader(byte[] buffer, GameClient client = null)
+        public CharacterPacketReader(byte[] buffer, GameClient? client = null)
         {
             if (buffer == null || buffer.Length < 10) // Verifica se o buffer tem pelo menos o tamanho mínimo necessário
                 throw new ArgumentException("Buffer de pacote inválido ou muito pequeno", nameof(buffer));
@@ -39,7 +39,7 @@ namespace DigitalWorldOnline.Character
             {
                 // Lê o tamanho e o tipo do pacote
                 Length = ReadInt();
-                Type = ReadShort();
+                Type = ReadUShort();
 
                 // Verifica se o tamanho declarado é válido
                 if (Length == 0)

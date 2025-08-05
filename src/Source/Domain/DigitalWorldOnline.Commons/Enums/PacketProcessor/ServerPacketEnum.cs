@@ -3,7 +3,7 @@
     public enum ServerPacketEnum
     {
         Unknow,
-        Connection = -1,
-        KeepConnection = -3
+        Connection = 65535, // -1 as ushort
+        KeepConnection = 65533 // -3 as ushort
     }
 }

@@ -38,7 +38,7 @@ namespace DigitalWorldOnline.Commons.Writers
         {
             ThrowIfDisposed();
             // CORREÇÃO: Escreve apenas 2 bytes do tipo, não 4
-            byte[] typeBytes = BitConverter.GetBytes((short)type);
+            byte[] typeBytes = BitConverter.GetBytes((ushort)type);
             Packet.Write(typeBytes, 0, 2);
         }
 

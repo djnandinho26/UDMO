@@ -6,7 +6,7 @@ namespace DigitalWorldOnline.Commons.Readers
     {
         public MemoryStream Packet { get; set; }
         public int Length {get; set; }
-        public int Type { get; set; }
+        public ushort Type { get; set; }
 
         public const int CheckSumValidation = 0x2B4D1A3C;
 
@@ -135,10 +135,24 @@ namespace DigitalWorldOnline.Commons.Readers
 
         #endregion
 
+        private bool _disposed = false;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                {
+                    Packet?.Close();
+                    Packet?.Dispose();
+                }
+                _disposed = true;
+            }
+        }
+
         public void Dispose()
         {
-            Packet.Close();
-            Packet.Dispose();
+            Dispose(true);
             GC.SuppressFinalize(this);
         }
     }

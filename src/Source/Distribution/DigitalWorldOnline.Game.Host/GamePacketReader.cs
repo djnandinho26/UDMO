@@ -40,7 +40,7 @@ namespace DigitalWorldOnline.Game
                 Length = ReadShort();
 
                 // Lê o tipo do pacote (próximos 2 bytes)
-                Type = ReadShort();
+                Type = ReadUShort();
 
                 // Navega até a posição do checksum (final do pacote menos 2 bytes)
                 Packet.Seek(Length - 2, SeekOrigin.Begin);

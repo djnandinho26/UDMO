@@ -58,7 +58,10 @@ namespace DigitalWorldOnline.Api
 
             services.AddTransient<Mediator>();
             services.AddSingleton<ISender, ScopedSender<Mediator>>();
-            services.AddMediatR(typeof(MediatorApplicationHandlerExtension).GetTypeInfo().Assembly);
+            
+            // Configure MediatR
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(MediatorApplicationHandlerExtension).Assembly));
+            
             services.AddSingleton(ConfigureLogger(Configuration));
             services.AddMemoryCache();
             services.AddControllers();
@@ -83,13 +86,16 @@ namespace DigitalWorldOnline.Api
 
         private static void AddAutoMapper(IServiceCollection services)
         {
-            services.AddAutoMapper(typeof(AccountProfile));
-            services.AddAutoMapper(typeof(AssetsProfile));
-            services.AddAutoMapper(typeof(CharacterProfile));
-            services.AddAutoMapper(typeof(ConfigProfile));
-            services.AddAutoMapper(typeof(DigimonProfile));
-            services.AddAutoMapper(typeof(GameProfile));
-            services.AddAutoMapper(typeof(SecurityProfile));
+            services.AddAutoMapper(cfg =>
+            {
+                cfg.AddProfile<AccountProfile>();
+                cfg.AddProfile<AssetsProfile>();
+                cfg.AddProfile<CharacterProfile>();
+                cfg.AddProfile<ConfigProfile>();
+                cfg.AddProfile<DigimonProfile>();
+                cfg.AddProfile<GameProfile>();
+                cfg.AddProfile<SecurityProfile>();
+            });
         }
 
         static Serilog.ILogger ConfigureLogger(IConfiguration configuration)

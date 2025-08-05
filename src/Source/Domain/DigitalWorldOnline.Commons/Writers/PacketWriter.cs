@@ -278,7 +278,7 @@ namespace DigitalWorldOnline.Commons.Writers
 
                 // Escreve o tipo no stream da sessão (substitui o comportamento da classe base)
                 _currentSession.Stream.Seek(4, SeekOrigin.Begin); // Posiciona após o header
-                _currentSession.Stream.Write(BitConverter.GetBytes(type), 0, 2);
+                _currentSession.Stream.Write(BitConverter.GetBytes((ushort)type), 0, 2);
             }
         }
 

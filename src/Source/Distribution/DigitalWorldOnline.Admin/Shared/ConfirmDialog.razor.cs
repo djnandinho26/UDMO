@@ -5,15 +5,15 @@ namespace DigitalWorldOnline.Admin.Shared
     public partial class ConfirmDialog
     {
         [CascadingParameter] 
-        MudDialogInstance MudDialog { get; set; }
+        IDialogReference MudDialog { get; set; } = null!;
 
         [Parameter] 
-        public string ContentText { get; set; }
+        public string ContentText { get; set; } = string.Empty;
 
         [Parameter]
         public Color Color { get; set; } = Color.Error;
 
         void Submit() => MudDialog.Close(DialogResult.Ok(true));
-        void Cancel() => MudDialog.Cancel();
+        void Cancel() => MudDialog.Close(DialogResult.Cancel());
     }
 }

@@ -148,9 +148,9 @@
                         <MudText><b>!</b> - Command identifier</MudText>
                         <MudText><b>{ }</b> - Required value</MudText>
                         <MudText><b>[ ]</b> - Optional value</MudText>
-                        <MudList>
+                        <MudList T="string">
                             <!-- Inventory Label -->
-                            <MudListItem Icon="@Icons.Material.Filled.LabelImportant" Text="Inventory" Style="cursor: pointer;">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.LabelImportant" Text="Inventory" Style="cursor: pointer;">
                                 <NestedList>
                                     <MudTooltip Text="Increase your inventory slots." Arrow="true" Placement="Placement.Top">
                                         <MudListItem Text="!inv add {amount}" Value="1" Style="padding-left: 15px;" />
@@ -162,15 +162,15 @@
                                 </NestedList>
                             </MudListItem>
                             <!-- Items Label -->
-                            <MudListItem Icon="@Icons.Material.Filled.LabelImportant" Text="Items" Style="cursor: pointer;">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.LabelImportant" Text="Items" Style="cursor: pointer;">
                                 <NestedList>
                                     <MudTooltip Text="Adds an item to your inventory. Default amount is 1." Arrow="true" Placement="Placement.Top">
-                                        <MudListItem Text="!item {id} [amount]" Value="1" Style="padding-left: 15px;" />
+                                        <MudListItem T="string" Text="!item {id} [amount]" Value="@("1")" Style="padding-left: 15px;" />
                                     </MudTooltip>
                                 </NestedList>
                             </MudListItem>
                             <!-- Currency Label -->
-                            <MudListItem Icon="@Icons.Material.Filled.LabelImportant" Text="Currency" Style="cursor: pointer;">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.LabelImportant" Text="Currency" Style="cursor: pointer;">
                                 <NestedList>
                                     <MudTooltip Text="Adds bits to your inventory." Arrow="true" Placement="Placement.Top">
                                         <MudListItem Text="!currency bits {value}" Value="1" Style="padding-left: 15px;" />
@@ -186,7 +186,7 @@
                                 </NestedList>
                             </MudListItem>
                             <!-- Movimentation Label -->
-                            <MudListItem Icon="@Icons.Material.Filled.LabelImportant" Text="Movimentation" Style="cursor: pointer;">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.LabelImportant" Text="Movimentation" Style="cursor: pointer;">
                                 <NestedList>
                                     <MudTooltip Text="Teleports to the target map and region. Default region is 1." Arrow="true" Placement="Placement.Top">
                                         <MudListItem Text="!tp {mapid} [region]" Value="1" Style="padding-left: 15px;" />
@@ -214,7 +214,7 @@
                                 </NestedList>
                             </MudListItem>
                             <!-- Events Label -->
-                            <MudListItem Icon="@Icons.Material.Filled.LabelImportant" Text="Events" Style="cursor: pointer;">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.LabelImportant" Text="Events" Style="cursor: pointer;">
                                 <NestedList>
                                     <MudTooltip Text="Gives a new buff for everybody on the same area." Arrow="true" Placement="Placement.Top">
                                         <MudListItem Text="!buff area {code}" Value="1" Style="padding-left: 15px;" />
@@ -222,7 +222,7 @@
                                 </NestedList>
                             </MudListItem>
                             <!-- Tamer Label -->
-                            <MudListItem Icon="@Icons.Material.Filled.LabelImportant" Text="Tamer" Style="cursor: pointer;">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.LabelImportant" Text="Tamer" Style="cursor: pointer;">
                                 <NestedList>
                                     <MudTooltip Text="Increase your current experience." Arrow="true" Placement="Placement.Top">
                                         <MudListItem Text="!tamer exp add {value}" Value="1" Style="padding-left: 15px;" />
@@ -242,7 +242,7 @@
                                 </NestedList>
                             </MudListItem>
                             <!-- Digimon Label -->
-                            <MudListItem Icon="@Icons.Material.Filled.LabelImportant" Text="Digimon" Style="cursor: pointer;">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.LabelImportant" Text="Digimon" Style="cursor: pointer;">
                                 <NestedList>
                                     <MudTooltip Text="Increase your current experience." Arrow="true" Placement="Placement.Top">
                                         <MudListItem Text="!digimon exp add {value}" Value="1" Style="padding-left: 15px;" />
@@ -262,7 +262,7 @@
                                 </NestedList>
                             </MudListItem>
                             <!-- Comunication Label -->
-                            <MudListItem Icon="@Icons.Material.Filled.LabelImportant" Text="Comunication" Style="cursor: pointer;">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.LabelImportant" Text="Comunication" Style="cursor: pointer;">
                                 <NestedList>
                                     <MudTooltip Text="Sends a global message for the server." Arrow="true" Placement="Placement.Top">
                                         <MudListItem Text="!notice {message}" Value="1" Style="padding-left: 15px;" />
@@ -271,7 +271,7 @@
                                 </NestedList>
                             </MudListItem>
                             <!-- Miscellaneous Label -->
-                            <MudListItem Icon="@Icons.Material.Filled.LabelImportant" Text="Miscellaneous" Style="cursor: pointer;">
+                            <MudListItem T="string" Icon="@Icons.Material.Filled.LabelImportant" Text="Miscellaneous" Style="cursor: pointer;">
                                 <NestedList>
                                     <MudTooltip Text="Hide yourself from other players (except staff) and monsters. Attacks removes this state." Arrow="true" Placement="Placement.Top">
                                         <MudListItem Text="!hide" Value="1" Style="padding-left: 15px;" />

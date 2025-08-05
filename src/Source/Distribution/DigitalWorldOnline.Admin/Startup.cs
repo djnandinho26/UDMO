@@ -107,12 +107,14 @@ namespace DigitalWorldOnline.Admin
 
             services.AddTransient<Mediator>();
             services.AddSingleton<ISender, ScopedSender<Mediator>>();
-            services.AddMediatR(typeof(MediatorApplicationHandlerExtension).GetTypeInfo().Assembly);
+            services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(MediatorApplicationHandlerExtension).Assembly));
             services.AddSingleton(ConfigureLogger(Configuration));
 
-            services.AddAutoMapper(typeof(AdminProfile));
-            services.AddAutoMapper(typeof(AdminMappingProfile));
-            services.AddAutoMapper(typeof(ConfigProfile));
+            services.AddAutoMapper(cfg => {
+                cfg.AddProfile<AdminProfile>();
+                cfg.AddProfile<AdminMappingProfile>();
+                cfg.AddProfile<ConfigProfile>();
+            });
         }
 
         static ILogger ConfigureLogger(IConfiguration configuration)
@@ -120,9 +122,8 @@ namespace DigitalWorldOnline.Admin
             return new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
                 .Enrich.FromLogContext()
-                .WriteTo.RollingFile(configuration["Log:DebugRepository"] ?? "logs\\Debug\\Admin", Serilog.Events.LogEventLevel.Debug, retainedFileCountLimit: 100)
-                .WriteTo.RollingFile(configuration["Log:InformationRepository"] ?? "logs\\Information\\Admin", Serilog.Events.LogEventLevel.Information, retainedFileCountLimit: 100)
-                .WriteTo.RollingFile(configuration["Log:WarningRepository"] ?? "logs\\Warning\\Admin", Serilog.Events.LogEventLevel.Warning, retainedFileCountLimit: 100)
+                .WriteTo.Console()
+                .WriteTo.Debug()
                 .WriteTo.RollingFile(configuration["Log:ErrorRepository"] ?? "logs\\Error\\Admin", Serilog.Events.LogEventLevel.Error, retainedFileCountLimit: 100)
                 .CreateLogger();
         }

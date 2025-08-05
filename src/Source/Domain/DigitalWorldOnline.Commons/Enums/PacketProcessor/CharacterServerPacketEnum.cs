@@ -5,17 +5,17 @@
         /// <summary>
         /// Unknown packet
         /// </summary>
-        Unknown = -99,
+        Unknown = 65437, // -99 as ushort
 
         /// <summary>
         /// To avoid connection break/interrupt, the client sends this often.
         /// </summary>
-        KeepConnection = -3,
+        KeepConnection = 65533, // -3 as ushort
 
         /// <summary>
         /// Request connection with the server.
         /// </summary>
-        Connection = -1,
+        Connection = 65535, // -1 as ushort
 
         /// <summary>
         /// Checks if the selected character name is available.
