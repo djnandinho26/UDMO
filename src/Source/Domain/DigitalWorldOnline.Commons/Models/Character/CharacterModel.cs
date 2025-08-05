@@ -81,6 +81,8 @@ namespace DigitalWorldOnline.Commons.Models.Character
         /// </summary>
         public byte Channel { get; private set; }
 
+        public int ServerTranf { get; private set; }
+
         /// <summary>
         /// Current connected channel.
         /// </summary>

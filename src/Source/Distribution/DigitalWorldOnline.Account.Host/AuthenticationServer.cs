@@ -214,7 +214,7 @@ namespace DigitalWorldOnline.Account
             {
                 _logger.Debug($"Enviando handshake para fonte de solicitação {gameClientEvent.Client.ClientAddress}.");
                 gameClientEvent.Client.Send(new OnConnectEventConnectionPacket(gameClientEvent.Client.Handshake));
-                //gameClientEvent.Client.Send(new InjectPacket(65535, "9188B1D02D0E11D168F100"));
+                //gameClientEvent.Client.Send(new InjectPacket(65535, "ABD3D9CC24958DD7457C00"));
             }
             else
                 _logger.Warning($"Fonte de solicitação {gameClientEvent.Client.ClientAddress} foi desconectado.");

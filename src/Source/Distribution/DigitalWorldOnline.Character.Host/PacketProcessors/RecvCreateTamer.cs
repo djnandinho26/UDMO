@@ -4,7 +4,6 @@ using DigitalWorldOnline.Application.Separar.Queries;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
-using DigitalWorldOnline.Commons.Extensions;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Asset;
@@ -12,18 +11,12 @@ using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Models.Digimon;
 using DigitalWorldOnline.Commons.Packets.CharacterServer;
 using DigitalWorldOnline.Commons.Utils;
-using DigitalWorldOnline.Commons.Writers;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace DigitalWorldOnline.Character.PacketProcessors
 {
@@ -77,7 +70,6 @@ namespace DigitalWorldOnline.Character.PacketProcessors
                 {
                     _logger.Warning("Pacote de criação de personagem muito pequeno: {Length} bytes, esperado: {Expected}",
                         packetData.Length, expectedSize);
-                    client.Send(new CharacterCreationErrorPacket("Dados insuficientes no pacote."));
                     return;
                 }
 
@@ -104,7 +96,6 @@ namespace DigitalWorldOnline.Character.PacketProcessors
                 if (account == null)
                 {
                     _logger.Warning("Conta não encontrada para ID {AccountId}", client.AccountId);
-                    client.Send(new CharacterCreationErrorPacket("Conta não encontrada."));
                     return;
                 }
 
@@ -116,7 +107,6 @@ namespace DigitalWorldOnline.Character.PacketProcessors
                 if (existingCharacter != null)
                 {
                     _logger.Warning("Nome de domador '{TamerName}' já existe", tamerName);
-                    client.Send(new CharacterCreationErrorPacket("Nome já está em uso."));
                     return;
                 }
 
@@ -169,20 +159,17 @@ namespace DigitalWorldOnline.Character.PacketProcessors
                 else
                 {
                     _logger.Error("Falha ao criar personagem no banco de dados");
-                    client.Send(new CharacterCreationErrorPacket("Erro interno do servidor."));
                 }
             }
             catch (EndOfStreamException ex)
             {
                 _logger.Error(ex, "Dados insuficientes no pacote de criação de personagem de {ClientAddress}: {Message}",
                     client.ClientAddress, ex.Message);
-                client.Send(new CharacterCreationErrorPacket("Dados do pacote incompletos."));
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Erro ao processar requisição de criação de personagem de {ClientAddress}: {Message}",
                     client.ClientAddress, ex.Message);
-                client.Send(new CharacterCreationErrorPacket("Erro interno do servidor."));
             }
         }
 
@@ -369,7 +356,6 @@ namespace DigitalWorldOnline.Character.PacketProcessors
             if (tamerModel < 80001 || tamerModel > 80004) // Assumindo modelos válidos de 80001 a 80004
             {
                 _logger.Warning("Modelo de domador inválido: {TamerModel}", tamerModel);
-                client.Send(new CharacterCreationErrorPacket("Modelo de domador inválido."));
                 return false;
             }
 
@@ -377,7 +363,6 @@ namespace DigitalWorldOnline.Character.PacketProcessors
             if (digimonModel < 31001 || digimonModel > 31004) // Assumindo que IDs de digimon começam em 31001 ate 31004
             {
                 _logger.Warning("Modelo de digimon inválido: {DigimonModel}", digimonModel);
-                client.Send(new CharacterCreationErrorPacket("Modelo de digimon inválido."));
                 return false;
             }
 
@@ -386,7 +371,6 @@ namespace DigitalWorldOnline.Character.PacketProcessors
             {
                 _logger.Warning("Nomes inválidos após validação. Domador: '{TamerName}', Digimon: '{DigimonName}'",
                     tamerName, digimonName);
-                client.Send(new CharacterCreationErrorPacket("Nomes de personagem inválidos."));
                 return false;
             }
 
@@ -395,26 +379,10 @@ namespace DigitalWorldOnline.Character.PacketProcessors
             {
                 _logger.Warning("Nomes excedem o limite de {Limit} caracteres. Domador: {TamerLength}, Digimon: {DigimonLength}",
                     NameCharacterLimit, tamerName.Length, digimonName.Length);
-                client.Send(new CharacterCreationErrorPacket($"Nomes devem ter no máximo {NameCharacterLimit} caracteres."));
                 return false;
             }
 
             return true;
-        }
-    }
-
-    /// <summary>
-    /// Pacote de erro de criação de personagem
-    /// </summary>
-    public class CharacterCreationErrorPacket : PacketWriter
-    {
-        private const int PacketNumber = 1303; // Assumindo um número de pacote para erro
-
-        public CharacterCreationErrorPacket(string errorMessage)
-        {
-            Type(PacketNumber);
-            WriteByte(0); // Status de erro
-            WriteString(errorMessage);
         }
     }
 }

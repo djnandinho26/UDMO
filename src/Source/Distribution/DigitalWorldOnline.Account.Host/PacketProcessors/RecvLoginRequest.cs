@@ -80,6 +80,7 @@ public class RecvLoginRequest : IAuthePacketProcessor
             using var reader = new BinaryReader(stream);
 
             Debug.WriteLine($"Processing login packet with {packetData.Length} bytes of payload data");
+            
 
             // Lê diretamente os dados do payload sem criar AuthenticationPacketReader
             var g_nNetVersion = BitConverter.ToUInt32(reader.ReadBytes(4), 0);

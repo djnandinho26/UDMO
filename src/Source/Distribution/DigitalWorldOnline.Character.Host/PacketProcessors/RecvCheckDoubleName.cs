@@ -5,17 +5,11 @@ using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Extensions;
 using DigitalWorldOnline.Commons.Interfaces;
 using DigitalWorldOnline.Commons.Models.Account;
-using DigitalWorldOnline.Commons.Models.Character;
 using DigitalWorldOnline.Commons.Packets.CharacterServer;
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
-
 namespace DigitalWorldOnline.Character.PacketProcessors
 {
     internal class RecvCheckDoubleName : ICharacterPacketProcessor
@@ -73,7 +67,7 @@ namespace DigitalWorldOnline.Character.PacketProcessors
                 short nameLength = reader.ReadInt16();
 
                 // Valida o tamanho da string
-                if (nameLength < 0 || nameLength > 255) // Limite razoável para nome de personagem
+                if (nameLength < 0 || nameLength > 32) // Limite razoável para nome de personagem
                 {
                     _logger.Warning("Tamanho de nome inválido: {NameLength} de {ClientAddress}",
                         nameLength, client.ClientAddress);

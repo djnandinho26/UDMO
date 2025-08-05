@@ -64,7 +64,9 @@ namespace DigitalWorldOnline.Account
         {
             ArgumentNullException.ThrowIfNull(client, nameof(client));
             ArgumentNullException.ThrowIfNull(data, nameof(data));
-
+            
+            SysCons.LogPacketRecv($"\r\n{Dump.HexDump(data, data.Length)}");
+            
             if (data.Length < 4)
             {
                 _logger?.Warning("Pacote recebido muito pequeno para ser válido. Tamanho: {Length}", data.Length);

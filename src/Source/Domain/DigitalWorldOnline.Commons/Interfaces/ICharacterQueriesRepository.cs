@@ -7,7 +7,7 @@ namespace DigitalWorldOnline.Commons.Interfaces
     {
         Task<IList<CharacterDTO>> GetCharactersByAccountIdAsync(long accountId);
         
-        Task<CharacterDTO?> GetCharacterByAccountIdAndPositionAsync(long accountId, byte position);
+        Task<CharacterDTO?> GetCharacterByAccountIdAndPositionAsync(long accountId, long position);
 
         Task<CharacterDTO?> GetCharacterByIdAsync(long characterId);
 

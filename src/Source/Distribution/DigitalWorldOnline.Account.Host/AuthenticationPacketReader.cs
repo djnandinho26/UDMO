@@ -107,6 +107,8 @@ namespace DigitalWorldOnline.Account
                     catch (Exception ex)
                     {
                         IsValid = false;
+                        SysCons.LogPacketRecv($"{Type} \r\n{Dump.HexDump(buffer, Length)}");
+                        _logger?.Error("Buffer recebido: {Buffer}", BitConverter.ToString(buffer));
                         _logger?.Warning(ex, "Erro de validação de checksum para pacote {PacketType}, Tamanho: {Length}",
                             Enum, Length);
                         _logger?.Error("Buffer recebido: {Buffer}", BitConverter.ToString(buffer));
@@ -125,6 +127,8 @@ namespace DigitalWorldOnline.Account
             catch (Exception ex)
             {
                 IsValid = false;
+                SysCons.LogPacketRecv($"{Type} \r\n{Dump.HexDump(buffer, Length)}");
+                _logger?.Error("Buffer recebido: {Buffer}", BitConverter.ToString(buffer));
                 _logger?.Error(ex, "Erro ao processar pacote: {Message}. Buffer: {Buffer}",
                     ex.Message, BitConverter.ToString(buffer));
                 throw;

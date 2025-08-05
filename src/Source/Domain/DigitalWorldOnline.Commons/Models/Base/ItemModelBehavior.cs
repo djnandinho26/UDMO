@@ -214,16 +214,14 @@ namespace DigitalWorldOnline.Commons.Models.Base
                 if (ItemId > 0)
                 {
                     m.Write(BitConverter.GetBytes(ItemId), 0, 4);
-                    m.Write(BitConverter.GetBytes(Amount), 0, 4);
+                    m.Write(BitConverter.GetBytes(Amount), 0, 2);
 
                     if (simplified)
                     {
-                        m.Write(new byte[60]);
+                        m.Write(new byte[53]);
                     }
                     else
                     {
-                        m.Write(BitConverter.GetBytes(0), 0, 2);
-                        m.Write(BitConverter.GetBytes(0), 0, 2);
                         m.Write(BitConverter.GetBytes((short)Power), 0, 1);
                         m.Write(BitConverter.GetBytes((short)RerollLeft), 0, 1);
                         m.Write(BitConverter.GetBytes(ItemInfo.BoundType), 0, 2);
@@ -238,8 +236,6 @@ namespace DigitalWorldOnline.Commons.Models.Base
                             m.Write(BitConverter.GetBytes(socketStatus.Value), 0, 1);
                         }
 
-                        m.Write(BitConverter.GetBytes(0), 0, 1);
-
                         foreach (var accessoryStatus in AccessoryStatus.OrderBy(x => x.Slot))
                         {
                             m.Write(BitConverter.GetBytes(accessoryStatus.Type.GetHashCode()), 0, 2);
@@ -249,8 +245,6 @@ namespace DigitalWorldOnline.Commons.Models.Base
                         {
                             m.Write(BitConverter.GetBytes(accessoryStatus.Value), 0, 2);
                         }
-
-                        m.Write(BitConverter.GetBytes(0), 0, 2);
 
                         if (RemainingMinutes() == 0) //if (RemainingMinutes() == 0xFFFFFFFF)
                         {
@@ -287,29 +281,27 @@ namespace DigitalWorldOnline.Commons.Models.Base
         {
             if (ItemId <= 0)
             {
-                return Array.Empty<byte>(); // Retorna um array vazio se o ItemId for menor ou igual a 0.
+                byte[] emptyBuffer = new byte[GeneralSizeEnum.ItemSizeInBytes.GetHashCode()];
+                return emptyBuffer;
             }
 
             using (MemoryStream m = new())
             {
                 m.Write(BitConverter.GetBytes(ItemId), 0, 4);
-                m.Write(BitConverter.GetBytes(Amount), 0, 4);
+                m.Write(BitConverter.GetBytes(Amount), 0, 2);
 
                 if (simplified)
                 {
-                    m.Write(new byte[60]);
+                    m.Write(new byte[53]);
                 }
                 else
                 {
-                    m.Write(BitConverter.GetBytes(0), 0, 2);
-                    m.Write(BitConverter.GetBytes(0), 0, 2);
                     m.Write(BitConverter.GetBytes((short)Power), 0, 1);
                     m.Write(BitConverter.GetBytes((short)RerollLeft), 0, 1);
                     m.Write(BitConverter.GetBytes(ItemInfo.BoundType), 0, 2);
                     m.Write(BitConverter.GetBytes(0), 0, 2);
                     m.Write(BitConverter.GetBytes(0), 0, 2);
                     m.Write(BitConverter.GetBytes(0), 0, 2);
-                    m.Write(BitConverter.GetBytes(0), 0, 1);
                     m.Write(BitConverter.GetBytes(0), 0, 1);
                     m.Write(BitConverter.GetBytes(0), 0, 1);
                     m.Write(BitConverter.GetBytes(0), 0, 1);
@@ -327,7 +319,6 @@ namespace DigitalWorldOnline.Commons.Models.Base
                         m.Write(BitConverter.GetBytes(accessoryStatus.Value), 0, 2);
                     }
 
-                    m.Write(BitConverter.GetBytes(0), 0, 2);
                     if (RemainingMinutes() == 4294967280)
                     {
                         m.Write(BitConverter.GetBytes(RemainingMinutes()), 0, 4);
@@ -349,16 +340,15 @@ namespace DigitalWorldOnline.Commons.Models.Base
         {
             if (ItemId <= 0)
             {
-                return Array.Empty<byte>();
+                byte[] emptyBuffer = new byte[GeneralSizeEnum.ItemSizeInBytes.GetHashCode()];
+                return emptyBuffer;
             }
 
             using (MemoryStream m = new())
             {
                 m.Write(BitConverter.GetBytes(ItemId), 0, 4);
-                m.Write(BitConverter.GetBytes(Amount), 0, 4);
+                m.Write(BitConverter.GetBytes(Amount), 0, 2);
 
-                m.Write(BitConverter.GetBytes(0), 0, 2);
-                m.Write(BitConverter.GetBytes(0), 0, 2);
                 m.Write(BitConverter.GetBytes((short)Power), 0, 1);
                 m.Write(BitConverter.GetBytes((short)RerollLeft), 0, 1);
 
@@ -377,7 +367,6 @@ namespace DigitalWorldOnline.Commons.Models.Base
                 m.Write(BitConverter.GetBytes(0), 0, 1);
                 m.Write(BitConverter.GetBytes(0), 0, 1);
                 m.Write(BitConverter.GetBytes(0), 0, 1);
-                m.Write(BitConverter.GetBytes(0), 0, 1);
 
                 var orderedAccessoryStatus = AccessoryStatus.OrderBy(x => x.Slot);
                 var orderedAccessoryStatusList = orderedAccessoryStatus.ToList();
@@ -391,8 +380,6 @@ namespace DigitalWorldOnline.Commons.Models.Base
                 {
                     m.Write(BitConverter.GetBytes(accessoryStatus.Value), 0, 2);
                 }
-
-                m.Write(BitConverter.GetBytes(0), 0, 2);
 
                 long nEndTime = (uint)new DateTimeOffset(EndDate).ToUnixTimeSeconds();
 

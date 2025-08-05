@@ -1,17 +1,13 @@
 ﻿using AutoMapper;
 using DigitalWorldOnline.Application.Separar.Commands.Update;
 using DigitalWorldOnline.Application.Separar.Queries;
-using DigitalWorldOnline.Character.Configuration;
 using DigitalWorldOnline.Commons.Entities;
 using DigitalWorldOnline.Commons.Enums.PacketProcessor;
 using DigitalWorldOnline.Commons.Interfaces;
-using DigitalWorldOnline.Commons.Models.Account;
 using DigitalWorldOnline.Commons.Models.Character;
-using DigitalWorldOnline.Commons.Packet;
 using DigitalWorldOnline.Commons.Packets.CharacterServer;
 using MediatR;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
 using Serilog;
 
 namespace DigitalWorldOnline.Character.PacketProcessors
@@ -24,6 +20,7 @@ namespace DigitalWorldOnline.Character.PacketProcessors
         private readonly IMapper _mapper;
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
+        private const string GameServerPort = "CharacterServer:Port";
 
         public RecvAccessCode(
             ISender sender,
@@ -53,13 +50,24 @@ namespace DigitalWorldOnline.Character.PacketProcessors
             {
                 _logger.Debug("Processando requisição de personagens de {ClientAddress}", client.ClientAddress);
 
-                // Cria um leitor de pacotes para processar os dados recebidos  
+                //TODO: Cria um leitor de pacotes para processar os dados recebidos  
                 using var stream = new MemoryStream(packetData);
                 using var packet = new BinaryReader(stream);
 
                 var checkCode = packet.ReadInt32();
                 var accountId = packet.ReadInt32();
                 var accessCode = packet.ReadInt32();
+                var port = Convert.ToUInt32(_configuration[GameServerPort]);
+
+                var checkCodeLocal = port ^ accessCode | accountId;
+
+                if (checkCode != checkCodeLocal)
+                {
+                    _logger.Warning("Código de verificação inválido para {ClientAddress}. Esperado: {Expected}, Recebido: {Received}",
+                        client.ClientAddress, checkCodeLocal, checkCode);
+                    client.Disconnect();
+                    return;
+                }
 
                 _logger.Debug("AccountId: {AccountId}, AccessCode: {AccessCode}", accountId, accessCode);
 

@@ -217,7 +217,7 @@
         DropItem = 35,
         MAX_DIGIMONSKILLLevel = 30,
 
-        ItemSizeInBytes = 68,
+        ItemSizeInBytes = 59,
 
         TamerLevelMax = 120,
         DigimonLevelMax = 120,

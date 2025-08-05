@@ -7,9 +7,11 @@ namespace DigitalWorldOnline.Application.Separar.Queries
     {
         public long AccountId { get; set; }
 
-        public byte Position { get; set; }
+        public long Position { get; set; }
 
-        public CharacterByAccountIdAndPositionQuery(long accountId, byte position)
+        public CharacterByAccountIdAndPositionQuery(
+            long accountId, 
+            long position)
         {
             AccountId = accountId;
             Position = position;

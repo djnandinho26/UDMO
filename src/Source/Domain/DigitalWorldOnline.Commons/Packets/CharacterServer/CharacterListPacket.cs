@@ -8,6 +8,9 @@ namespace DigitalWorldOnline.Commons.Packets.CharacterServer
     {
         private const int PacketNumber = 1301;
 
+        // CORREÇÃO: Constantes para valores repetidos
+        private const short ReservedFieldValue = 0;
+
         public CharacterListPacket(IEnumerable<CharacterModel> characters)
         {
             Type(PacketNumber);
@@ -28,22 +31,56 @@ namespace DigitalWorldOnline.Commons.Packets.CharacterServer
                 WriteByte(character.Level);
                 WriteString(character.Name);
 
-                for (int i = 0; i < GeneralSizeEnum.Equipment.GetHashCode(); i++)
-                {
-                    //WriteBytes(character.Equipment.Items[i].ToArray(true));
-                    WriteBytes(new byte[59]);
-                }
+                // Equipment slots
+                WriteEquipmentSlots(character);
 
-                WriteInt(character.Partner.BaseType);
-                WriteByte(character.Partner.Level);
-                WriteString(character.Partner.Name);
-                WriteShort(character.Partner.Size);
+                // Partner information
+                WritePartnerInfo(character);
 
-                //TODO: Ver o que esses 2 mudam
-                WriteShort(0); //??
-                WriteShort(character.SealList.SealLeaderId);
-                WriteShort(0); //??
+                // Final fields
+                WriteReservedFields(character);
             }
+        }
+
+        /// <summary>
+        /// Escreve os slots de equipamento com valores padrão
+        /// </summary>
+        private void WriteEquipmentSlots(CharacterModel character)
+        {
+            for (int i = 0; i < GeneralSizeEnum.Equipment.GetHashCode(); i++)
+            {
+                WriteBytes(character.Equipment.Items[i].ToArray(true));
+            }
+        }
+
+        /// <summary>
+        /// Escreve as informações do partner do personagem
+        /// </summary>
+        /// <param name="character">Modelo do personagem</param>
+        private void WritePartnerInfo(CharacterModel character)
+        {
+            WriteInt(character.Partner.BaseType);
+            WriteByte(character.Partner.Level);
+            WriteString(character.Partner.Name);
+            WriteShort(character.Partner.Size);
+        }
+
+        /// <summary>
+        /// CORREÇÃO: Escreve os campos reservados/finais do pacote garantindo que todos os valores sejam escritos
+        /// </summary>
+        /// <param name="character">Modelo do personagem</param>
+        private void WriteReservedFields(CharacterModel character)
+        {
+            // Primeiro campo reservado (2 bytes)
+            WriteShort(ReservedFieldValue); 
+            WriteShort(ReservedFieldValue);
+
+            // SealLeaderId (1 byte) - com proteção null
+            byte sealLeaderId = (byte)(character.SealList?.SealLeaderId ?? 0);
+            WriteByte(2);
+
+            // Segundo campo reservado (2 bytes)
+            WriteShort((short)character.ServerTranf);
         }
     }
 }

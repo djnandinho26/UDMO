@@ -88,7 +88,9 @@ namespace DigitalWorldOnline.Commons.Entities
             return true;
         }
 
-
+        /// <summary>
+        /// CORREÇÃO: Melhor tratamento de exceções e logging de erros
+        /// </summary>
         private void AcceptCallback(IAsyncResult result)
         {
             if (!IsListening)
@@ -107,7 +109,46 @@ namespace DigitalWorldOnline.Commons.Entities
                 client.BeginReceive(ReceiveCallback, client);
                 ServerListener.BeginAccept(AcceptCallback, null);
             }
-            catch { }
+            catch (ObjectDisposedException)
+            {
+                // Socket foi fechado durante o shutdown - comportamento esperado
+                return;
+            }
+            catch (SocketException ex)
+            {
+                // Log específico para erros de socket
+                System.Diagnostics.Debug.WriteLine($"Erro de socket em AcceptCallback: {ex.Message}");
+
+                // Continua tentando aceitar novas conexões se o servidor ainda estiver rodando
+                if (IsListening)
+                {
+                    try
+                    {
+                        ServerListener?.BeginAccept(AcceptCallback, null);
+                    }
+                    catch
+                    {
+                        // Se falhou novamente, para de tentar
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log de erro genérico e continua operação
+                System.Diagnostics.Debug.WriteLine($"Erro inesperado em AcceptCallback: {ex.Message}");
+
+                if (IsListening)
+                {
+                    try
+                    {
+                        ServerListener?.BeginAccept(AcceptCallback, null);
+                    }
+                    catch
+                    {
+                        // Se falhou novamente, para de tentar
+                    }
+                }
+            }
         }
 
         private void ReceiveCallback(IAsyncResult result)
@@ -153,7 +194,7 @@ namespace DigitalWorldOnline.Commons.Entities
 
             int totalBytesSent = 0;
             int bytesRemaining = buffer.Length;
-           
+
 
             SysCons.LogPacketSend($"\r\n{Dump.HexDump(buffer, buffer.Length)}");
 

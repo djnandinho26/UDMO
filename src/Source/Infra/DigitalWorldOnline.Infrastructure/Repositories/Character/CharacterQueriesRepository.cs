@@ -63,14 +63,14 @@ namespace DigitalWorldOnline.Infrastructure.Repositories.Character
             return dto;
         }
 
-        public async Task<CharacterDTO?> GetCharacterByAccountIdAndPositionAsync(long accountId, byte position)
+        public async Task<CharacterDTO?> GetCharacterByAccountIdAndPositionAsync(long accountId, long position)
         {
             return await _context.Character
                 .AsNoTracking()
                 .Include(x => x.Location)
                 .Include(x => x.Digimons)
                 .FirstOrDefaultAsync(x => x.AccountId == accountId &&
-                                          x.Position == position);
+                                          x.Id == position);
         }
 
         public async Task<CharacterDTO?> GetCharacterByIdAsync(long characterId)

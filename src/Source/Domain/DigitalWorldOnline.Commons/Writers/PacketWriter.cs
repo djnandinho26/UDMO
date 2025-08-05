@@ -7,7 +7,7 @@ namespace DigitalWorldOnline.Commons.Writers
     /// <summary>
     /// Classe responsável por escrever dados para pacotes de rede.
     /// Implementa a serialização e o cálculo de checksum do pacote.
-    /// Thread-safe e suporta múltiplos usos com sessões isoladas por tipo.
+    /// CORREÇÃO: Thread-safe com sessões isoladas por instância.
     /// </summary>
     public class PacketWriter : PacketWriterBase
     {
@@ -38,12 +38,7 @@ namespace DigitalWorldOnline.Commons.Writers
         }
 
         /// <summary>
-        /// Dicionário de sessões por tipo de pacote (thread-safe)
-        /// </summary>
-        private static readonly ConcurrentDictionary<int, PacketSession> _sessions = new();
-
-        /// <summary>
-        /// Sessão atual sendo usada por esta instância
+        /// CORREÇÃO: Sessão atual sendo usada por esta instância (não estática)
         /// </summary>
         private PacketSession? _currentSession;
 
@@ -122,22 +117,25 @@ namespace DigitalWorldOnline.Commons.Writers
         }
 
         /// <summary>
-        /// Obtém ou cria uma sessão para o tipo de pacote especificado
+        /// CORREÇÃO: Cria uma nova sessão para esta instância
         /// </summary>
-        private PacketSession GetOrCreateSession(int packetType)
+        private PacketSession CreateSession(int packetType)
         {
-            return _sessions.GetOrAdd(packetType, type => new PacketSession(type));
+            return new PacketSession(packetType);
         }
 
         /// <summary>
-        /// Define a sessão atual baseada no tipo de pacote
+        /// CORREÇÃO: Define a sessão atual baseada no tipo de pacote (não usa cache estático)
         /// </summary>
         private void SetCurrentSession(int packetType)
         {
             lock (_lock)
             {
+                // Limpa sessão anterior se existir
+                _currentSession?.Dispose();
+
                 _currentPacketType = packetType;
-                _currentSession = GetOrCreateSession(packetType);
+                _currentSession = CreateSession(packetType);
 
                 // Atualiza a referência do Packet para a sessão atual
                 Packet = _currentSession.Stream;
@@ -146,6 +144,7 @@ namespace DigitalWorldOnline.Commons.Writers
 
         /// <summary>
         /// Serializa o pacote da sessão atual, calculando seu comprimento total e checksum.
+        /// CORREÇÃO: Utiliza MemoryStream expansível para evitar o erro de stream não expansível.
         /// </summary>
         /// <returns>Um array de bytes representando o pacote completo</returns>
         /// <exception cref="ObjectDisposedException">Lançada quando o objeto já foi descartado</exception>
@@ -167,12 +166,16 @@ namespace DigitalWorldOnline.Commons.Writers
                 {
                     var workingStream = _currentSession.Stream;
 
-                    // Cria uma cópia do stream atual para não modificar o original
+                    // Obtém dados atuais do stream
                     byte[] currentData = workingStream.ToArray();
-                    using var tempStream = new MemoryStream(currentData);
 
-                    // Move para o final e adiciona o checksum placeholder (4 bytes)
-                    tempStream.Seek(0, SeekOrigin.End);
+                    // CORREÇÃO: Cria um MemoryStream expansível em vez de usar array fixo
+                    using var tempStream = new MemoryStream();
+
+                    // Escreve os dados atuais no stream temporário
+                    tempStream.Write(currentData, 0, currentData.Length);
+
+                    // Adiciona o checksum placeholder (4 bytes) - agora o stream pode expandir
                     tempStream.Write(BitConverter.GetBytes(0), 0, 4);
 
                     // Obter o buffer do MemoryStream temporário
@@ -231,40 +234,6 @@ namespace DigitalWorldOnline.Commons.Writers
         }
 
         /// <summary>
-        /// Remove uma sessão específica do cache
-        /// </summary>
-        /// <param name="packetType">Tipo do pacote para remover</param>
-        public static void ClearSession(int packetType)
-        {
-            if (_sessions.TryRemove(packetType, out var session))
-            {
-                session.Dispose();
-            }
-        }
-
-        /// <summary>
-        /// Remove todas as sessões do cache
-        /// </summary>
-        public static void ClearAllSessions()
-        {
-            foreach (var session in _sessions.Values)
-            {
-                session.Dispose();
-            }
-            _sessions.Clear();
-        }
-
-        /// <summary>
-        /// Obtém informações sobre todas as sessões ativas
-        /// </summary>
-        public static string GetSessionsInfo()
-        {
-            var sessionCount = _sessions.Count;
-            var sessionTypes = string.Join(", ", _sessions.Keys);
-            return $"Sessões ativas: {sessionCount} [{sessionTypes}]";
-        }
-
-        /// <summary>
         /// Valida se o pacote pode ser modificado.
         /// </summary>
         private void ThrowIfFinalized()
@@ -296,7 +265,7 @@ namespace DigitalWorldOnline.Commons.Writers
         }
 
         /// <summary>
-        /// Define o tipo do pacote e cria/obtém a sessão correspondente.
+        /// CORREÇÃO: Define o tipo do pacote e cria uma nova sessão para esta instância.
         /// </summary>
         public override void Type(int type)
         {
@@ -314,7 +283,7 @@ namespace DigitalWorldOnline.Commons.Writers
         }
 
         /// <summary>
-        /// Método helper para operações de escrita thread-safe
+        /// CORREÇÃO: Método helper para operações de escrita thread-safe simplificado
         /// </summary>
         private void SafeWrite(Action writeAction)
         {
@@ -323,6 +292,12 @@ namespace DigitalWorldOnline.Commons.Writers
                 ThrowIfDisposed();
                 ThrowIfNoSession();
                 ThrowIfFinalized();
+
+                // Limpa buffer em cache para forçar nova serialização
+                if (_currentSession != null)
+                {
+                    _currentSession.SerializedBuffer = null;
+                }
 
                 writeAction();
             }
@@ -361,7 +336,7 @@ namespace DigitalWorldOnline.Commons.Writers
         }
 
         /// <summary>
-        /// Sobrescreve WriteShort para validar estado antes da escrita.
+        /// CORREÇÃO: WriteShort com logging para debug
         /// </summary>
         public new void WriteShort(short value)
         {
@@ -452,7 +427,7 @@ namespace DigitalWorldOnline.Commons.Writers
         }
 
         /// <summary>
-        /// Implementação do Dispose que limpa recursos específicos desta classe.
+        /// CORREÇÃO: Implementação do Dispose que limpa recursos específicos desta classe.
         /// </summary>
         public new void Dispose()
         {
@@ -463,10 +438,13 @@ namespace DigitalWorldOnline.Commons.Writers
 
                 try
                 {
-                    // Marca como descartado
-                    _disposed = true;
+                    // Limpa sessão atual
+                    _currentSession?.Dispose();
                     _currentSession = null;
                     _currentPacketType = null;
+
+                    // Marca como descartado
+                    _disposed = true;
 
                     // Chama o Dispose da classe base
                     base.Dispose();
